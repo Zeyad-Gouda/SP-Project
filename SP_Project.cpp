@@ -309,8 +309,13 @@ void Update()
                         isListFull = 0;
 
                 if (DupplicateOKButton.getGlobalBounds().contains(mousePos))
+                {
                     if (DupplicateName and !isListFull and !isConfirmUserDelete and !NameEntry and !isUserSelected)
+                    {
                         DupplicateName = 0;
+                        NameEntry = 1;
+                    }
+                }
             }
 
         if (const auto *typed = x->getIf<Event::TextEntered>())
@@ -464,7 +469,6 @@ void FullList()
 
 void DupplicateUser()
 {
-
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
     CreateSprite(DupplicateBg, DupplicateBgTex, "DupplicateUser.png", X, Y, 0.25, 0.25);
