@@ -1,0 +1,3 @@
+C:/Users/lenovo/OneDrive/Desktop/TEST/build/CMakeFiles/TEST.dir
+C:/Users/lenovo/OneDrive/Desktop/TEST/build/CMakeFiles/edit_cache.dir
+C:/Users/lenovo/OneDrive/Desktop/TEST/build/CMakeFiles/rebuild_cache.dir
