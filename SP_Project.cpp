@@ -990,10 +990,10 @@ void DrawMainMenuBackground()
     window.draw(QueenTrigger);
 
     window.draw(Minowfish);
+    MainMenuFishAnimation();
     for (auto &obj : smallfishs)
-    {
         window.draw(obj.sprite);
-    }
+
     window.draw(n);
 
     // window.draw(Barracudacollieder);
@@ -1295,20 +1295,20 @@ void StartSwitchUser()
         UserTexts[i] = nullptr; // Initializing Users with Null
 
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
-    CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.25, 0.25); // Background of the SwitchUser pop-up window
+    CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2); // Background of the SwitchUser pop-up window
 
-    X = WindowWidth * 0.37f, Y = WindowHeight * 0.68f;
-    CreateButton(NewButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    X = WindowWidth * 0.25f, Y = WindowHeight * 0.75f;
+    CreateButton(NewButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
-    CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.75f;
+    CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!SelectButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
-    X = WindowWidth * 0.62f, Y = WindowHeight * 0.68f;
-    CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    X = WindowWidth * 0.75f, Y = WindowHeight * 0.75f;
+    CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!DeleteButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
@@ -1318,7 +1318,7 @@ void StartSwitchUser()
     SetupButtonText(SelectText, "Select", SelectButton);
     SetupButtonText(DeleteText, "Delete", DeleteButton);
 
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.25f;
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
     CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
 
     // ----------- Checking to see if we already Have Users------------------
@@ -1345,7 +1345,7 @@ void SetupButtonText(Text &text, const string &str, Sprite &button)
 {
     text.setFont(btnFont);
     text.setString(str);
-    text.setCharacterSize(40);
+    text.setCharacterSize(30);
     text.setFillColor(Color(210, 225, 90));
     text.setOutlineColor(Color(30, 60, 10));
     text.setOutlineThickness(2.f);
@@ -1375,12 +1375,31 @@ void UpdateSwitchUser()
 {
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
 
-    while (auto x = window.pollEvent())
+    while (auto event = window.pollEvent())
     {
-        if (x->is<Event::Closed>())
+        if (event->is<Event::Closed>())
             window.close();
 
-        if (auto mouseEvent = x->getIf<Event::MouseButtonReleased>())
+        else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+        {
+            float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
+            float viewRatio = 800.f / 600.f;
+            float sizeX = 1.f, sizeY = 1.f, posX = 0.f, posY = 0.f;
+
+            if (windowRatio > viewRatio)
+            {
+                sizeX = viewRatio / windowRatio;
+                posX = (1.f - sizeX) / 2.f;
+            }
+            else
+            {
+                sizeY = windowRatio / viewRatio;
+                posY = (1.f - sizeY) / 2.f;
+            }
+            view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
+        }
+
+        if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
             if (mouseEvent->button == Mouse::Button::Left)
             {
                 // if The Button "NEW" is pressed and (you're on the switchUser Menu)
@@ -1411,7 +1430,7 @@ void UpdateSwitchUser()
                         }
                         if (!DupplicateName) // NO? -> add it
                         {
-                            ofstream adduser("Users_List.txt");
+                            ofstream adduser("Assets/Switch User/Users_List.txt");
                             users[NumberOfUsers].first = InputString;
                             users[NumberOfUsers].second = NumberOfUsers + 1;
                             NumberOfUsers++;
@@ -1504,10 +1523,10 @@ void UpdateSwitchUser()
                 }
             }
 
-        if (const auto *typed = x->getIf<Event::TextEntered>())
+        if (const auto *typed = event->getIf<Event::TextEntered>())
         {
             char32_t a = typed->unicode;
-            if (a == 8 /*ASCII for delete*/ and !InputString.empty())
+            if (a == 8 /*ASCII for BackSpace*/ and !InputString.empty())
                 InputString.pop_back();
             else if (a >= 32 and InputString.size() < 8)
                 InputString += a;
@@ -1580,17 +1599,17 @@ void EnterYourName()
     DisplayText.setPosition({(float)X, (float)Y});
 
     X = WindowWidth * 0.375f, Y = WindowHeight * 0.448f;
-    CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1.5, 1.5);
+    CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.58f;
-    CreateButton(DoneAddingUser, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(DoneAddingUser, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
     SetupButtonText(DoneAddingUserText, "Done", DoneAddingUser);
 
     if (!CancelAddingUserHLTex.loadFromFile("Assets/Switch User/shell_tinybtn124_high.jpg"))
         cout << "Can't load Texture!\n";
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
-    CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/shell_tinybtn124_normal.jpg", X, Y, 1.5, 1.5);
+    CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/shell_tinybtn124_normal.jpg", X, Y, 1, 1);
     SetupButtonText(CancelAddingUserText, "Cancel", CancelAddingUser);
 }
 
@@ -1603,11 +1622,11 @@ void RefreshUsersList()
 
         if (i < NumberOfUsers)
         {
-            UserTexts[i] = new Text(btnFont, users[i].first, 35);
+            UserTexts[i] = new Text(btnFont, users[i].first, 25);
             UserTexts[i]->setFillColor(Color::White);
 
             float X = WindowWidth * 0.5f;
-            float Y = WindowHeight * 0.3f + (i * 50.f);
+            float Y = WindowHeight * 0.23f + (i * 40.f);
             UserTexts[i]->setPosition({X, Y});
 
             FloatRect bounds = UserTexts[i]->getLocalBounds();
@@ -1626,11 +1645,11 @@ void DeleteUser()
     CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/DeleteUserBg.png", X, Y, 0.25, 0.25);
 
     X = WindowWidth * 0.4f, Y = WindowHeight * 0.65f;
-    CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
     SetupButtonText(YesButtonText, "Yes", YesButton);
 
     X = WindowWidth * 0.6f, Y = WindowHeight * 0.65f;
-    CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
     SetupButtonText(NoButtonText, "No!", NoButton);
 
     SetupButtonText(DeletethisUser, users[SelectedUser].first, DeleteUserBg);
@@ -1647,7 +1666,7 @@ void FullList()
     CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.25, 0.25);
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
     SetupButtonText(OKText, "OK", FullOKButton);
 
     InputString = "";
@@ -1660,7 +1679,7 @@ void DupplicateUser()
     CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.25, 0.25);
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
     SetupButtonText(OKText, "OK", DupplicateOKButton);
 
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
@@ -1691,7 +1710,7 @@ void DisplaySwitchUser()
 
     if (isUserSelected)
     {
-        return;
+        MainMenu();
         // Get Back to the Main Menu
     }
 
