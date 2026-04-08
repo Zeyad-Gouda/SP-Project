@@ -62,8 +62,8 @@ float getRandom(float min, float max)
 }
 
 // --- المتغيرات العالمية ---
-float WindowWidth = 1920;                                                                                    // عرض الشاشة الثابت
-float WindowHeight = 1080;                                                                                   // طول الشاشة الثابت
+float WindowWidth = 800;                                                                                     // عرض الشاشة الثابت
+float WindowHeight = 600;                                                                                    // طول الشاشة الثابت
 RenderWindow window(VideoMode({(unsigned int)WindowWidth, (unsigned int)WindowHeight}), "Feeding Frenzy 2"); // فتح الشاشة كاملة
 View view({400.f, 300.f}, Vector2f(window.getSize()));                                                       // الكاميرا اللي بتظبط أبعاد اللعبة
 
@@ -286,8 +286,14 @@ Texture NewButtonTex;
 Sprite NewButton(NewButtonTex);
 Texture NewButtonHLTex;
 Sprite NewButtonHL(NewButtonHLTex);
-Sprite SelectButton(NewButtonTex);
-Sprite DeleteButton(NewButtonTex);
+Texture SelectButtonTex;
+Sprite SelectButton(SelectButtonTex);
+Texture SelectButtonHLTex;
+Sprite SelectButtonHL(SelectButtonHLTex);
+Texture DeleteButtonTex;
+Sprite DeleteButton(DeleteButtonTex);
+Texture DeleteButtonHLTex;
+Sprite DeleteButtonHL(DeleteButtonHLTex);
 Texture BlinkTex;
 Sprite Blink(BlinkTex);
 Texture EnterYourNameBgTex;
@@ -1297,16 +1303,16 @@ void StartSwitchUser()
         cout << "Failed to load: ButtonHL" << "\n";
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
-    CreateButton(SelectButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
-    if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
+    CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    if (!SelectButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
     X = WindowWidth * 0.62f, Y = WindowHeight * 0.68f;
-    CreateButton(DeleteButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
-    if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
+    CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    if (!DeleteButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
-    if (!btnFont.openFromFile("Assets/Switch User/BarmenoBold.otf"))
+    if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
         cout << "Can't load font\n";
     SetupButtonText(NewText, "New", NewButton);
     SetupButtonText(SelectText, "Select", SelectButton);
@@ -1561,7 +1567,7 @@ void EnterYourName()
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
     CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/EnterYourName.png", X, Y, 0.25, 0.25);
 
-    if (!Inputfont.openFromFile("Assets/Switch User/trebuc.ttf"))
+    if (!Inputfont.openFromFile("Assets/Fonts/trebuc.ttf"))
         cout << "Cant Open Font!";
 
     DisplayText.setFont(Inputfont);
