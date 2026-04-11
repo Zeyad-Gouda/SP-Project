@@ -21,6 +21,7 @@
 using namespace std; // عشان نكتب أوامر C++ العادية بسهولة
 using namespace sf;  // عشان نستخدم أوامر SFML من غير تعقيد
 
+void PortView();
 void loading_screen();
 void StartLoadingScreen();
 void UpdateLoadingScreen();
@@ -45,7 +46,7 @@ void CreateButton(Sprite &sprite, Texture &texture, const string &filePath, // A
 void SetupButtonText(Text &text, const string &str, Sprite &button); // A Template for Creating Text for buttons
 void UpdateSwitchUser();
 void HoverButton(Sprite &button, const Texture &normalTex,
-                 const Texture &highlightTex, Vector2f mousePos); // A Template for Hovering Over Buttons
+                 const Texture &highlightTex, Vector2f mousePos, Text &text); // A Template for Hovering Over Buttons
 void EnterYourName();
 void RefreshUsersList();
 void DeleteUser();
@@ -311,6 +312,8 @@ Clock CursorTimer;
 Text DoneAddingUserText(btnFont, "", 40);
 Texture DoneAddingUserTex;
 Sprite DoneAddingUser(DoneAddingUserTex);
+Texture DoneAddingUserHLTex;
+Sprite DoneAddingUserHL(DoneAddingUserHLTex);
 pair<string, int> users[7];
 int NumberOfUsers = 0;
 const int MaxNumberOfUsers = 7;
@@ -815,12 +818,34 @@ void MainMenu()
                 window.close();
             }
             if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
+            {
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
                     if (switchuserbutton.getGlobalBounds().contains(mousePos))
                         SwitchUser();
                 }
+            }
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+            {
+                float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
+                float viewRatio = 800.f / 600.f;
+                float sizeX = 1.f, sizeY = 1.f, posX = 0.f, posY = 0.f;
+
+                if (windowRatio > viewRatio)
+                {
+                    sizeX = viewRatio / windowRatio;
+                    posX = (1.f - sizeX) / 2.f;
+                }
+                else
+                {
+                    sizeY = windowRatio / viewRatio;
+                    posY = (1.f - sizeY) / 2.f;
+                }
+                view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
+            }
+            window.setView(view);
+            window.clear(Color::Black);
         }
         background.setTexture(mainbackground);
 
@@ -1297,17 +1322,17 @@ void StartSwitchUser()
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
     CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2); // Background of the SwitchUser pop-up window
 
-    X = WindowWidth * 0.25f, Y = WindowHeight * 0.75f;
+    X = WindowWidth * 0.25f, Y = WindowHeight * 0.78f;
     CreateButton(NewButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.75f;
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.78f;
     CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!SelectButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
 
-    X = WindowWidth * 0.75f, Y = WindowHeight * 0.75f;
+    X = WindowWidth * 0.75f, Y = WindowHeight * 0.78f;
     CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!DeleteButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
@@ -1340,13 +1365,14 @@ void StartSwitchUser()
     SelectUserHL.setFillColor(Color(180, 220, 255, 150));
     SelectUserHL.setOrigin({SelectUserHL.getSize().x / 2.f, 0.f});
 }
+
 // ------------------------ Template ------------------------
 void SetupButtonText(Text &text, const string &str, Sprite &button)
 {
     text.setFont(btnFont);
     text.setString(str);
     text.setCharacterSize(30);
-    text.setFillColor(Color(210, 225, 90));
+    text.setFillColor(Color(210, 240, 90));
     text.setOutlineColor(Color(30, 60, 10));
     text.setOutlineThickness(2.f);
 
@@ -1373,7 +1399,7 @@ void CreateButton(Sprite &sprite, Texture &texture, const string &filePath,
 
 void UpdateSwitchUser()
 {
-    Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
     while (auto event = window.pollEvent())
     {
@@ -1396,7 +1422,8 @@ void UpdateSwitchUser()
                 sizeY = windowRatio / viewRatio;
                 posY = (1.f - sizeY) / 2.f;
             }
-            view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
+            view.setViewport(FloatRect({posX, posY}, {sizeX, sizeY}));
+            window.setView(view);
         }
 
         if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
@@ -1547,33 +1574,38 @@ void UpdateSwitchUser()
         DisplayText.setString(InputString);
     }
 
-    HoverButton(NewButton, NewButtonTex, NewButtonHLTex, mousePos);
-    HoverButton(SelectButton, NewButtonTex, NewButtonHLTex, mousePos);
-    HoverButton(DeleteButton, NewButtonTex, NewButtonHLTex, mousePos);
+    HoverButton(NewButton, NewButtonTex, NewButtonHLTex, mousePos, NewText);
+    HoverButton(SelectButton, NewButtonTex, NewButtonHLTex, mousePos, SelectText);
+    HoverButton(DeleteButton, NewButtonTex, NewButtonHLTex, mousePos, DeleteText);
     if (NameEntry and !isConfirmUserDelete)
     {
-        HoverButton(DoneAddingUser, NewButtonTex, NewButtonHLTex, mousePos);
-        HoverButton(CancelAddingUser, CancelAddingUserTex, CancelAddingUserHLTex, mousePos);
+        HoverButton(DoneAddingUser, DoneAddingUserTex, DoneAddingUserHLTex, mousePos, DoneAddingUserText);
+        HoverButton(CancelAddingUser, CancelAddingUserTex, CancelAddingUserHLTex, mousePos, CancelAddingUserText);
     }
     if (isConfirmUserDelete and !NameEntry)
     {
-        HoverButton(YesButton, NewButtonTex, NewButtonHLTex, mousePos);
-        HoverButton(NoButton, NewButtonTex, NewButtonHLTex, mousePos);
+        HoverButton(YesButton, NewButtonTex, NewButtonHLTex, mousePos, YesButtonText);
+        HoverButton(NoButton, NewButtonTex, NewButtonHLTex, mousePos, NoButtonText);
     }
     if (!NameEntry and !isConfirmUserDelete and isListFull and !DupplicateName)
-        HoverButton(FullOKButton, NewButtonTex, NewButtonHLTex, mousePos);
+        HoverButton(FullOKButton, NewButtonTex, NewButtonHLTex, mousePos, OKText);
 
     if (!NameEntry and !isConfirmUserDelete and !isListFull and DupplicateName)
-        HoverButton(DupplicateOKButton, NewButtonTex, NewButtonHLTex, mousePos);
+        HoverButton(DupplicateOKButton, NewButtonTex, NewButtonHLTex, mousePos, DupplicatedUserText);
 }
 
-void HoverButton(Sprite &button, const Texture &normalTex,
-                 const Texture &highlightTex, Vector2f mousePos)
+void HoverButton(Sprite &button, const Texture &normalTex, const Texture &highlightTex, Vector2f mousePos, Text &text)
 {
     if (button.getGlobalBounds().contains(mousePos))
+    {
         button.setTexture(highlightTex);
+        text.setFillColor(Color(255, 255, 80));
+    }
     else
+    {
         button.setTexture(normalTex);
+        text.setFillColor(Color(210, 240, 90));
+    }
 }
 
 void EnterYourName()
@@ -1584,33 +1616,37 @@ void EnterYourName()
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
     NameEntry = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/EnterYourName.png", X, Y, 0.25, 0.25);
+    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/EnterYourName.png", X, Y, 0.2, 0.2);
 
     if (!Inputfont.openFromFile("Assets/Fonts/trebuc.ttf"))
         cout << "Cant Open Font!";
 
     DisplayText.setFont(Inputfont);
-    DisplayText.setCharacterSize(40);
+    DisplayText.setCharacterSize(30);
     DisplayText.setFillColor(Color::White);
-    X = WindowWidth * 0.38f, Y = WindowHeight * 0.40f;
-    DisplayText.setPosition({(float)X, (float)Y});
 
-    X = WindowWidth * 0.38f, Y = WindowHeight * 0.42f;
+    // X = WindowWidth * 0.38f, Y = WindowHeight * 0.30f;
+    // DisplayText.setPosition({(float)X, (float)Y});
+
+    X = WindowWidth * 0.24f, Y = WindowHeight * 0.34f;
     DisplayText.setPosition({(float)X, (float)Y});
 
     X = WindowWidth * 0.375f, Y = WindowHeight * 0.448f;
     CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
 
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.58f;
-    CreateButton(DoneAddingUser, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.62f;
+    CreateButton(DoneAddingUser, DoneAddingUserTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(DoneAddingUserText, "Done", DoneAddingUser);
+    if (!DoneAddingUserHLTex.loadFromFile("Assets/Switch User/Button High.png"))
+        cout << "Failed to load: ButtonHL" << "\n";
 
     if (!CancelAddingUserHLTex.loadFromFile("Assets/Switch User/shell_tinybtn124_high.jpg"))
         cout << "Can't load Texture!\n";
 
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
-    CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/shell_tinybtn124_normal.jpg", X, Y, 1, 1);
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.75f;
+    CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/Cancel.png", X, Y, 1.5, 1.5);
     SetupButtonText(CancelAddingUserText, "Cancel", CancelAddingUser);
+    CancelAddingUserText.setPosition({CancelAddingUser.getPosition().x, CancelAddingUser.getPosition().y - 5});
 }
 
 void RefreshUsersList()
@@ -1642,20 +1678,20 @@ void DeleteUser()
     JustOpenDeleteConfirm = 1;
     isConfirmUserDelete = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/DeleteUserBg.png", X, Y, 0.25, 0.25);
+    CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/DeleteUserBg.png", X, Y, 0.175, 0.175);
 
-    X = WindowWidth * 0.4f, Y = WindowHeight * 0.65f;
-    CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
+    X = WindowWidth * 0.4f, Y = WindowHeight * 0.7f;
+    CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(YesButtonText, "Yes", YesButton);
 
-    X = WindowWidth * 0.6f, Y = WindowHeight * 0.65f;
-    CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
+    X = WindowWidth * 0.6f, Y = WindowHeight * 0.7f;
+    CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(NoButtonText, "No!", NoButton);
 
     SetupButtonText(DeletethisUser, users[SelectedUser].first, DeleteUserBg);
-    X = WindowWidth * 0.49f, Y = WindowHeight * 0.53f;
+    X = WindowWidth * 0.47f, Y = WindowHeight * 0.52f;
     DeletethisUser.setPosition({(float)X, (float)Y});
-    DeletethisUser.setCharacterSize(60);
+    DeletethisUser.setCharacterSize(45);
 }
 
 void FullList()
@@ -1663,7 +1699,7 @@ void FullList()
     isListFull = 1;
 
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.25, 0.25);
+    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.5, 0.5);
 
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
     CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
