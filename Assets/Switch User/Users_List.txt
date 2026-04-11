@@ -1,6 +1,1 @@
-Zeyad	1
-as	2
-ds	3
-gas	4
-hdd	5
-lkj	6
+

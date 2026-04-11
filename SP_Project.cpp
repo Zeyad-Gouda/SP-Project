@@ -53,6 +53,10 @@ void DeleteUser();
 void FullList();       // If the List is Full -> (max is 7 users)
 void DupplicateUser(); // If the user tried to enter a name that already exists
 void DisplaySwitchUser();
+void Select_level();
+void StartSelectLevel();
+void UpdateSelectLevel(float dt = 0.f);
+void DrawSelectLevel();
 
 float getRandom(float min, float max)
 {
@@ -173,7 +177,8 @@ Sprite startgamebutton(startgametex);
 // sound button
 SoundBuffer buttonpressed("Assets/Music and Sounds/mouseover.ogg");
 Sound buttonpressedsound(buttonpressed);
-
+//music of main menu
+Music mainmenumusic("Assets/Music and Sounds/menuMusic.mp3");
 // time attack button
 Texture timeattacktex("Assets/Main menu & Loading/Main Menu/mm_timeattack_normal-removebg-preview.png");
 Texture timeattackpressed("Assets/Main menu & Loading/Main Menu/mm_timeattack_high-removebg-preview.png");
@@ -350,6 +355,73 @@ Sprite DupplicateBg(DupplicateBgTex);
 Text DupplicatedUserText(btnFont, "", 40);
 Texture DupplicatedUserTex;
 bool CamefromDupplicate = 0;
+Texture bgTexture("Assets/Select_level/gamemap_bg.jpeg");
+Sprite bgSprite(bgTexture);
+Texture signTexture("Assets/Select_level/gamemap_tittleboard.jpeg");
+Sprite signSprite(signTexture);
+Texture bannerTexture("Assets/Select_level/bord.jpeg");        // بنحمل البانر السفلي
+Sprite bannerSprite(bannerTexture);
+Texture myTexture("Assets/Select_level/shell_tinybtn124_normal.jpeg");    // بنحمل زرار Back to Menu - الصورة العادية
+Texture myHoverTexture("Assets/Select_level/shell_tinybtn124_high.jpeg");    // بنحمل زرار Back to Menu - صورة الـ hover
+Sprite mySprite(myTexture);
+Texture pearlTexture("Assets/Select_level/white.jpeg");    // بنحمل صورة اللؤلؤة المقفولة
+Texture pearlUnlockedTexture("Assets/Select_level/gold.jpeg");     // بنحمل صورة اللؤلؤة بعد الكسب
+Texture loadBarTexture("Assets/Select_level/gamemap_loadbar.jpeg");     // بنحمل صورة الـ loading bar
+Sprite pearlSprite1(pearlTexture);
+Sprite pearlSprite2(pearlTexture);
+Sprite pearlSprite3(pearlTexture);
+Sprite pearlSprite4(pearlTexture);
+// مكان وحجم اللآلئ قبل الكسب
+sf::Vector2f lockedPos1 = { 220.f, 87.f };   sf::Vector2f lockedScale1 = { 0.08f, 0.08f };
+sf::Vector2f lockedPos2 = { 249.f, 133.f };  sf::Vector2f lockedScale2 = { 0.06f, 0.06f };
+sf::Vector2f lockedPos3 = { 246.f, 170.f };  sf::Vector2f lockedScale3 = { 0.06f, 0.06f };
+sf::Vector2f lockedPos4 = { 228.f, 202.f };  sf::Vector2f lockedScale4 = { 0.06f, 0.06f };
+
+// مكان وحجم اللآلئ بعد الكسب
+sf::Vector2f unlockedPos1 = { 235.f, 110.f };  sf::Vector2f unlockedScale1 = { 0.036f, 0.036f };
+sf::Vector2f unlockedPos2 = { 261.f, 152.f };  sf::Vector2f unlockedScale2 = { 0.029f, 0.029f };
+sf::Vector2f unlockedPos3 = { 255.f, 186.f };  sf::Vector2f unlockedScale3 = { 0.028f, 0.028f };
+sf::Vector2f unlockedPos4 = { 239.f, 220.f };  sf::Vector2f unlockedScale4 = { 0.028f, 0.028f };
+
+
+static sf::Font font("Assets/Fonts/ARIALNBI.ttf"); // تحميل الخط المستخدم في الأزرار
+static sf::Text staticTxt(font, ""); 
+static sf::Text nowLoadingTxt(font, ""); 
+static sf::Text menuTxt(font, ""); 
+static sf::Text levelTxt(font, "");
+
+bool level1Unlocked = true;
+bool level2Unlocked = false;
+bool level3Unlocked = false;
+bool level4Unlocked = false;
+
+// هيكل بيجمع بيانات كل لؤلؤة في حاجة واحدة
+struct PearlData {
+    sf::Sprite* sprite;
+    float radius;
+    std::string name;
+    bool* unlocked;
+    sf::Vector2f lockedPos;   sf::Vector2f lockedScale;
+    sf::Vector2f unlockedPos; sf::Vector2f unlockedScale;
+};
+
+    PearlData pearls[] = {
+        { &pearlSprite1, 25.f, "Level 1", &level1Unlocked, lockedPos1, lockedScale1, unlockedPos1, unlockedScale1 },
+        { &pearlSprite2, 25.f, "Level 2", &level2Unlocked, lockedPos2, lockedScale2, unlockedPos2, unlockedScale2 },
+        { &pearlSprite3, 25.f, "Level 3", &level3Unlocked, lockedPos3, lockedScale3, unlockedPos3, unlockedScale3 },
+        { &pearlSprite4, 25.f, "Level 4", &level4Unlocked, lockedPos4, lockedScale4, unlockedPos4, unlockedScale4 },
+    };
+
+    // متغيرات الـ loading bar - عدل هنا
+    float barX = 258.f;  // مكان البار من الشمال
+    float barY = 495.f;  // مكان البار من فوق
+    float barWidth = 308.f;  // العرض الكامل للبار
+    float barHeight = 28.f;   // ارتفاع البار
+    float barSpeed = 150.f;  // سرعة الـ loading
+
+    // بيانات حالة الـ loading
+    bool  isLoading = false;
+    float loadProgress = 0.f;
 
 int main()
 {
@@ -821,9 +893,18 @@ void MainMenu()
             {
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
-                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
-                    if (switchuserbutton.getGlobalBounds().contains(mousePos))
+                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+                    if (startgamebutton.getGlobalBounds().contains(mousePos)) {
+                            cout << "Start Game Clicked!" << endl;
+                            Select_level();
+                            return;
+                        }
+
+                    if (switchuserbutton.getGlobalBounds().contains(mousePos)) {
+                        cout << "Switch User Clicked!" << endl;
                         SwitchUser();
+                        return;
+                    }
                 }
             }
             else if (const auto *resizeEvent = event->getIf<Event::Resized>())
@@ -849,12 +930,17 @@ void MainMenu()
         }
         background.setTexture(mainbackground);
 
+        window.setView(view); 
         UpdateMainMenu();
         DrawMainMenu();
     }
 }
 void StartMainMenu()
 {
+    if (mainmenumusic.getStatus() != Music::Status::Playing)
+    mainmenumusic.play();
+    mainmenumusic.setLooping(true);
+    
     srand(time(0));
     // creating small fish objects
     for (int i = 0; i < 3; i++)
@@ -977,6 +1063,7 @@ void StartMainMenu()
 
 void UpdateMainMenu()
 {
+
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
     // COLLIDERS UPDATE
     Barracudacollieder.setPosition(Vector2f(Barracuda.getPosition().x, Barracuda.getPosition().y + 50));
@@ -984,7 +1071,7 @@ void UpdateMainMenu()
     MFcollieder.setPosition(Vector2f(Minowfish.getPosition().x, Minowfish.getPosition().y));
     // mouse position
     Vector2i mouseLocalPos = Mouse::getPosition(window); // Get the mouse position relative to the window
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
 
     // MOVING THE SMALL FISHES AND THIER ANIMATION AND CHANGING DIRECTION IF THEY HIT THE WALL
     for (auto &obj : smallfishs)
@@ -1107,66 +1194,70 @@ void GreenfishAnimation()
 }
 void ChangingButtonShape()
 {
-    Vector2i mouseLocalPos = Mouse::getPosition(window); // Get the mouse position relative to the window
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
-    // Check if the mouse is hovering over the start game button
-    if (startgamebutton.getGlobalBounds().contains(mouseWorldPos))
+    Vector2i mouseLocalPos = Mouse::getPosition(window);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
+    
+    // متغيرات عشان نمنع تكرار الصوت
+    static bool wasHoveringStart = false;
+    static bool wasHoveringTime = false;
+    static bool wasHoveringHigh = false;
+    static bool wasHoveringOptions = false;
+    static bool wasHoveringQuit = false;
+    static bool wasHoveringSwitch = false;
+    static bool wasHoveringCredits = false;
+    
+    // Check start game button
+    bool isHoveringStart = startgamebutton.getGlobalBounds().contains(mouseWorldPos);
+    if (isHoveringStart)
     {
         startgamebutton.setTexture(startgamepressed);
-        buttonpressedsound.play();
+        if (!wasHoveringStart) 
+        {
+            buttonpressedsound.play();
+            wasHoveringStart = true;
+        }
     }
     else
     {
         startgamebutton.setTexture(startgametex);
+        wasHoveringStart = false;
     }
+    
+    // Time attack button
     if (timeattackbutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         timeattackbutton.setTexture(timeattackpressed);
-    }
     else
-    {
         timeattackbutton.setTexture(timeattacktex);
-    }
+    
+    // High score button
     if (highscorebutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         highscorebutton.setTexture(highscorepressed);
-    }
     else
-    {
         highscorebutton.setTexture(highscoretex);
-    }
+    
+    // Options button
     if (optionsbutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         optionsbutton.setTexture(optionspressed);
-    }
     else
-    {
         optionsbutton.setTexture(optionstex);
-    }
+    
+    // Quit button
     if (quitbutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         quitbutton.setTexture(quitpressed);
-    }
     else
-    {
         quitbutton.setTexture(quittex);
-    }
+    
+    // Switch user button
     if (switchuserbutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         switchuserbutton.setTexture(switchuserpressed);
-    }
     else
-    {
         switchuserbutton.setTexture(switchusertex);
-    }
+    
+    // Credits button
     if (creditsbutton.getGlobalBounds().contains(mouseWorldPos))
-    {
         creditsbutton.setTexture(creditspressed);
-    }
     else
-    {
         creditsbutton.setTexture(creditstex);
-    }
 }
 
 void MinowFishanimation()
@@ -1302,6 +1393,216 @@ void QueenTriggerFish()
         QueenTrigger.setTextureRect(IntRect({QTcol * 298, 1 * 216}, {298, 216}));
         QTcol = (QTcol + 1) % 14;
     }
+}
+
+void Select_level()
+{
+    StartSelectLevel();
+    Clock clock;
+    while (window.isOpen())
+    {
+        float dt = clock.restart().asSeconds();
+
+        while (auto event = window.pollEvent())
+        {
+            if (event->is<Event::Closed>())
+                window.close();
+
+            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
+                if (mouseEvent->button == Mouse::Button::Left)
+                {
+                    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window));
+                    
+                    // زرار Back to Menu
+                    if (mySprite.getGlobalBounds().contains(mf))
+                    {
+                        MainMenu();
+                        return;
+                    }
+
+                    // اختيار level
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        if (*pearls[i].unlocked)
+                        {
+                            FloatRect bounds = pearls[i].sprite->getGlobalBounds();
+                            Vector2f center = { bounds.position.x + bounds.size.x / 2.f,
+                                                bounds.position.y + bounds.size.y / 2.f };
+                            if (hypot(mf.x - center.x, mf.y - center.y) <= pearls[i].radius)
+                            {
+                                isLoading = true;
+                                loadProgress = 0.f;
+                            }
+                        }
+                    }
+                }
+        }
+
+        window.setView(view);
+        UpdateSelectLevel(dt);
+        DrawSelectLevel();
+    }
+}
+
+void centerText(Text& text) {
+    FloatRect b = text.getLocalBounds();
+    text.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+    text.setPosition({ 415.f, 545.f });
+}
+
+// ─── 1. StartSelectLevel ───
+void StartSelectLevel() {
+    // تحميل الأصول
+    // 1. تحميل الخلفية
+    if (!bgTexture.loadFromFile("Assets/Select_level/gamemap_bg.jpeg")) {
+        std::cerr << "Error: Could not load gamemap_bg.jpeg" << std::endl;
+    }
+    bgSprite.setTexture(bgTexture);
+    bgTexture.setSmooth(true);
+
+    // 2. تحميل لوحة الاسم
+    if (!signTexture.loadFromFile("Assets/Select_level/gamemap_tittleboard.jpeg")) {
+        std::cerr << "Error: Could not load gamemap_tittleboard.jpeg" << std::endl;
+    }
+    signTexture.setSmooth(true);
+    signSprite.setTexture(signTexture);
+    signSprite.setPosition({ 10.f, 10.f });
+
+    // 3. تحميل البانر (البورد)
+    if (!bannerTexture.loadFromFile("Assets/Select_level/bord.jpeg")) {
+        std::cerr << "Error: Could not load bord.jpeg" << std::endl;
+    }
+    bannerTexture.setSmooth(true);
+    bannerSprite.setTexture(bannerTexture);
+    bannerSprite.setPosition({ 1.f, 445.f });
+
+    // 4. تحميل أزرار القائمة (العادي والـ Hover)
+    if (!myTexture.loadFromFile("Assets/Select_level/shell_tinybtn124_normal.jpeg")) {
+        std::cerr << "Error: Could not load shell_tinybtn124_normal.jpeg" << std::endl;
+    }
+    if (!myHoverTexture.loadFromFile("Assets/Select_level/shell_tinybtn124_high.jpeg")) {
+        std::cerr << "Error: Could not load shell_tinybtn124_high.jpeg" << std::endl;
+    }
+    myTexture.setSmooth(true);
+    myHoverTexture.setSmooth(true);
+    mySprite.setTexture(myTexture);
+    mySprite.setPosition({ 350.f, 565.f });
+
+    // 5. تحميل اللآلئ وشريط التحميل
+    if (!pearlTexture.loadFromFile("Assets/Select_level/white.jpeg")) {
+        std::cerr << "Error: Could not load white.jpeg" << std::endl;
+    }
+    pearlTexture.setSmooth(true);
+    if (!pearlUnlockedTexture.loadFromFile("Assets/Select_level/gold.jpeg")) {
+        std::cerr << "Error: Could not load gold.jpeg" << std::endl;
+    }
+    pearlUnlockedTexture.setSmooth(true);
+    if (!loadBarTexture.loadFromFile("Assets/Select_level/gamemap_loadbar.jpeg")) {
+        std::cerr << "Error: Could not load gamemap_loadbar.jpeg" << std::endl;
+    }
+    loadBarTexture.setSmooth(true);
+
+    // تحميل الخط
+    if (!font.openFromFile("Assets/Fonts/ARIALNBI.ttf")) {
+        cout << "Error loading font!\n";
+    }
+    font.setSmooth(true);
+
+    // إعداد النصوص
+    staticTxt = Text(font, "NEW GAME", 25);
+    staticTxt.setPosition({ 345.f, 495.f });
+    menuTxt = Text(font, "menu", 20);
+    menuTxt.setPosition({ 390.f, 570.f });
+    levelTxt = Text(font, "choose level", 24);
+    centerText(levelTxt);
+
+    // ملء بيانات الـ pearls من القيم اللي بعتها
+    pearls[0] = { &pearlSprite1, 25.f, "Level 1", &level1Unlocked, 
+                  { 205.f, 75.f }, { 0.13f, 0.13f }, 
+                  { 220.f, 100.f }, { 0.13f, 0.13f } };
+    pearls[1] = { &pearlSprite2, 25.f, "Level 2", &level2Unlocked, 
+                  { 235.f, 125.f }, { 0.15f, 0.15f }, 
+                  { 248.f, 148.f }, { 0.15f, 0.15f } };
+    pearls[2] = { &pearlSprite3, 25.f, "Level 3", &level3Unlocked, 
+                  { 230.f, 165.f }, { 0.15f, 0.15f }, 
+                  { 242.f, 188.f }, { 0.15f, 0.15f } };
+    pearls[3] = { &pearlSprite4, 25.f, "Level 4", &level4Unlocked, 
+                  { 210.f, 200.f }, { 0.15f, 0.15f }, 
+                  { 224.f, 222.f }, { 0.15f, 0.15f } };
+}
+
+// ─── 2. UpdateSelectLevel ───
+void UpdateSelectLevel(float dt) {
+    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window));
+    levelTxt.setString("choose level");
+    centerText(levelTxt);
+
+    for (int i = 0; i < 4; ++i) {
+        auto& p = pearls[i];
+        
+        if (*p.unlocked) {
+            p.sprite->setTexture(pearlUnlockedTexture);
+            p.sprite->setPosition(p.unlockedPos);
+            p.sprite->setScale(p.unlockedScale);
+        } else {
+            p.sprite->setTexture(pearlTexture);
+            p.sprite->setPosition(p.lockedPos);
+            p.sprite->setScale(p.lockedScale);
+        }
+
+        // منطق الـ Hover للؤلؤة
+        FloatRect bounds = p.sprite->getGlobalBounds();
+        Vector2f center = { bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f };
+        if (hypot(mf.x - center.x, mf.y - center.y) <= p.radius) {
+            levelTxt.setString(p.name);
+            centerText(levelTxt);
+        }
+    }
+
+    // Hover زرار القائمة
+    if (mySprite.getGlobalBounds().contains(mf)) {
+        mySprite.setTexture(myHoverTexture);
+        levelTxt.setString("back to menu");
+        centerText(levelTxt);
+    } else {
+        mySprite.setTexture(myTexture);
+    }
+
+    // تحديث الـ Loading Bar
+    if (isLoading) {
+        loadProgress += barSpeed * dt;
+        if (loadProgress >= barWidth) loadProgress = barWidth;
+    }
+}
+
+// ─── 3. DrawSelectLevel ───
+void DrawSelectLevel() {
+    window.clear();
+    window.draw(bgSprite);
+    window.draw(signSprite);
+    window.draw(bannerSprite);
+
+    window.draw(pearlSprite1);
+    window.draw(pearlSprite2);
+    window.draw(pearlSprite3);
+    window.draw(pearlSprite4);
+
+    window.draw(mySprite);
+    window.draw(menuTxt);
+    window.draw(levelTxt);
+
+    if (isLoading) {
+        Sprite bar(loadBarTexture);
+        bar.setPosition({ barX, barY });
+        float sx = barWidth / (float)loadBarTexture.getSize().x;
+        float sy = barHeight / (float)loadBarTexture.getSize().y;
+        bar.setScale({ sx, sy });
+        bar.setTextureRect(IntRect({0, 0}, {(int)(loadProgress / sx), (int)loadBarTexture.getSize().y}));
+        window.draw(bar);
+    } else {
+        window.draw(staticTxt);
+    }
+    window.display();
 }
 
 void SwitchUser()
@@ -1788,4 +2089,4 @@ void DisplaySwitchUser()
         window.draw(DupplicatedUserText);
     }
     window.display();
-}
+}    //ليه فى الكود ده لما بدوس على ال start button مش بيشتغل

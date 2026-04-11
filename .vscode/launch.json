@@ -5,7 +5,7 @@
             "name": "Debug SFML Project",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\${workspaceFolderBasename}.exe",
+            "program": "${workspaceFolder}\\FeedingFrenzy2.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -19,7 +19,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Build SFML Project",
+            "preLaunchTask": "Build SFML",
             "miDebuggerPath": "C:\\msys64\\ucrt64\\bin\\gdb.exe"
         }
     ]
