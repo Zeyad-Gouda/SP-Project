@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build SFML",
+            "type": "cppbuild",
+            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "args": [
+                "-g",
+                "${workspaceFolder}/*.cpp",
+                "-o",
+                "${workspaceFolder}\\FeedingFrenzy2.exe", 
+                "-I",
+                "C:/msys64/ucrt64/include",
+                "-L",
+                "C:/msys64/ucrt64/lib",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system",
+                "-lsfml-audio",
+                "-lsfml-network" 
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compiler for SFML"
+        }
+    ]
+}
