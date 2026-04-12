@@ -18,7 +18,7 @@
 #include <cstdint>
 #include <fstream>
 using namespace std; // عشان نكتب أوامر C++ العادية بسهولة
-using namespace sf; // عشان نستخدم أوامر SFML من غير تعقيد
+using namespace sf;  // عشان نستخدم أوامر SFML من غير تعقيد
 
 void PortView();
 void loading_screen();
@@ -37,17 +37,17 @@ void ChangingButtonShape();
 void QueenTriggerFish();
 void SwitchUser();
 void StartSwitchUser();
-void CreateButton(Sprite& sprite, Texture& texture, const string& filePath, // A Template for creating sprites
-    float xPosition,
-    float yPositon, float scaleX, float scaleY);
-void SetupButtonText(Text& text, const string& str, Sprite& button); // A Template for Creating Text for buttons
+void CreateButton(Sprite &sprite, Texture &texture, const string &filePath, // A Template for creating sprites
+                  float xPosition,
+                  float yPositon, float scaleX, float scaleY);
+void SetupButtonText(Text &text, const string &str, Sprite &button); // A Template for Creating Text for buttons
 void UpdateSwitchUser();
-void HoverButton(Sprite& button, const Texture& normalTex,
-    const Texture& highlightTex, Vector2f mousePos, Text& text); // A Template for Hovering Over Buttons
+void HoverButton(Sprite &button, const Texture &normalTex,
+                 const Texture &highlightTex, Vector2f mousePos, Text &text); // A Template for Hovering Over Buttons
 void EnterYourName();
 void RefreshUsersList();
 void DeleteUser();
-void FullList(); // If the List is Full -> (max is 7 users)
+void FullList();       // If the List is Full -> (max is 7 users)
 void DupplicateUser(); // If the user tried to enter a name that already exists
 void DisplaySwitchUser();
 void Select_level();
@@ -71,67 +71,67 @@ float getRandom(float min, float max)
     return dist(gen);
 }
 // --- المتغيرات العالمية ---
-float WindowWidth = 800; // عرض الشاشة الثابت
-float WindowHeight = 600; // طول الشاشة الثابت
-RenderWindow window(VideoMode({ (unsigned int)WindowWidth, (unsigned int)WindowHeight }), "Feeding Frenzy 2"); // فتح الشاشة كاملة
-View view({ 400.f, 300.f }, Vector2f(window.getSize())); // الكاميرا اللي بتظبط أبعاد اللعبة
+float WindowWidth = 800;                                                                                     // عرض الشاشة الثابت
+float WindowHeight = 600;                                                                                    // طول الشاشة الثابت
+RenderWindow window(VideoMode({(unsigned int)WindowWidth, (unsigned int)WindowHeight}), "Feeding Frenzy 2"); // فتح الشاشة كاملة
+View view({400.f, 300.f}, Vector2f(window.getSize()));                                                       // الكاميرا اللي بتظبط أبعاد اللعبة
 // =================================== Loading Screen =================================
-Shader swayShader; // "فلتر" حركة المية الهادية
-float deltaTime; // الوقت بين كل فريم والتاني
-float startX = WindowWidth / 2.f; // نقطة بداية رص الحروف في النص
-float spacing = 65.0f; // المسافة الفاضية بين كل حرف وتاني
-float width_bubble_global; // عرض الفقاعة الكبيرة اللي ورا الحرف
-float endTimer = 0.0f; // تايمر بيبدأ بعد ما الحروف تفرقع
-bool transitionStarted = false; // علامة إننا بدأنا وقت الانتظار الأخير
-Vector2f ventPositions[2] = { {WindowWidth - 140.f, WindowHeight - 157.5f}, {WindowWidth - 220.f, WindowHeight - 117.f} }; // أماكن فتحات المرجان
+Shader swayShader;                                                                                                       // "فلتر" حركة المية الهادية
+float deltaTime;                                                                                                         // الوقت بين كل فريم والتاني
+float startX = WindowWidth / 2.f;                                                                                        // نقطة بداية رص الحروف في النص
+float spacing = 65.0f;                                                                                                   // المسافة الفاضية بين كل حرف وتاني
+float width_bubble_global;                                                                                               // عرض الفقاعة الكبيرة اللي ورا الحرف
+float endTimer = 0.0f;                                                                                                   // تايمر بيبدأ بعد ما الحروف تفرقع
+bool transitionStarted = false;                                                                                          // علامة إننا بدأنا وقت الانتظار الأخير
+Vector2f ventPositions[2] = {{WindowWidth - 140.f, WindowHeight - 157.5f}, {WindowWidth - 220.f, WindowHeight - 117.f}}; // أماكن فتحات المرجان
 struct Particle
-{ // وصف لأي ذرة (شرارة أو فقاعة فرقعة)
-    float x, y, vx, vy; // مكانها وسرعتها في الاتجاهين
+{                         // وصف لأي ذرة (شرارة أو فقاعة فرقعة)
+    float x, y, vx, vy;   // مكانها وسرعتها في الاتجاهين
     float alpha = 255.0f; // درجة وضوحها (بتختفي بالتدريج)
-    bool active = false; // هل هي ظاهرة دلوقتي ولا لأ؟
+    bool active = false;  // هل هي ظاهرة دلوقتي ولا لأ؟
 };
 struct AmbientBubble
-{ // وصف لفقاقيع الجو العام
-    float x, y, vx, vy; // مكانها وسرعتها
+{                         // وصف لفقاقيع الجو العام
+    float x, y, vx, vy;   // مكانها وسرعتها
     float alpha = 255.0f; // شفافيتها
-    bool active = false; // هل هي شغالة؟
-    bool isVent = false; // هل طالعة من المرجان ولا بالعرض؟
+    bool active = false;  // هل هي شغالة؟
+    bool isVent = false;  // هل طالعة من المرجان ولا بالعرض؟
 };
-AmbientBubble ventBubbles[60]; // مصفوفة فيها 60 فقاعة للجو
-float bubbleTimer = 0.0f; // تايمر عشان نطلع فقاقيع بالعرض
-Particle sparks[35]; // 35 شرارة للانفجار
-Particle letterBubbles[35]; // 35 فقاعة صغيرة للانفجار
-bool exploded = false; // هل الفرقعة حصلت خلاص؟
+AmbientBubble ventBubbles[60];  // مصفوفة فيها 60 فقاعة للجو
+float bubbleTimer = 0.0f;       // تايمر عشان نطلع فقاقيع بالعرض
+Particle sparks[35];            // 35 شرارة للانفجار
+Particle letterBubbles[35];     // 35 فقاعة صغيرة للانفجار
+bool exploded = false;          // هل الفرقعة حصلت خلاص؟
 bool particlesFinished = false; // هل كل آثار الفرقعة اختفت؟
-float timerLeft = 0.0f; // تايمر للمرجان اللي على الشمال
-float timerRight = 0.0f; // تايمر للمرجان اللي على اليمين
+float timerLeft = 0.0f;         // تايمر للمرجان اللي على الشمال
+float timerRight = 0.0f;        // تايمر للمرجان اللي على اليمين
 // --- تحميل الصور والأجسام ---
-Texture Background_Loading("Assets/Main menu & Loading/Loading Screen/Images/loadbg.png"); // صورة الخلفية
-Sprite Background_Loading_sprite(Background_Loading); // جسم الخلفية
-Texture Game_Icon("Assets/Main menu & Loading/Loading Screen/Images/LOGO.png"); // لوجو اللعبة
-Sprite Game_Icon_sprite(Game_Icon); // جسم اللوجو
-Texture POPCAP_Logo("Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png"); // لوجو الشركة
-Sprite POPCAP_Logo_sprite(POPCAP_Logo); // جسم لوجو الشركة
-Texture LogoWood("Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png"); // الخشبة اللي تحت
-Sprite LogoWood_sprite(LogoWood); // جسم الخشبة
-Texture loadBar("Assets/Main menu & Loading/Loading Screen/Images/loadBar.png"); // الشريط المليان
-Sprite loadBar_sprite(loadBar); // جسم الشريط المليان
-Texture loadBar_empty("Assets/Main menu & Loading/Loading Screen/Images/loadBarCap.png"); // برواز الشريط
-Sprite loadBar_empty_sprite(loadBar_empty); // جسم البرواز
+Texture Background_Loading("Assets/Main menu & Loading/Loading Screen/Images/loadbg.png");     // صورة الخلفية
+Sprite Background_Loading_sprite(Background_Loading);                                          // جسم الخلفية
+Texture Game_Icon("Assets/Main menu & Loading/Loading Screen/Images/LOGO.png");                // لوجو اللعبة
+Sprite Game_Icon_sprite(Game_Icon);                                                            // جسم اللوجو
+Texture POPCAP_Logo("Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png");        // لوجو الشركة
+Sprite POPCAP_Logo_sprite(POPCAP_Logo);                                                        // جسم لوجو الشركة
+Texture LogoWood("Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png");       // الخشبة اللي تحت
+Sprite LogoWood_sprite(LogoWood);                                                              // جسم الخشبة
+Texture loadBar("Assets/Main menu & Loading/Loading Screen/Images/loadBar.png");               // الشريط المليان
+Sprite loadBar_sprite(loadBar);                                                                // جسم الشريط المليان
+Texture loadBar_empty("Assets/Main menu & Loading/Loading Screen/Images/loadBarCap.png");      // برواز الشريط
+Sprite loadBar_empty_sprite(loadBar_empty);                                                    // جسم البرواز
 Texture bubbleTexture("Assets/Main menu & Loading/Loading Screen/Images/bubbles_letters.png"); // فقاعة الحرف
-Sprite bubbleSprite(bubbleTexture); // جسم فقاعة الحرف
-Texture fontTexture("Assets/Fonts/LOADING.png"); // صورة الحروف المجمعة
-Sprite s_L(fontTexture); // جسم حرف L
-Sprite s_O(fontTexture); // جسم حرف O
-Sprite s_A(fontTexture); // جسم حرف A
-Sprite s_D(fontTexture); // جسم حرف D
-Sprite s_I(fontTexture); // جسم حرف I
-Sprite s_N(fontTexture); // جسم حرف N
-Sprite s_G(fontTexture); // جسم حرف G
-Texture bubbleSmallTex("Assets/Main menu & Loading/Loading Screen/Images/fx_bubble_d0.png"); // فقاعة صغيرة
-Sprite bubbleSmallSprite(bubbleSmallTex); // جسم الفقاعة الصغيرة
-Texture spark("Assets/Main menu & Loading/Loading Screen/Images/sparkleb0.png"); // صورة الشرارة
-Sprite sparkSprite(spark); // جسم الشرارة
+Sprite bubbleSprite(bubbleTexture);                                                            // جسم فقاعة الحرف
+Texture fontTexture("Assets/Fonts/LOADING.png");                                               // صورة الحروف المجمعة
+Sprite s_L(fontTexture);                                                                       // جسم حرف L
+Sprite s_O(fontTexture);                                                                       // جسم حرف O
+Sprite s_A(fontTexture);                                                                       // جسم حرف A
+Sprite s_D(fontTexture);                                                                       // جسم حرف D
+Sprite s_I(fontTexture);                                                                       // جسم حرف I
+Sprite s_N(fontTexture);                                                                       // جسم حرف N
+Sprite s_G(fontTexture);                                                                       // جسم حرف G
+Texture bubbleSmallTex("Assets/Main menu & Loading/Loading Screen/Images/fx_bubble_d0.png");   // فقاعة صغيرة
+Sprite bubbleSmallSprite(bubbleSmallTex);                                                      // جسم الفقاعة الصغيرة
+Texture spark("Assets/Main menu & Loading/Loading Screen/Images/sparkleb0.png");               // صورة الشرارة
+Sprite sparkSprite(spark);                                                                     // جسم الشرارة
 // ===============================================================================
 // =================================== Main Menu =================================
 // ===============================================================================
@@ -207,10 +207,10 @@ float MFchangedir = -1;
 float MFvelocityX_AXIS = -2;
 float MFvelocityY_AXIS = -2;
 bool MFvisable = 1;
-RectangleShape MFcollieder(Vector2f{ 57, 25 });
+RectangleShape MFcollieder(Vector2f{57, 25});
 // Generating A Random NUM________________________________________________
 float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
-CircleShape b({ 20 });
+CircleShape b({20});
 // SMALL FISH CLASS
 struct AnimatedObject
 {
@@ -218,8 +218,8 @@ public:
     float changedir = 1;
     float velocityX_AXIS = -2;
     float velocityY_AXIS = -2;
-    AnimatedObject(const Texture& texture, int frameWidth, int frameHeight)
-        : sprite(texture, IntRect({ 0, 0 }, { frameWidth, frameHeight }))
+    AnimatedObject(const Texture &texture, int frameWidth, int frameHeight)
+        : sprite(texture, IntRect({0, 0}, {frameWidth, frameHeight}))
     {
     }
     Sprite sprite;
@@ -231,10 +231,10 @@ public:
     void update(int frameWidth, int frameHeight)
     {
         // Move
-        sprite.move({ velocityX_AXIS, 0 });
+        sprite.move({velocityX_AXIS, 0});
         // Animate
         timer = 0.0f;
-        sprite.setTextureRect(IntRect({ currentFrame * frameWidth, 0 }, { frameWidth, frameHeight }));
+        sprite.setTextureRect(IntRect({currentFrame * frameWidth, 0}, {frameWidth, frameHeight}));
         currentFrame++;
         if (currentFrame == 15)
         {
@@ -244,13 +244,13 @@ public:
 };
 vector<AnimatedObject> smallfishs;
 // Colliders FOR Barracuda and Queen Trigger
-RectangleShape Barracudacollieder(Vector2f{ 271, 121 });
-RectangleShape QueenTriggercollieder(Vector2f{ 260, 160 });
+RectangleShape Barracudacollieder(Vector2f{271, 121});
+RectangleShape QueenTriggercollieder(Vector2f{260, 160});
 int cu = 0;
 float totaltime = 0.0f;
 Vector2i mouseLocalPos;
 Vector2f mouseWorldPos;
-CircleShape c({ 10 });
+CircleShape c({10});
 //________________________________________________________________________________________________________
 // Yellow Fish
 Texture QueenTrigerTEX("Assets/Fish/QueenTrigger/QueenTrigger.png");
@@ -302,7 +302,7 @@ pair<string, int> users[7];
 int NumberOfUsers = 0;
 const int MaxNumberOfUsers = 7;
 int SelectedUser = -1;
-Text* UserTexts[8];
+Text *UserTexts[8];
 RectangleShape SelectUserHL;
 string CurUser = "";
 bool isUserSelected = 0;
@@ -340,34 +340,34 @@ Texture signTexture("Assets/Select_level/gamemap_tittleboard.jpeg");
 Sprite signSprite(signTexture);
 Texture bannerTexture("Assets/Select_level/bord.jpeg"); // بنحمل البانر السفلي
 Sprite bannerSprite(bannerTexture);
-Texture myTexture("Assets/Select_level/shell_tinybtn124_normal.jpeg"); // بنحمل زرار Back to Menu - الصورة العادية
+Texture myTexture("Assets/Select_level/shell_tinybtn124_normal.jpeg");    // بنحمل زرار Back to Menu - الصورة العادية
 Texture myHoverTexture("Assets/Select_level/shell_tinybtn124_high.jpeg"); // بنحمل زرار Back to Menu - صورة الـ hover
 Sprite mySprite(myTexture);
-Texture pearlTexture("Assets/Select_level/white.jpeg"); // بنحمل صورة اللؤلؤة المقفولة
-Texture pearlUnlockedTexture("Assets/Select_level/gold.jpeg"); // بنحمل صورة اللؤلؤة بعد الكسب
+Texture pearlTexture("Assets/Select_level/white.jpeg");             // بنحمل صورة اللؤلؤة المقفولة
+Texture pearlUnlockedTexture("Assets/Select_level/gold.jpeg");      // بنحمل صورة اللؤلؤة بعد الكسب
 Texture loadBarTexture("Assets/Select_level/gamemap_loadbar.jpeg"); // بنحمل صورة الـ loading bar
 Sprite pearlSprite1(pearlTexture);
 Sprite pearlSprite2(pearlTexture);
 Sprite pearlSprite3(pearlTexture);
 Sprite pearlSprite4(pearlTexture);
 // مكان وحجم اللآلئ قبل الكسب
-sf::Vector2f lockedPos1 = { 220.f, 87.f };
-sf::Vector2f lockedScale1 = { 0.08f, 0.08f };
-sf::Vector2f lockedPos2 = { 249.f, 133.f };
-sf::Vector2f lockedScale2 = { 0.06f, 0.06f };
-sf::Vector2f lockedPos3 = { 246.f, 170.f };
-sf::Vector2f lockedScale3 = { 0.06f, 0.06f };
-sf::Vector2f lockedPos4 = { 228.f, 202.f };
-sf::Vector2f lockedScale4 = { 0.06f, 0.06f };
+sf::Vector2f lockedPos1 = {220.f, 87.f};
+sf::Vector2f lockedScale1 = {0.08f, 0.08f};
+sf::Vector2f lockedPos2 = {249.f, 133.f};
+sf::Vector2f lockedScale2 = {0.06f, 0.06f};
+sf::Vector2f lockedPos3 = {246.f, 170.f};
+sf::Vector2f lockedScale3 = {0.06f, 0.06f};
+sf::Vector2f lockedPos4 = {228.f, 202.f};
+sf::Vector2f lockedScale4 = {0.06f, 0.06f};
 // مكان وحجم اللآلئ بعد الكسب
-sf::Vector2f unlockedPos1 = { 235.f, 110.f };
-sf::Vector2f unlockedScale1 = { 0.036f, 0.036f };
-sf::Vector2f unlockedPos2 = { 261.f, 152.f };
-sf::Vector2f unlockedScale2 = { 0.029f, 0.029f };
-sf::Vector2f unlockedPos3 = { 255.f, 186.f };
-sf::Vector2f unlockedScale3 = { 0.028f, 0.028f };
-sf::Vector2f unlockedPos4 = { 239.f, 220.f };
-sf::Vector2f unlockedScale4 = { 0.028f, 0.028f };
+sf::Vector2f unlockedPos1 = {235.f, 110.f};
+sf::Vector2f unlockedScale1 = {0.036f, 0.036f};
+sf::Vector2f unlockedPos2 = {261.f, 152.f};
+sf::Vector2f unlockedScale2 = {0.029f, 0.029f};
+sf::Vector2f unlockedPos3 = {255.f, 186.f};
+sf::Vector2f unlockedScale3 = {0.028f, 0.028f};
+sf::Vector2f unlockedPos4 = {239.f, 220.f};
+sf::Vector2f unlockedScale4 = {0.028f, 0.028f};
 static sf::Font font("Assets/Fonts/ARIALNBI.ttf"); // تحميل الخط المستخدم في الأزرار
 static sf::Text staticTxt(font, "");
 static sf::Text nowLoadingTxt(font, "");
@@ -380,10 +380,10 @@ bool level4Unlocked = false;
 // هيكل بيجمع بيانات كل لؤلؤة في حاجة واحدة
 struct PearlData
 {
-    sf::Sprite* sprite;
+    sf::Sprite *sprite;
     float radius;
     std::string name;
-    bool* unlocked;
+    bool *unlocked;
     sf::Vector2f lockedPos;
     sf::Vector2f lockedScale;
     sf::Vector2f unlockedPos;
@@ -396,8 +396,8 @@ PearlData pearls[] = {
     {&pearlSprite4, 25.f, "Level 4", &level4Unlocked, lockedPos4, lockedScale4, unlockedPos4, unlockedScale4},
 };
 // متغيرات الـ loading bar - عدل هنا
-float barX = 258.f; // مكان البار من الشمال
-float barY = 495.f; // مكان البار من فوق
+float barX = 258.f;     // مكان البار من الشمال
+float barY = 495.f;     // مكان البار من فوق
 float barWidth = 308.f; // العرض الكامل للبار
 float barHeight = 28.f; // ارتفاع البار
 float barSpeed = 150.f; // سرعة الـ loading
@@ -410,8 +410,8 @@ int main()
     StartLoadingScreen();
     Clock clock;
     Clock totalClock;
-    view.setSize({ 800.f, 600.f });
-    view.setCenter({ 400.f, 300.f });
+    view.setSize({800.f, 600.f});
+    view.setCenter({400.f, 300.f});
     // ── Loading Screen Loop ──
     while (window.isOpen())
     {
@@ -421,7 +421,7 @@ int main()
         {
             if (event->is<Event::Closed>())
                 window.close();
-            else if (const auto* resizeEvent = event->getIf<Event::Resized>())
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
                 float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
                 float viewRatio = 800.f / 600.f;
@@ -436,7 +436,7 @@ int main()
                     sizeY = windowRatio / viewRatio;
                     posY = (1.f - sizeY) / 2.f;
                 }
-                view.setViewport(sf::FloatRect({ posX, posY }, { sizeX, sizeY }));
+                view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
             }
         }
         window.setView(view);
@@ -463,189 +463,189 @@ int main()
     return 0;
 }
 void loading_screen()
-{ // دالة تجهيز كل حاجة في البداية
+{                                 // دالة تجهيز كل حاجة في البداية
     window.setFramerateLimit(45); // تثبيت السرعة على 45 فريم
     if (!swayShader.loadFromFile("sway.frag", Shader::Type::Fragment))
-    { // تحميل كود حركة المية
+    {                                            // تحميل كود حركة المية
         cout << "Error loading shader!" << endl; // لو مش موجود اطبع غلط
     }
     if (!Background_Loading.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/loadbg.png"))
-    { // تحميل الخلفية
+    {                                                               // تحميل الخلفية
         cout << "!!! Error: Could not find loadbg.png !!!" << endl; // لو مش موجودة اطبع غلط
     }
     Background_Loading_sprite.setTexture(Background_Loading); // ربط الصورة بالجسم
-    Background_Loading_sprite.setPosition({ 0, 0 }); // حطها في ركن الشاشة
-    Vector2u texture_Size = Background_Loading.getSize(); // هات مقاسها الحقيقي
-    float ScaleX = WindowWidth / texture_Size.x; // احسب نسبة التكبير بالعرض
-    float ScaleY = WindowHeight / texture_Size.y; // احسب نسبة التكبير بالطول
-    Background_Loading_sprite.setScale({ ScaleX, ScaleY }); // كبرها تملى الشاشة
-    Background_Loading.setSmooth(true); // نعم الحواف عشان متكسرش
+    Background_Loading_sprite.setPosition({0, 0});            // حطها في ركن الشاشة
+    Vector2u texture_Size = Background_Loading.getSize();     // هات مقاسها الحقيقي
+    float ScaleX = WindowWidth / texture_Size.x;              // احسب نسبة التكبير بالعرض
+    float ScaleY = WindowHeight / texture_Size.y;             // احسب نسبة التكبير بالطول
+    Background_Loading_sprite.setScale({ScaleX, ScaleY});     // كبرها تملى الشاشة
+    Background_Loading.setSmooth(true);                       // نعم الحواف عشان متكسرش
     if (!Game_Icon.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/LOGO.png"))
-    { // تحميل اللوجو
+    {                                                             // تحميل اللوجو
         cout << "!!! Error: Could not find LOGO.png !!!" << endl; // لو مش موجود اطبع غلط
     }
-    float width = 300; // العرض اللي عاوزه للوجو
-    float height = 150; // الطول اللي عاوزه للوجو
-    Game_Icon_sprite.setTexture(Game_Icon); // اربط الصورة بالجسم
-    Game_Icon_sprite.setPosition({ (WindowWidth / 2) - 155, 7 }); // حطه في نص الشاشة فوق
-    texture_Size = Game_Icon.getSize(); // هات مقاسه
-    ScaleX = width / Game_Icon.getSize().x; // احسب التكبير
-    ScaleY = height / Game_Icon.getSize().y; // احسب التكبير
-    Game_Icon_sprite.setScale({ ScaleX, ScaleY }); // ظبط الحجم
-    Game_Icon.setSmooth(true); // تنعيم الصورة
+    float width = 300;                                          // العرض اللي عاوزه للوجو
+    float height = 150;                                         // الطول اللي عاوزه للوجو
+    Game_Icon_sprite.setTexture(Game_Icon);                     // اربط الصورة بالجسم
+    Game_Icon_sprite.setPosition({(WindowWidth / 2) - 155, 7}); // حطه في نص الشاشة فوق
+    texture_Size = Game_Icon.getSize();                         // هات مقاسه
+    ScaleX = width / Game_Icon.getSize().x;                     // احسب التكبير
+    ScaleY = height / Game_Icon.getSize().y;                    // احسب التكبير
+    Game_Icon_sprite.setScale({ScaleX, ScaleY});                // ظبط الحجم
+    Game_Icon.setSmooth(true);                                  // تنعيم الصورة
     if (!POPCAP_Logo.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png"))
-    { // تحميل لوجو الشركة
+    {                                                                   // تحميل لوجو الشركة
         cout << "!!! Error: Could not find popCapLogo.png !!!" << endl; // غلط لو مش موجودة
     }
-    width = 120; // عرض اللوجو الصغير
-    height = 110; // طول اللوجو الصغير
-    POPCAP_Logo_sprite.setTexture(POPCAP_Logo); // اربط الصورة
-    POPCAP_Logo_sprite.setPosition({ (WindowWidth - 155), WindowHeight - 126.f }); // مكانه تحت يمين
-    texture_Size = POPCAP_Logo.getSize(); // هات مقاسه
-    ScaleX = width / POPCAP_Logo.getSize().x; // احسب تكبيره
-    ScaleY = height / POPCAP_Logo.getSize().y; // احسب تكبيره
-    POPCAP_Logo_sprite.setScale({ ScaleX, ScaleY }); // ظبط حجمه
-    POPCAP_Logo.setSmooth(true); // تنعيم
+    width = 120;                                                                 // عرض اللوجو الصغير
+    height = 110;                                                                // طول اللوجو الصغير
+    POPCAP_Logo_sprite.setTexture(POPCAP_Logo);                                  // اربط الصورة
+    POPCAP_Logo_sprite.setPosition({(WindowWidth - 155), WindowHeight - 126.f}); // مكانه تحت يمين
+    texture_Size = POPCAP_Logo.getSize();                                        // هات مقاسه
+    ScaleX = width / POPCAP_Logo.getSize().x;                                    // احسب تكبيره
+    ScaleY = height / POPCAP_Logo.getSize().y;                                   // احسب تكبيره
+    POPCAP_Logo_sprite.setScale({ScaleX, ScaleY});                               // ظبط حجمه
+    POPCAP_Logo.setSmooth(true);                                                 // تنعيم
     if (!LogoWood.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png"))
-    { // تحميل صورة الخشب
+    {                                                                       // تحميل صورة الخشب
         cout << "!!! Error: Could not find sproutLogoWood.png !!!" << endl; // غلط لو مش موجودة
     }
-    width = 160; // عرض الخشبة
-    height = 80; // طول الخشبة
-    LogoWood_sprite.setTexture(LogoWood); // اربط الصورة
-    LogoWood_sprite.setPosition({ (0 + 25), WindowHeight - 115.f }); // مكانها تحت شمال
-    texture_Size = LogoWood.getSize(); // هات مقاسها
-    ScaleX = width / LogoWood.getSize().x; // احسب التكبير
-    ScaleY = height / LogoWood.getSize().y; // احسب التكبير
-    LogoWood_sprite.setScale({ ScaleX, ScaleY }); // ظبط الحجم
-    LogoWood.setSmooth(true); // تنعيم
+    width = 160;                                                   // عرض الخشبة
+    height = 80;                                                   // طول الخشبة
+    LogoWood_sprite.setTexture(LogoWood);                          // اربط الصورة
+    LogoWood_sprite.setPosition({(0 + 25), WindowHeight - 115.f}); // مكانها تحت شمال
+    texture_Size = LogoWood.getSize();                             // هات مقاسها
+    ScaleX = width / LogoWood.getSize().x;                         // احسب التكبير
+    ScaleY = height / LogoWood.getSize().y;                        // احسب التكبير
+    LogoWood_sprite.setScale({ScaleX, ScaleY});                    // ظبط الحجم
+    LogoWood.setSmooth(true);                                      // تنعيم
     if (!fontTexture.loadFromFile("Assets/Fonts/LOADING.png"))
-    { // تحميل صورة الحروف
+    {                                                                // تحميل صورة الحروف
         cout << "!!! Error: Could not find LOADING.png !!!" << endl; // غلط لو مش موجودة
     }
-    fontTexture.setSmooth(true); // تنعيم الحروف
-    float cellWidth = 19.4; // عرض الحرف الواحد في الصورة
-    float cellHeight = 35.5; // طول الحرف الواحد في الصورة
-    Color targetColor(160, 211, 74); // اللون الأخضر الفوسفوري بتاع اللعبة
-    s_L.setTexture(fontTexture); // اربط الحرف L بالصورة
-    s_L.setTextureRect(IntRect({ (int)(1 * cellWidth), (int)(3 * cellHeight) }, { (int)cellWidth, (int)cellHeight })); // قص مكانه
-    s_L.setColor(targetColor); // لونه بالأخضر
-    s_L.setOrigin({ cellWidth / 2.f, cellHeight / 2.f }); // خلي السنتر في النص
-    s_O.setTexture(fontTexture); // اربط الحرف O
-    s_O.setTextureRect(IntRect({ (int)(4 * 20), (int)(3 * 35.7) }, { 20, (int)35.7 })); // قص مكانه
-    s_O.setColor(targetColor); // لونه
-    s_O.setOrigin({ 10.f, 35.7f / 2.f }); // السنتر في النص
-    s_A.setTexture(fontTexture); // اربط الحرف A
-    s_A.setTextureRect(IntRect({ (int)(3 * 20), (int)(2 * cellHeight) }, { 20, (int)cellHeight })); // قص مكانه
-    s_A.setColor(targetColor); // لونه
-    s_A.setOrigin({ 10.f, cellHeight / 2.f }); // السنتر في النص
-    s_D.setTexture(fontTexture); // اربط الحرف D
-    s_D.setTextureRect(IntRect({ (int)(6 * 20), (int)(2 * cellHeight) }, { 20, (int)cellHeight })); // قص مكانه
-    s_D.setColor(targetColor); // لونه
-    s_D.setOrigin({ 10.f, cellHeight / 2.f }); // السنتر في النص
-    s_I.setTexture(fontTexture); // اربط الحرف I
-    s_I.setTextureRect(IntRect({ (int)(10.39 * 20 + 4), (int)(2 * cellHeight) }, { 12, (int)cellHeight })); // قص مكانه بدقة
-    s_I.setColor(targetColor); // لونه
-    s_I.setOrigin({ 6.f, cellHeight / 2.f }); // السنتر في النص
-    s_N.setTexture(fontTexture); // اربط الحرف N
-    s_N.setTextureRect(IntRect({ (int)(3 * 20), (int)(3 * cellHeight) }, { 20, (int)cellHeight })); // قص مكانه
-    s_N.setColor(targetColor); // لونه
-    s_N.setOrigin({ 10.f, cellHeight / 2.f }); // السنتر في النص
-    s_G.setTexture(fontTexture); // اربط الحرف G
-    s_G.setTextureRect(IntRect({ 174, (int)(2 * cellHeight) }, { 18, (int)cellHeight })); // قص مكانه
-    s_G.setColor(targetColor); // لونه
-    s_G.setOrigin({ 9.f, cellHeight / 2.f }); // السنتر في النص
-    bubbleSprite.setTexture(bubbleTexture); // اربط فقاعة الحروف
-    bubbleSprite.setScale({ 0.7f, 0.7f }); // صغر حجمها شوية
-    bubbleSprite.setOrigin({ bubbleSprite.getLocalBounds().size.x / 2.f, bubbleSprite.getLocalBounds().size.y / 2.f }); // سنترها
-    width_bubble_global = bubbleSprite.getGlobalBounds().size.x; // احفظ عرضها للعمليات
-    bubbleTexture.setSmooth(true); // تنعيم
-    width = 320.f; // عرض شريط التحميل
-    height = 50.f; // طول شريط التحميل
-    loadBar_empty_sprite.setTexture(loadBar_empty); // اربط برواز الشريط
-    loadBar_empty_sprite.setOrigin({ loadBar_empty_sprite.getLocalBounds().size.x / 2.f, loadBar_empty_sprite.getLocalBounds().size.y / 2.f }); // سنتره
-    loadBar_empty_sprite.setPosition({ WindowWidth / 2.f, WindowHeight - 85.f }); // حطه تحت في النص
-    texture_Size = loadBar_empty.getSize(); // مقاسه الحقيقي
-    ScaleX = width / loadBar_empty.getSize().x; // احسب تكبير العرض
-    ScaleY = height / loadBar_empty.getSize().y; // احسب تكبير الطول
-    loadBar_empty_sprite.setScale({ ScaleX, ScaleY }); // ظبط الحجم
-    loadBar_empty.setSmooth(true); // تنعيم
-    loadBar_sprite.setTexture(loadBar); // اربط الشريط المليان
-    loadBar_sprite.setOrigin({ loadBar_sprite.getLocalBounds().size.x / 2.f, loadBar_sprite.getLocalBounds().size.y / 2.f }); // سنتره
-    loadBar_sprite.setPosition({ WindowWidth / 2.f, WindowHeight - 85.f }); // حطه في نفس مكان البرواز
-    loadBar_sprite.setScale({ width / loadBar.getSize().x, height / loadBar.getSize().y }); // ظبط حجمه
-    loadBar.setSmooth(true); // تنعيم
-    bubbleSmallTex.setSmooth(true); // تنعيم الفقاقيع الصغيرة
-    spark.setSmooth(true); // تنعيم الشرارات
+    fontTexture.setSmooth(true);                                                                                                              // تنعيم الحروف
+    float cellWidth = 19.4;                                                                                                                   // عرض الحرف الواحد في الصورة
+    float cellHeight = 35.5;                                                                                                                  // طول الحرف الواحد في الصورة
+    Color targetColor(160, 211, 74);                                                                                                          // اللون الأخضر الفوسفوري بتاع اللعبة
+    s_L.setTexture(fontTexture);                                                                                                              // اربط الحرف L بالصورة
+    s_L.setTextureRect(IntRect({(int)(1 * cellWidth), (int)(3 * cellHeight)}, {(int)cellWidth, (int)cellHeight}));                            // قص مكانه
+    s_L.setColor(targetColor);                                                                                                                // لونه بالأخضر
+    s_L.setOrigin({cellWidth / 2.f, cellHeight / 2.f});                                                                                       // خلي السنتر في النص
+    s_O.setTexture(fontTexture);                                                                                                              // اربط الحرف O
+    s_O.setTextureRect(IntRect({(int)(4 * 20), (int)(3 * 35.7)}, {20, (int)35.7}));                                                           // قص مكانه
+    s_O.setColor(targetColor);                                                                                                                // لونه
+    s_O.setOrigin({10.f, 35.7f / 2.f});                                                                                                       // السنتر في النص
+    s_A.setTexture(fontTexture);                                                                                                              // اربط الحرف A
+    s_A.setTextureRect(IntRect({(int)(3 * 20), (int)(2 * cellHeight)}, {20, (int)cellHeight}));                                               // قص مكانه
+    s_A.setColor(targetColor);                                                                                                                // لونه
+    s_A.setOrigin({10.f, cellHeight / 2.f});                                                                                                  // السنتر في النص
+    s_D.setTexture(fontTexture);                                                                                                              // اربط الحرف D
+    s_D.setTextureRect(IntRect({(int)(6 * 20), (int)(2 * cellHeight)}, {20, (int)cellHeight}));                                               // قص مكانه
+    s_D.setColor(targetColor);                                                                                                                // لونه
+    s_D.setOrigin({10.f, cellHeight / 2.f});                                                                                                  // السنتر في النص
+    s_I.setTexture(fontTexture);                                                                                                              // اربط الحرف I
+    s_I.setTextureRect(IntRect({(int)(10.39 * 20 + 4), (int)(2 * cellHeight)}, {12, (int)cellHeight}));                                       // قص مكانه بدقة
+    s_I.setColor(targetColor);                                                                                                                // لونه
+    s_I.setOrigin({6.f, cellHeight / 2.f});                                                                                                   // السنتر في النص
+    s_N.setTexture(fontTexture);                                                                                                              // اربط الحرف N
+    s_N.setTextureRect(IntRect({(int)(3 * 20), (int)(3 * cellHeight)}, {20, (int)cellHeight}));                                               // قص مكانه
+    s_N.setColor(targetColor);                                                                                                                // لونه
+    s_N.setOrigin({10.f, cellHeight / 2.f});                                                                                                  // السنتر في النص
+    s_G.setTexture(fontTexture);                                                                                                              // اربط الحرف G
+    s_G.setTextureRect(IntRect({174, (int)(2 * cellHeight)}, {18, (int)cellHeight}));                                                         // قص مكانه
+    s_G.setColor(targetColor);                                                                                                                // لونه
+    s_G.setOrigin({9.f, cellHeight / 2.f});                                                                                                   // السنتر في النص
+    bubbleSprite.setTexture(bubbleTexture);                                                                                                   // اربط فقاعة الحروف
+    bubbleSprite.setScale({0.7f, 0.7f});                                                                                                      // صغر حجمها شوية
+    bubbleSprite.setOrigin({bubbleSprite.getLocalBounds().size.x / 2.f, bubbleSprite.getLocalBounds().size.y / 2.f});                         // سنترها
+    width_bubble_global = bubbleSprite.getGlobalBounds().size.x;                                                                              // احفظ عرضها للعمليات
+    bubbleTexture.setSmooth(true);                                                                                                            // تنعيم
+    width = 320.f;                                                                                                                            // عرض شريط التحميل
+    height = 50.f;                                                                                                                            // طول شريط التحميل
+    loadBar_empty_sprite.setTexture(loadBar_empty);                                                                                           // اربط برواز الشريط
+    loadBar_empty_sprite.setOrigin({loadBar_empty_sprite.getLocalBounds().size.x / 2.f, loadBar_empty_sprite.getLocalBounds().size.y / 2.f}); // سنتره
+    loadBar_empty_sprite.setPosition({WindowWidth / 2.f, WindowHeight - 85.f});                                                               // حطه تحت في النص
+    texture_Size = loadBar_empty.getSize();                                                                                                   // مقاسه الحقيقي
+    ScaleX = width / loadBar_empty.getSize().x;                                                                                               // احسب تكبير العرض
+    ScaleY = height / loadBar_empty.getSize().y;                                                                                              // احسب تكبير الطول
+    loadBar_empty_sprite.setScale({ScaleX, ScaleY});                                                                                          // ظبط الحجم
+    loadBar_empty.setSmooth(true);                                                                                                            // تنعيم
+    loadBar_sprite.setTexture(loadBar);                                                                                                       // اربط الشريط المليان
+    loadBar_sprite.setOrigin({loadBar_sprite.getLocalBounds().size.x / 2.f, loadBar_sprite.getLocalBounds().size.y / 2.f});                   // سنتره
+    loadBar_sprite.setPosition({WindowWidth / 2.f, WindowHeight - 85.f});                                                                     // حطه في نفس مكان البرواز
+    loadBar_sprite.setScale({width / loadBar.getSize().x, height / loadBar.getSize().y});                                                     // ظبط حجمه
+    loadBar.setSmooth(true);                                                                                                                  // تنعيم
+    bubbleSmallTex.setSmooth(true);                                                                                                           // تنعيم الفقاقيع الصغيرة
+    spark.setSmooth(true);                                                                                                                    // تنعيم الشرارات
 }
 void StartLoadingScreen()
-{ // دالة البدء
+{                     // دالة البدء
     loading_screen(); // شغل دالة التحميل
 }
 void UpdateLoadingScreen()
 { // دالة التحديث (فاضية حالياً)
 }
 bool DrawLoadingScreen(float totalTime)
-{ // دالة الرسم (بتتكرر كل فريم)
-    window.clear(Color::Black); // امسح الشاشة وخليها سودة
-    swayShader.setUniform("time", totalTime); // ابعت الوقت للشيدر عشان المية تتحرك
-    Background_Loading.setSmooth(true); // تأكيد التنعيم
-    window.draw(Background_Loading_sprite, &swayShader); // ارسم الخلفية وعليها حركة المية
-    window.draw(Game_Icon_sprite); // ارسم لوجو اللعبة
-    window.draw(POPCAP_Logo_sprite); // ارسم لوجو الشركة
-    window.draw(LogoWood_sprite); // ارسم الخشبة
-    float loadingStartTime = 1.0f; // وقت بداية التحميل (بعد ثانية)
+{                                                           // دالة الرسم (بتتكرر كل فريم)
+    window.clear(Color::Black);                             // امسح الشاشة وخليها سودة
+    swayShader.setUniform("time", totalTime);               // ابعت الوقت للشيدر عشان المية تتحرك
+    Background_Loading.setSmooth(true);                     // تأكيد التنعيم
+    window.draw(Background_Loading_sprite, &swayShader);    // ارسم الخلفية وعليها حركة المية
+    window.draw(Game_Icon_sprite);                          // ارسم لوجو اللعبة
+    window.draw(POPCAP_Logo_sprite);                        // ارسم لوجو الشركة
+    window.draw(LogoWood_sprite);                           // ارسم الخشبة
+    float loadingStartTime = 1.0f;                          // وقت بداية التحميل (بعد ثانية)
     float progress = (totalTime - loadingStartTime) / 5.0f; // النسبة (على مدار 5 ثواني)
     if (progress < 0)
         progress = 0; // لو لسه مجاش الوقت خليها صفر
     if (progress > 1.0f)
-        progress = 1.0f; // لو خلصت ثبتها على 100%
-    Vector2u textureSize = loadBar.getSize(); // مقاس صورة الشريط
-    int currentWidth = (int)(textureSize.x * progress); // العرض اللي المفروض يظهر
-    loadBar_sprite.setTextureRect(IntRect({ 0, 0 }, { currentWidth, (int)textureSize.y })); // قص الجزء المليان بس
-    window.draw(loadBar_empty_sprite); // ارسم البرواز الفاضي
-    window.draw(loadBar_sprite); // ارسم الجزء المليان فوقه
-    startX = WindowWidth / 2.0f - (3.5f * spacing) + 20.f; // سنتر الكلمة بالعرض
-    Sprite* letters[] = { &s_L, &s_O, &s_A, &s_D, &s_I, &s_N, &s_G }; // لستة بالحروف
+        progress = 1.0f;                                                                // لو خلصت ثبتها على 100%
+    Vector2u textureSize = loadBar.getSize();                                           // مقاس صورة الشريط
+    int currentWidth = (int)(textureSize.x * progress);                                 // العرض اللي المفروض يظهر
+    loadBar_sprite.setTextureRect(IntRect({0, 0}, {currentWidth, (int)textureSize.y})); // قص الجزء المليان بس
+    window.draw(loadBar_empty_sprite);                                                  // ارسم البرواز الفاضي
+    window.draw(loadBar_sprite);                                                        // ارسم الجزء المليان فوقه
+    startX = WindowWidth / 2.0f - (3.5f * spacing) + 20.f;                              // سنتر الكلمة بالعرض
+    Sprite *letters[] = {&s_L, &s_O, &s_A, &s_D, &s_I, &s_N, &s_G};                     // لستة بالحروف
     for (int i = 0; i < 7; i++)
-    { // لف على الـ 7 حروف
-        float startDelay = 1.5f; // تأخير بداية ظهور الحروف
-        float letterDelay = i * 0.4f; // تأخير بين كل حرف والتاني
+    {                                                            // لف على الـ 7 حروف
+        float startDelay = 1.5f;                                 // تأخير بداية ظهور الحروف
+        float letterDelay = i * 0.4f;                            // تأخير بين كل حرف والتاني
         float letterTime = totalTime - startDelay - letterDelay; // الوقت الخاص بالحرف ده
-        float popScale = 0.0f; // الحجم بيبدأ من صفر
+        float popScale = 0.0f;                                   // الحجم بيبدأ من صفر
         if (letterTime > 0)
-        { // لو جه ميعاد ظهوره
+        {                                                                                    // لو جه ميعاد ظهوره
             popScale = (letterTime < 0.4f) ? sin(letterTime * (3.14f / 0.4f)) * 1.2f : 1.0f; // حركة الـ Pop (يكبر ويرجع)
             if (popScale < 1.0f && letterTime > 0.2f)
                 popScale = 1.0f; // تثبيته بعد الحركة
         }
-        float curX = startX + (i * spacing); // مكانه الأفقي
+        float curX = startX + (i * spacing);                                                  // مكانه الأفقي
         float curY = (WindowHeight / 2.0f - 40.f) + sin(totalTime * 4.0f + i * 0.8f) * 12.0f; // حركة الموج لفوق وتحت
-        bubbleSprite.setScale({ 0.7f * popScale, 0.7f * popScale }); // حجم الفقاعة مع الـ Pop
-        letters[i]->setScale({ 0.92f * popScale, 0.92f * popScale }); // حجم الحرف مع الـ Pop
-        bubbleSprite.setPosition({ curX, curY }); // مكان الفقاعة
-        letters[i]->setPosition({ curX, curY }); // مكان الحرف
+        bubbleSprite.setScale({0.7f * popScale, 0.7f * popScale});                            // حجم الفقاعة مع الـ Pop
+        letters[i]->setScale({0.92f * popScale, 0.92f * popScale});                           // حجم الحرف مع الـ Pop
+        bubbleSprite.setPosition({curX, curY});                                               // مكان الفقاعة
+        letters[i]->setPosition({curX, curY});                                                // مكان الحرف
         if (progress < 1.0f && popScale > 0)
-        { // لو التحميل شغال ارسمهم
+        {                              // لو التحميل شغال ارسمهم
             window.draw(bubbleSprite); // ارسم الفقاعة
-            window.draw(*letters[i]); // ارسم الحرف
+            window.draw(*letters[i]);  // ارسم الحرف
         }
     }
     if (progress >= 1.0f && !exploded)
-    { // لو خلص تحميل ومفرقعناش
+    {                    // لو خلص تحميل ومفرقعناش
         exploded = true; // ابدأ الفرقعة
         for (int i = 0; i < 35; i++)
-        { // جهز 35 جزيء
-            int idx = i / 5; // وزعهم على الـ 7 حروف
+        {                                        // جهز 35 جزيء
+            int idx = i / 5;                     // وزعهم على الـ 7 حروف
             float pX = startX + (idx * spacing); // نقطة انطلاقهم
             float pY = (WindowHeight / 2.0f - 40.f);
             sparks[i].active = true; // فعل الشرارة
             sparks[i].x = pX;
-            sparks[i].y = pY; // حطها في مكانها
-            sparks[i].vx = (float)(rand() % 60 - 20) / 15.0f; // سرعة أفقية عشوائية
+            sparks[i].y = pY;                                   // حطها في مكانها
+            sparks[i].vx = (float)(rand() % 60 - 20) / 15.0f;   // سرعة أفقية عشوائية
             sparks[i].vy = -((float)(rand() % 30 + 10)) / 6.0f; // قذفة لفوق
-            sparks[i].alpha = 255.0f; // واضحة جداً
-            letterBubbles[i].active = true; // فعل فقاعة الفرقعة
+            sparks[i].alpha = 255.0f;                           // واضحة جداً
+            letterBubbles[i].active = true;                     // فعل فقاعة الفرقعة
             letterBubbles[i].x = pX;
             letterBubbles[i].y = pY;
             letterBubbles[i].vx = (float)(rand() % 60 - 20) / 18.0f;
@@ -654,36 +654,36 @@ bool DrawLoadingScreen(float totalTime)
         }
     }
     if (exploded && !particlesFinished)
-    { // لو الفرقعة شغالة
+    {                           // لو الفرقعة شغالة
         bool anyActive = false; // علامة لو فيه حاجة لسه بتتحرك
         for (int i = 0; i < 35; i++)
         { // لف على كل الجزيئات
             if (sparks[i].active)
-            { // لو الشرارة شغالة
-                anyActive = true; // لسه فيه حركة
+            {                                // لو الشرارة شغالة
+                anyActive = true;            // لسه فيه حركة
                 sparks[i].x += sparks[i].vx; // حركها أفقي
-                sparks[i].vy += 0.2f; // تأثير الجاذبية
+                sparks[i].vy += 0.2f;        // تأثير الجاذبية
                 sparks[i].y += sparks[i].vy; // حركها رأسي
-                sparks[i].alpha -= 6.f; // قلل وضوحها
+                sparks[i].alpha -= 6.f;      // قلل وضوحها
                 if (sparks[i].alpha <= 0)
-                { // لو اختفت تماماً
-                    sparks[i].alpha = 0; // صفرها
+                {                             // لو اختفت تماماً
+                    sparks[i].alpha = 0;      // صفرها
                     sparks[i].active = false; // عطلها
                 }
                 else
                 {
-                    sparkSprite.setPosition({ sparks[i].x, sparks[i].y }); // حط صورة الشرارة
+                    sparkSprite.setPosition({sparks[i].x, sparks[i].y});                  // حط صورة الشرارة
                     sparkSprite.setColor(Color(255, 255, 255, (uint8_t)sparks[i].alpha)); // ظبط شفافيتها
-                    sparkSprite.setScale({ 0.55f, 0.55f }); // حجمها
-                    window.draw(sparkSprite); // ارسمها
+                    sparkSprite.setScale({0.55f, 0.55f});                                 // حجمها
+                    window.draw(sparkSprite);                                             // ارسمها
                 }
             }
             if (letterBubbles[i].active)
-            { // لو فقاعة الفرقعة شغالة
-                anyActive = true; // لسه فيه حركة
+            {                                              // لو فقاعة الفرقعة شغالة
+                anyActive = true;                          // لسه فيه حركة
                 letterBubbles[i].x += letterBubbles[i].vx; // حرك أفقياً
                 letterBubbles[i].y += letterBubbles[i].vy; // حرك رأسياً
-                letterBubbles[i].alpha -= 7.f; // قلل وضوحها
+                letterBubbles[i].alpha -= 7.f;             // قلل وضوحها
                 if (letterBubbles[i].alpha <= 0)
                 { // لو اختفت
                     letterBubbles[i].alpha = 0;
@@ -691,37 +691,37 @@ bool DrawLoadingScreen(float totalTime)
                 }
                 else
                 {
-                    bubbleSmallSprite.setPosition({ letterBubbles[i].x, letterBubbles[i].y }); // حط الصورة
+                    bubbleSmallSprite.setPosition({letterBubbles[i].x, letterBubbles[i].y});           // حط الصورة
                     bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)letterBubbles[i].alpha)); // الشفافية
-                    window.draw(bubbleSmallSprite); // ارسم
+                    window.draw(bubbleSmallSprite);                                                    // ارسم
                 }
             }
         }
         if (!anyActive)
-        { // لو مفيش حاجة تانية بتتحرك
+        {                             // لو مفيش حاجة تانية بتتحرك
             particlesFinished = true; // كدا خلصنا فرقعة
         }
     }
-    timerLeft += deltaTime; // زود تايمر الشمال
-    timerRight += deltaTime; // زود تايمر اليمين
-    bubbleTimer += deltaTime; // زود تايمر الجو العام
+    timerLeft += deltaTime;               // زود تايمر الشمال
+    timerRight += deltaTime;              // زود تايمر اليمين
+    bubbleTimer += deltaTime;             // زود تايمر الجو العام
     auto spawnBubble = [&](int ventIdx) { // دالة "تفريخ" فقاقيع من المرجان
         for (int i = 0; i < 60; i++)
         {
             if (!ventBubbles[i].active)
-            { // دور على مكان فاضي في المصفوفة
-                ventBubbles[i].active = true; // فعلها
-                ventBubbles[i].isVent = true; // قول إنها من المرجان
-                ventBubbles[i].alpha = 255.0f; // واضحة
+            {                                                                    // دور على مكان فاضي في المصفوفة
+                ventBubbles[i].active = true;                                    // فعلها
+                ventBubbles[i].isVent = true;                                    // قول إنها من المرجان
+                ventBubbles[i].alpha = 255.0f;                                   // واضحة
                 ventBubbles[i].x = ventPositions[ventIdx].x + (rand() % 12 - 6); // مكان عشوائي بسيط
-                ventBubbles[i].y = ventPositions[ventIdx].y; // من عند الفتحة
-                ventBubbles[i].vx = (float)(rand() % 10 - 5) / 100.0f; // حركة أفقية ضعيفة
-                ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 20.0f; // طالعة لفوق بسرعة
+                ventBubbles[i].y = ventPositions[ventIdx].y;                     // من عند الفتحة
+                ventBubbles[i].vx = (float)(rand() % 10 - 5) / 100.0f;           // حركة أفقية ضعيفة
+                ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 20.0f;        // طالعة لفوق بسرعة
                 return true;
             }
         }
         return false;
-        };
+    };
     if (timerLeft >= 0.8f)
     {
         if (spawnBubble(0))
@@ -741,8 +741,8 @@ bool DrawLoadingScreen(float totalTime)
                 ventBubbles[i].active = true;
                 ventBubbles[i].isVent = false; // مش من المرجان
                 ventBubbles[i].alpha = 255.0f;
-                ventBubbles[i].x = 810.f; // من بره الشاشة يمين
-                ventBubbles[i].y = (float)(rand() % 601); // ارتفاع عشوائي
+                ventBubbles[i].x = 810.f;                                // من بره الشاشة يمين
+                ventBubbles[i].y = (float)(rand() % 601);                // ارتفاع عشوائي
                 ventBubbles[i].vx = -((float)(rand() % 30 + 15) / 10.f); // raيحة شمال
                 ventBubbles[i].vy = 0.0f;
                 bubbleTimer = 0.0f;
@@ -757,7 +757,7 @@ bool DrawLoadingScreen(float totalTime)
             ventBubbles[i].x += ventBubbles[i].vx; // حرك أفقي
             ventBubbles[i].y += ventBubbles[i].vy; // حرك رأسي
             if (ventBubbles[i].isVent)
-            { // لو فقاعة مرجان
+            {                                                          // لو فقاعة مرجان
                 ventBubbles[i].x += sin(totalTime * 4.0f + i) * 0.25f; // خليها تترعش وهي طالعة
                 if (ventBubbles[i].y < 200.f)
                     ventBubbles[i].alpha -= 8.0f; // خليها تختفي قرب السطح
@@ -770,12 +770,12 @@ bool DrawLoadingScreen(float totalTime)
                     ventBubbles[i].active = false; // لو خرجت من الشاشة عطلها
             }
             if (ventBubbles[i].active)
-            { // لو لسه نشطة ارسمها
-                bubbleSmallSprite.setPosition({ ventBubbles[i].x, ventBubbles[i].y }); // حط المكان
+            {                                                                                    // لو لسه نشطة ارسمها
+                bubbleSmallSprite.setPosition({ventBubbles[i].x, ventBubbles[i].y});             // حط المكان
                 bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)ventBubbles[i].alpha)); // حط الشفافية
-                float s = ventBubbles[i].isVent ? (0.8f + (i % 3) * 0.2f) : 0.65f; // مقاسات متنوعة
-                bubbleSmallSprite.setScale({ s, s }); // ظبط الحجم
-                window.draw(bubbleSmallSprite); // ارسم
+                float s = ventBubbles[i].isVent ? (0.8f + (i % 3) * 0.2f) : 0.65f;               // مقاسات متنوعة
+                bubbleSmallSprite.setScale({s, s});                                              // ظبط الحجم
+                window.draw(bubbleSmallSprite);                                                  // ارسم
             }
         }
     }
@@ -826,13 +826,14 @@ void MainMenu()
                         return;
                     }
                     // [ADDED] Options button click handler (placed right after switchuser check)
-                    if (optionsbutton.getGlobalBounds().contains(mousePos)) {
+                    if (optionsbutton.getGlobalBounds().contains(mousePos))
+                    {
                         OptionsMenu();
                         return;
                     }
                 }
             }
-            else if (const auto* resizeEvent = event->getIf<Event::Resized>())
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
                 float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
                 float viewRatio = 800.f / 600.f;
@@ -847,7 +848,7 @@ void MainMenu()
                     sizeY = windowRatio / viewRatio;
                     posY = (1.f - sizeY) / 2.f;
                 }
-                view.setViewport(sf::FloatRect({ posX, posY }, { sizeX, sizeY }));
+                view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
             }
             window.setView(view);
             window.clear(Color::Black);
@@ -868,25 +869,25 @@ void StartMainMenu()
     // creating small fish objects
     for (int i = 0; i < 3; i++)
     {
-        AnimatedObject obj{ minowfishtex, 286, 126 };
+        AnimatedObject obj{minowfishtex, 286, 126};
         obj.velocityX_AXIS = -2;
         obj.changedir = 1;
         obj.shape.setFillColor(Color::Green);
-        obj.shape.setSize(Vector2f{ 57, 25 });
+        obj.shape.setSize(Vector2f{57, 25});
         obj.shape.setOrigin(obj.shape.getLocalBounds().size / 2.f);
         obj.sprite.setTexture(minowfishtex);
-        obj.sprite.setOrigin({ 285 / 2, 126 / 2 });
-        obj.sprite.setPosition(Vector2f({ window.getSize().x / 2.0f + 10000, window.getSize().y / 2.0f + (i * 50) }));
+        obj.sprite.setOrigin({285 / 2, 126 / 2});
+        obj.sprite.setPosition(Vector2f({window.getSize().x / 2.0f + 10000, window.getSize().y / 2.0f + (i * 50)}));
         if (i == 0)
         {
-            obj.sprite.setPosition({ 1100, 360 });
+            obj.sprite.setPosition({1100, 360});
         }
         if (i == 2)
         {
-            obj.sprite.setPosition({ 900, 360 });
+            obj.sprite.setPosition({900, 360});
         }
-        obj.sprite.setScale({ float(obj.changedir * 0.2), 0.2 });
-        obj.velocity = Vector2f({ obj.velocityX_AXIS, 0 });
+        obj.sprite.setScale({float(obj.changedir * 0.2), 0.2});
+        obj.velocity = Vector2f({obj.velocityX_AXIS, 0});
         smallfishs.push_back(obj);
     }
     // frame rate limit
@@ -916,51 +917,51 @@ void StartMainMenu()
     // Barracudatex.setSmooth(true);
     // setting up sprites
     background.setOrigin(background.getLocalBounds().size / 2.0f);
-    background.setPosition(Vector2f({ window.getSize().x / 2.0f, window.getSize().y / 2.0f }));
-    background.setScale(Vector2f({ 1.6f, 1.2f }));
+    background.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f}));
+    background.setScale(Vector2f({1.6f, 1.2f}));
     logosp.setOrigin(logosp.getLocalBounds().size / 2.0f);
-    logosp.setPosition(Vector2f({ window.getSize().x / 2.0f, window.getSize().y / 2.0f - 240 }));
-    logosp.setScale(Vector2f({ 1.2f, 1.1f }));
+    logosp.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f - 240}));
+    logosp.setScale(Vector2f({1.2f, 1.1f}));
     Barracudacollieder.setFillColor(Color::Green);
     Barracudacollieder.setOrigin(Barracudacollieder.getLocalBounds().size / 2.0f);
     MFcollieder.setFillColor(Color::Green);
     MFcollieder.setOrigin(MFcollieder.getLocalBounds().size / 2.0f);
-    Greenfish.setPosition(Vector2f({ window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f }));
+    Greenfish.setPosition(Vector2f({window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f}));
     Greenfish.setOrigin(Greenfish.getLocalBounds().size / 26.f);
-    Greenfish.setScale(Vector2f({ 1.0f, 1.0f }));
+    Greenfish.setScale(Vector2f({1.0f, 1.0f}));
     startgamebutton.setOrigin(startgamebutton.getLocalBounds().size / 2.0f);
-    startgamebutton.setPosition(Vector2f({ window.getSize().x / 2.0f, window.getSize().y / 2.0f - 80 }));
-    startgamebutton.setScale({ 1.5, 1.5 });
+    startgamebutton.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f - 80}));
+    startgamebutton.setScale({1.5, 1.5});
     timeattackbutton.setOrigin(timeattackbutton.getLocalBounds().size / 2.0f);
-    timeattackbutton.setPosition(Vector2f({ window.getSize().x / 2.0f + 10, window.getSize().y / 2.0f + 50 }));
-    timeattackbutton.setScale({ 1.5, 1.5 });
+    timeattackbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 10, window.getSize().y / 2.0f + 50}));
+    timeattackbutton.setScale({1.5, 1.5});
     highscorebutton.setOrigin(highscorebutton.getLocalBounds().size / 2.0f);
-    highscorebutton.setPosition(Vector2f({ window.getSize().x / 2.0f + -150, window.getSize().y / 2.0f + 140 }));
-    highscorebutton.setScale({ 1.5, 1.5 });
+    highscorebutton.setPosition(Vector2f({window.getSize().x / 2.0f + -150, window.getSize().y / 2.0f + 140}));
+    highscorebutton.setScale({1.5, 1.5});
     optionsbutton.setOrigin(optionsbutton.getLocalBounds().size / 2.0f);
-    optionsbutton.setPosition(Vector2f({ window.getSize().x / 2.0f + 120, window.getSize().y / 2.0f + 150 }));
-    optionsbutton.setScale({ 1.5, 1.5 });
+    optionsbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 120, window.getSize().y / 2.0f + 150}));
+    optionsbutton.setScale({1.5, 1.5});
     quitbutton.setOrigin(quitbutton.getLocalBounds().size / 2.0f);
-    quitbutton.setPosition(Vector2f({ window.getSize().x / 2.0f, window.getSize().y / 2.0f + 230 }));
-    quitbutton.setScale({ 1.5, 1.5 });
+    quitbutton.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f + 230}));
+    quitbutton.setScale({1.5, 1.5});
     switchuserbutton.setOrigin(switchuserbutton.getLocalBounds().size / 2.0f);
-    switchuserbutton.setPosition(Vector2f({ window.getSize().x / 2.0f + 460, window.getSize().y / 2.0f + 300 }));
-    switchuserbutton.setScale({ 1.5, 1.5 });
+    switchuserbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 460, window.getSize().y / 2.0f + 300}));
+    switchuserbutton.setScale({1.5, 1.5});
     creditsbutton.setOrigin(creditsbutton.getLocalBounds().size / 2.0f);
-    creditsbutton.setPosition(Vector2f({ window.getSize().x / 2.0f - 450, window.getSize().y / 2.0f + 290 }));
-    creditsbutton.setScale({ 1.5, 1.5 });
-    Minowfish.setPosition(Vector2f({ window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f }));
-    Minowfish.setOrigin({ 285 / 2, 126 / 2 });
-    Minowfish.setScale({ 0.2, 0.2 });
-    Barracuda.setPosition(Vector2f({ window.getSize().x / 2.0f + 400, window.getSize().y / 2.0f }));
+    creditsbutton.setPosition(Vector2f({window.getSize().x / 2.0f - 450, window.getSize().y / 2.0f + 290}));
+    creditsbutton.setScale({1.5, 1.5});
+    Minowfish.setPosition(Vector2f({window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f}));
+    Minowfish.setOrigin({285 / 2, 126 / 2});
+    Minowfish.setScale({0.2, 0.2});
+    Barracuda.setPosition(Vector2f({window.getSize().x / 2.0f + 400, window.getSize().y / 2.0f}));
     Barracuda.setOrigin(Barracuda.getLocalBounds().size / 28.f);
-    QueenTrigger.setOrigin({ 298 / 2, 216 / 2 });
+    QueenTrigger.setOrigin({298 / 2, 216 / 2});
     QueenTriggercollieder.setFillColor(Color::Green);
     QueenTriggercollieder.setOrigin(QueenTriggercollieder.getLocalBounds().size / 2.0f);
-    QueenTrigger.setPosition({ 1450, 360 });
+    QueenTrigger.setPosition({1450, 360});
     b.setFillColor(Color::Red);
     b.setOrigin(b.getLocalBounds().size / 2.f);
-    b.setPosition({ 1280, 720 });
+    b.setPosition({1280, 720});
     // Barracuda.setScale({2,2});
 }
 void UpdateMainMenu()
@@ -974,16 +975,16 @@ void UpdateMainMenu()
     Vector2i mouseLocalPos = Mouse::getPosition(window); // Get the mouse position relative to the window
     Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
     // MOVING THE SMALL FISHES AND THIER ANIMATION AND CHANGING DIRECTION IF THEY HIT THE WALL
-    for (auto& obj : smallfishs)
+    for (auto &obj : smallfishs)
     {
-        obj.shape.setPosition({ obj.sprite.getPosition().x, obj.sprite.getPosition().y });
+        obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
         obj.update(286, 126);
         if (obj.sprite.getPosition().x == window.getPosition().x - 580 || obj.sprite.getPosition().x == window.getPosition().y + 580)
         {
             obj.velocityX_AXIS *= -1;
             obj.changedir *= -1;
-            obj.velocity = Vector2f({ obj.velocityX_AXIS, 0 });
-            obj.sprite.setScale({ float(0.2 * obj.changedir), 0.2 });
+            obj.velocity = Vector2f({obj.velocityX_AXIS, 0});
+            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
         }
     }
     MainMenuFishAnimation();
@@ -999,7 +1000,7 @@ void DrawMainMenuBackground()
     window.draw(QueenTrigger);
     window.draw(Minowfish);
     MainMenuFishAnimation();
-    for (auto& obj : smallfishs)
+    for (auto &obj : smallfishs)
         window.draw(obj.sprite);
     window.draw(n);
     // window.draw(Barracudacollieder);
@@ -1028,19 +1029,19 @@ void MainMenuFishAnimation()
 }
 void GreenfishAnimation()
 {
-    Greenfish.move({ GFvelocityX_AXIS, GFvelocityY_AXIS });
+    Greenfish.move({GFvelocityX_AXIS, GFvelocityY_AXIS});
     if (Greenfish.getPosition().x == window.getSize().x / 2.0f - 580 || Greenfish.getPosition().x == window.getSize().x / 2.0f + 580)
     {
         counter = 0;
         while (true)
         {
             Greenfish.setTexture(Greenfishturn);
-            Greenfish.setTextureRect(IntRect({ GFturn * 227, 0 }, { 227, 255 }));
+            Greenfish.setTextureRect(IntRect({GFturn * 227, 0}, {227, 255}));
             GFturn++;
             if (GFturn == 13)
             {
                 GFturn = 0;
-                Greenfish.setScale({ GFchangedir, 1 });
+                Greenfish.setScale({GFchangedir, 1});
                 GFvelocityX_AXIS = GFvelocityX_AXIS * -1;
                 break;
             }
@@ -1050,7 +1051,7 @@ void GreenfishAnimation()
     else
     {
         Greenfish.setTexture(Greenfishswim);
-        Greenfish.setTextureRect(IntRect({ GFswim * 227, 0 }, { 227, 233 }));
+        Greenfish.setTextureRect(IntRect({GFswim * 227, 0}, {227, 233}));
         GFswim = (GFswim + 1) % 13;
     }
     if (Greenfish.getGlobalBounds().findIntersection(Minowfish.getGlobalBounds()))
@@ -1061,19 +1062,19 @@ void GreenfishAnimation()
         }
         if (counter == 4)
         {
-            Minowfish.setPosition({ 3000, 3000 });
+            Minowfish.setPosition({3000, 3000});
         }
         counter++;
         if (counter <= 5)
         {
             Greenfish.setTexture(Greenfisheat);
-            Greenfish.setTextureRect(IntRect({ GFeat * 227, 0 }, { 227, 233 }));
+            Greenfish.setTextureRect(IntRect({GFeat * 227, 0}, {227, 233}));
             GFeat++;
         }
         else
         {
             Greenfish.setTexture(Greenfishswim);
-            Greenfish.setTextureRect(IntRect({ GFswim * 227, 0 }, { 227, 233 }));
+            Greenfish.setTextureRect(IntRect({GFswim * 227, 0}, {227, 233}));
             GFswim = (GFswim + 1) % 13;
         }
     }
@@ -1141,15 +1142,15 @@ void MinowFishanimation()
 {
     if (MFvisable)
     {
-        Minowfish.move({ MFvelocityX_AXIS, 0 });
+        Minowfish.move({MFvelocityX_AXIS, 0});
         if (Minowfish.getPosition().x == window.getSize().x / 2.0f - 580 || Minowfish.getPosition().x == window.getSize().x / 2.0f + 580)
         {
             while (true)
             {
-                Minowfish.setTextureRect(IntRect({ MFcol * 286, 1 * 126 }, { 286, 126 }));
+                Minowfish.setTextureRect(IntRect({MFcol * 286, 1 * 126}, {286, 126}));
                 if (MFcol == 6)
                 {
-                    Minowfish.setScale({ float(0.2 * MFchangedir), 0.2 });
+                    Minowfish.setScale({float(0.2 * MFchangedir), 0.2});
                     MFvelocityX_AXIS = MFvelocityX_AXIS * -1;
                     break;
                 }
@@ -1159,14 +1160,14 @@ void MinowFishanimation()
         }
         else
         {
-            Minowfish.setTextureRect(IntRect({ MFcol * 286, 0 }, { 286, 126 }));
+            Minowfish.setTextureRect(IntRect({MFcol * 286, 0}, {286, 126}));
             MFcol = (MFcol + 1) % 15;
         }
     }
 }
 void BarracudaFishanimation()
 {
-    Barracuda.move({ BFvelocityX_AXIS, 0 });
+    Barracuda.move({BFvelocityX_AXIS, 0});
     BFrow = 0;
     if (Barracuda.getPosition().x == window.getSize().x / 2.0f - 580 || Barracuda.getPosition().x == window.getSize().x / 2.0f + 580)
     {
@@ -1174,12 +1175,12 @@ void BarracudaFishanimation()
         BFcol = 0;
         while (true)
         {
-            Barracuda.setTextureRect(IntRect({ BFcol * 256, 2 * 118 }, { 256, 118 }));
+            Barracuda.setTextureRect(IntRect({BFcol * 256, 2 * 118}, {256, 118}));
             BFcol++;
             if (BFcol == 5)
             {
                 BFcol = 0;
-                Barracuda.setScale({ BFchangedir, 1 });
+                Barracuda.setScale({BFchangedir, 1});
                 BFvelocityX_AXIS = BFvelocityX_AXIS * -1;
                 break;
             }
@@ -1194,23 +1195,23 @@ void BarracudaFishanimation()
         }
         if (counter == 4)
         {
-            Minowfish.setPosition({ 3000, 3000 });
+            Minowfish.setPosition({3000, 3000});
         }
         counter++;
         if (counter <= 6)
         {
-            Barracuda.setTextureRect(IntRect({ BFcol * 256, 0 }, { 256, 118 }));
+            Barracuda.setTextureRect(IntRect({BFcol * 256, 0}, {256, 118}));
             BFcol++;
         }
         else
         {
-            Barracuda.setTextureRect(IntRect({ BFcol * 256, 1 * 118 }, { 256, 118 }));
+            Barracuda.setTextureRect(IntRect({BFcol * 256, 1 * 118}, {256, 118}));
             BFcol = (BFcol + 1) % 14;
         }
     }
     else
     {
-        Barracuda.setTextureRect(IntRect({ BFcol * 256, 1 * 118 }, { 256, 118 }));
+        Barracuda.setTextureRect(IntRect({BFcol * 256, 1 * 118}, {256, 118}));
         BFcol = (BFcol + 1) % 14;
     }
     if (Barracuda.getPosition().y == 690 || Barracuda.getPosition().y == 0)
@@ -1220,7 +1221,7 @@ void BarracudaFishanimation()
 }
 void QueenTriggerFish()
 {
-    QueenTrigger.move({ QTvelocityX_AXIS, 0 });
+    QueenTrigger.move({QTvelocityX_AXIS, 0});
     QTrow = 0;
     if (QueenTrigger.getPosition().x == 0 || QueenTrigger.getPosition().x == 1460)
     {
@@ -1228,12 +1229,12 @@ void QueenTriggerFish()
         QTcol = 0;
         while (true)
         {
-            QueenTrigger.setTextureRect(IntRect({ QTcol * 298, 2 * 216 }, { 298, 216 }));
+            QueenTrigger.setTextureRect(IntRect({QTcol * 298, 2 * 216}, {298, 216}));
             QTcol++;
             if (QTcol == 6)
             {
                 QTcol = 0;
-                QueenTrigger.setScale({ QTchangedir, 1 });
+                QueenTrigger.setScale({QTchangedir, 1});
                 QTvelocityX_AXIS = QTvelocityX_AXIS * -1;
                 break;
             }
@@ -1248,20 +1249,20 @@ void QueenTriggerFish()
         }
         if (cu == 3)
         {
-            smallfishs[2].sprite.setPosition({ 3000, 3000 });
-            smallfishs[0].sprite.setPosition({ 3000, 3000 });
+            smallfishs[2].sprite.setPosition({3000, 3000});
+            smallfishs[0].sprite.setPosition({3000, 3000});
         }
         cu++;
         if (cu <= 6)
         {
-            QueenTrigger.setTextureRect(IntRect({ QTcol * 298, 0 }, { 298, 216 }));
+            QueenTrigger.setTextureRect(IntRect({QTcol * 298, 0}, {298, 216}));
             QTcol++;
         }
     }
     else
     {
         cu = 0;
-        QueenTrigger.setTextureRect(IntRect({ QTcol * 298, 1 * 216 }, { 298, 216 }));
+        QueenTrigger.setTextureRect(IntRect({QTcol * 298, 1 * 216}, {298, 216}));
         QTcol = (QTcol + 1) % 14;
     }
 }
@@ -1292,8 +1293,8 @@ void Select_level()
                         if (*pearls[i].unlocked)
                         {
                             FloatRect bounds = pearls[i].sprite->getGlobalBounds();
-                            Vector2f center = { bounds.position.x + bounds.size.x / 2.f,
-                                               bounds.position.y + bounds.size.y / 2.f };
+                            Vector2f center = {bounds.position.x + bounds.size.x / 2.f,
+                                               bounds.position.y + bounds.size.y / 2.f};
                             if (hypot(mf.x - center.x, mf.y - center.y) <= pearls[i].radius)
                             {
                                 isLoading = true;
@@ -1308,11 +1309,11 @@ void Select_level()
         DrawSelectLevel();
     }
 }
-void centerText(Text& text)
+void centerText(Text &text)
 {
     FloatRect b = text.getLocalBounds();
-    text.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
-    text.setPosition({ 415.f, 545.f });
+    text.setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
+    text.setPosition({415.f, 545.f});
 }
 // ─── 1. StartSelectLevel ───
 void StartSelectLevel()
@@ -1332,7 +1333,7 @@ void StartSelectLevel()
     }
     signTexture.setSmooth(true);
     signSprite.setTexture(signTexture);
-    signSprite.setPosition({ 10.f, 10.f });
+    signSprite.setPosition({10.f, 10.f});
     // 3. تحميل البانر (البورد)
     if (!bannerTexture.loadFromFile("Assets/Select_level/bord.jpeg"))
     {
@@ -1340,7 +1341,7 @@ void StartSelectLevel()
     }
     bannerTexture.setSmooth(true);
     bannerSprite.setTexture(bannerTexture);
-    bannerSprite.setPosition({ 1.f, 445.f });
+    bannerSprite.setPosition({1.f, 445.f});
     // 4. تحميل أزرار القائمة (العادي والـ Hover)
     if (!myTexture.loadFromFile("Assets/Select_level/shell_tinybtn124_normal.jpeg"))
     {
@@ -1353,7 +1354,7 @@ void StartSelectLevel()
     myTexture.setSmooth(true);
     myHoverTexture.setSmooth(true);
     mySprite.setTexture(myTexture);
-    mySprite.setPosition({ 350.f, 565.f });
+    mySprite.setPosition({350.f, 565.f});
     // 5. تحميل اللآلئ وشريط التحميل
     if (!pearlTexture.loadFromFile("Assets/Select_level/white.jpeg"))
     {
@@ -1378,16 +1379,16 @@ void StartSelectLevel()
     font.setSmooth(true);
     // إعداد النصوص
     staticTxt = Text(font, "NEW GAME", 25);
-    staticTxt.setPosition({ 345.f, 495.f });
+    staticTxt.setPosition({345.f, 495.f});
     menuTxt = Text(font, "menu", 20);
-    menuTxt.setPosition({ 390.f, 570.f });
+    menuTxt.setPosition({390.f, 570.f});
     levelTxt = Text(font, "choose level", 24);
     centerText(levelTxt);
     // ملء بيانات الـ pearls من القيم اللي بعتها
-    pearls[0] = { &pearlSprite1, 25.f, "Level 1", &level1Unlocked, {205.f, 75.f}, {0.13f, 0.13f}, {220.f, 100.f}, {0.13f, 0.13f} };
-    pearls[1] = { &pearlSprite2, 25.f, "Level 2", &level2Unlocked, {235.f, 125.f}, {0.15f, 0.15f}, {248.f, 148.f}, {0.15f, 0.15f} };
-    pearls[2] = { &pearlSprite3, 25.f, "Level 3", &level3Unlocked, {230.f, 165.f}, {0.15f, 0.15f}, {242.f, 188.f}, {0.15f, 0.15f} };
-    pearls[3] = { &pearlSprite4, 25.f, "Level 4", &level4Unlocked, {210.f, 200.f}, {0.15f, 0.15f}, {224.f, 222.f}, {0.15f, 0.15f} };
+    pearls[0] = {&pearlSprite1, 25.f, "Level 1", &level1Unlocked, {205.f, 75.f}, {0.13f, 0.13f}, {220.f, 100.f}, {0.13f, 0.13f}};
+    pearls[1] = {&pearlSprite2, 25.f, "Level 2", &level2Unlocked, {235.f, 125.f}, {0.15f, 0.15f}, {248.f, 148.f}, {0.15f, 0.15f}};
+    pearls[2] = {&pearlSprite3, 25.f, "Level 3", &level3Unlocked, {230.f, 165.f}, {0.15f, 0.15f}, {242.f, 188.f}, {0.15f, 0.15f}};
+    pearls[3] = {&pearlSprite4, 25.f, "Level 4", &level4Unlocked, {210.f, 200.f}, {0.15f, 0.15f}, {224.f, 222.f}, {0.15f, 0.15f}};
 }
 // ─── 2. UpdateSelectLevel ───
 void UpdateSelectLevel(float dt)
@@ -1397,7 +1398,7 @@ void UpdateSelectLevel(float dt)
     centerText(levelTxt);
     for (int i = 0; i < 4; ++i)
     {
-        auto& p = pearls[i];
+        auto &p = pearls[i];
         if (*p.unlocked)
         {
             p.sprite->setTexture(pearlUnlockedTexture);
@@ -1412,7 +1413,7 @@ void UpdateSelectLevel(float dt)
         }
         // منطق الـ Hover للؤلؤة
         FloatRect bounds = p.sprite->getGlobalBounds();
-        Vector2f center = { bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f };
+        Vector2f center = {bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f};
         if (hypot(mf.x - center.x, mf.y - center.y) <= p.radius)
         {
             levelTxt.setString(p.name);
@@ -1455,11 +1456,11 @@ void DrawSelectLevel()
     if (isLoading)
     {
         Sprite bar(loadBarTexture);
-        bar.setPosition({ barX, barY });
+        bar.setPosition({barX, barY});
         float sx = barWidth / (float)loadBarTexture.getSize().x;
         float sy = barHeight / (float)loadBarTexture.getSize().y;
-        bar.setScale({ sx, sy });
-        bar.setTextureRect(IntRect({ 0, 0 }, { (int)(loadProgress / sx), (int)loadBarTexture.getSize().y }));
+        bar.setScale({sx, sy});
+        bar.setTextureRect(IntRect({0, 0}, {(int)(loadProgress / sx), (int)loadBarTexture.getSize().y}));
         window.draw(bar);
     }
     else
@@ -1515,12 +1516,12 @@ void StartSwitchUser()
     loadusers.close();
     RefreshUsersList(); // Refreshing the array of users after loading them from the file
     // ----------- HighLight if user is choosen -------------------
-    SelectUserHL.setSize({ WindowWidth * 0.35f, 45.f });
+    SelectUserHL.setSize({WindowWidth * 0.35f, 45.f});
     SelectUserHL.setFillColor(Color(180, 220, 255, 150));
-    SelectUserHL.setOrigin({ SelectUserHL.getSize().x / 2.f, 0.f });
+    SelectUserHL.setOrigin({SelectUserHL.getSize().x / 2.f, 0.f});
 }
 // ------------------------ Template ------------------------
-void SetupButtonText(Text& text, const string& str, Sprite& button)
+void SetupButtonText(Text &text, const string &str, Sprite &button)
 {
     text.setFont(btnFont);
     text.setString(str);
@@ -1529,21 +1530,21 @@ void SetupButtonText(Text& text, const string& str, Sprite& button)
     text.setOutlineColor(Color(30, 60, 10));
     text.setOutlineThickness(2.f);
     FloatRect bounds = text.getLocalBounds();
-    text.setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
-    Vector2f center = { button.getPosition().x, button.getPosition().y - 10 };
+    text.setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
+    Vector2f center = {button.getPosition().x, button.getPosition().y - 10};
     text.setPosition(center);
 }
 // ------------------------ Template ------------------------
-void CreateButton(Sprite& sprite, Texture& texture, const string& filePath,
-    float xPosition = WindowWidth / 2.f,
-    float yPositon = WindowHeight / 2.f, float scaleX = 1.f, float scaleY = 1.f)
+void CreateButton(Sprite &sprite, Texture &texture, const string &filePath,
+                  float xPosition = WindowWidth / 2.f,
+                  float yPositon = WindowHeight / 2.f, float scaleX = 1.f, float scaleY = 1.f)
 {
     if (!texture.loadFromFile(filePath))
         cout << "Failed to load: " << filePath << "\n";
     sprite = Sprite(texture);
-    sprite.setOrigin({ texture.getSize().x / 2.f, texture.getSize().y / 2.f });
-    sprite.setPosition({ xPosition, yPositon });
-    sprite.setScale({ scaleX, scaleY });
+    sprite.setOrigin({texture.getSize().x / 2.f, texture.getSize().y / 2.f});
+    sprite.setPosition({xPosition, yPositon});
+    sprite.setScale({scaleX, scaleY});
 }
 void UpdateSwitchUser()
 {
@@ -1552,7 +1553,7 @@ void UpdateSwitchUser()
     {
         if (event->is<Event::Closed>())
             window.close();
-        else if (const auto* resizeEvent = event->getIf<Event::Resized>())
+        else if (const auto *resizeEvent = event->getIf<Event::Resized>())
         {
             float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
             float viewRatio = 800.f / 600.f;
@@ -1567,7 +1568,7 @@ void UpdateSwitchUser()
                 sizeY = windowRatio / viewRatio;
                 posY = (1.f - sizeY) / 2.f;
             }
-            view.setViewport(FloatRect({ posX, posY }, { sizeX, sizeY }));
+            view.setViewport(FloatRect({posX, posY}, {sizeX, sizeY}));
             window.setView(view);
         }
         if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
@@ -1583,7 +1584,7 @@ void UpdateSwitchUser()
                     {
                         NameEntry = 0;
                         isCancelAddingUser = 0;
-                        for (auto& user : users) // is the name already there?
+                        for (auto &user : users) // is the name already there?
                         {
                             if (user.first == InputString)
                             {
@@ -1608,7 +1609,7 @@ void UpdateSwitchUser()
                             for (int i = 0; i < NumberOfUsers; i++)
                                 adduser << users[i].first << '\t' << users[i].second << '\n';
                             adduser.close();
-                            RefreshUsersList(); // Refresh The List after each addition
+                            RefreshUsersList();                       // Refresh The List after each addition
                             CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
                         }
                     }
@@ -1619,7 +1620,7 @@ void UpdateSwitchUser()
                         if (isListFull)
                             if (mouseEvent->button == Mouse::Button::Left)
                                 if (FullOKButton.getGlobalBounds().contains(mousePos)) // after pressing ok
-                                    isListFull = 0; // to get out of the POP-UP massege
+                                    isListFull = 0;                                    // to get out of the POP-UP massege
                     }
                 }
                 else if (NameEntry and CancelAddingUser.getGlobalBounds().contains(mousePos))
@@ -1634,7 +1635,7 @@ void UpdateSwitchUser()
                     {
                         SelectedUser = i;
                         float X = WindowWidth * 0.5f - 5, Y = UserTexts[i]->getPosition().y - 5.f;
-                        SelectUserHL.setPosition({ X, Y });
+                        SelectUserHL.setPosition({X, Y});
                     }
                 }
                 if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName)
@@ -1681,7 +1682,7 @@ void UpdateSwitchUser()
                     }
                 }
             }
-        if (const auto* typed = event->getIf<Event::TextEntered>())
+        if (const auto *typed = event->getIf<Event::TextEntered>())
         {
             char32_t a = typed->unicode;
             if (a == 8 /*ASCII for BackSpace*/ and !InputString.empty())
@@ -1699,7 +1700,7 @@ void UpdateSwitchUser()
         }
         FloatRect textBounds = DisplayText.getLocalBounds();
         float X = DisplayText.getPosition().x + textBounds.size.x + 5, Y = DisplayText.getPosition().y + 25;
-        Blink.setPosition({ X, Y });
+        Blink.setPosition({X, Y});
         DisplayText.setString(InputString);
     }
     HoverButton(NewButton, NewButtonTex, NewButtonHLTex, mousePos, NewText);
@@ -1720,7 +1721,7 @@ void UpdateSwitchUser()
     if (!NameEntry and !isConfirmUserDelete and !isListFull and DupplicateName)
         HoverButton(DupplicateOKButton, NewButtonTex, NewButtonHLTex, mousePos, DupplicatedUserText);
 }
-void HoverButton(Sprite& button, const Texture& normalTex, const Texture& highlightTex, Vector2f mousePos, Text& text)
+void HoverButton(Sprite &button, const Texture &normalTex, const Texture &highlightTex, Vector2f mousePos, Text &text)
 {
     if (button.getGlobalBounds().contains(mousePos))
     {
@@ -1750,7 +1751,7 @@ void EnterYourName()
     // X = WindowWidth * 0.38f, Y = WindowHeight * 0.30f;
     // DisplayText.setPosition({(float)X, (float)Y});
     X = WindowWidth * 0.24f, Y = WindowHeight * 0.34f;
-    DisplayText.setPosition({ (float)X, (float)Y });
+    DisplayText.setPosition({(float)X, (float)Y});
     X = WindowWidth * 0.375f, Y = WindowHeight * 0.448f;
     CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.62f;
@@ -1763,7 +1764,7 @@ void EnterYourName()
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.75f;
     CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/Cancel.png", X, Y, 1.5, 1.5);
     SetupButtonText(CancelAddingUserText, "Cancel", CancelAddingUser);
-    CancelAddingUserText.setPosition({ CancelAddingUser.getPosition().x, CancelAddingUser.getPosition().y - 5 });
+    CancelAddingUserText.setPosition({CancelAddingUser.getPosition().x, CancelAddingUser.getPosition().y - 5});
 }
 void RefreshUsersList()
 {
@@ -1777,9 +1778,9 @@ void RefreshUsersList()
             UserTexts[i]->setFillColor(Color::White);
             float X = WindowWidth * 0.5f;
             float Y = WindowHeight * 0.23f + (i * 40.f);
-            UserTexts[i]->setPosition({ X, Y });
+            UserTexts[i]->setPosition({X, Y});
             FloatRect bounds = UserTexts[i]->getLocalBounds();
-            UserTexts[i]->setOrigin({ bounds.size.x / 2.f, 0.f });
+            UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
         }
         else
             UserTexts[i] = nullptr;
@@ -1799,7 +1800,7 @@ void DeleteUser()
     SetupButtonText(NoButtonText, "No!", NoButton);
     SetupButtonText(DeletethisUser, users[SelectedUser].first, DeleteUserBg);
     X = WindowWidth * 0.47f, Y = WindowHeight * 0.52f;
-    DeletethisUser.setPosition({ (float)X, (float)Y });
+    DeletethisUser.setPosition({(float)X, (float)Y});
     DeletethisUser.setCharacterSize(45);
 }
 void FullList()
@@ -1822,7 +1823,7 @@ void DupplicateUser()
     SetupButtonText(OKText, "OK", DupplicateOKButton);
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
     X = WindowWidth * 0.49f, Y = WindowHeight * 0.53f;
-    DupplicatedUserText.setPosition({ (float)X, (float)Y });
+    DupplicatedUserText.setPosition({(float)X, (float)Y});
     DupplicatedUserText.setCharacterSize(60);
 }
 void DisplaySwitchUser()
@@ -1899,7 +1900,7 @@ void OptionsMenu()
         {
             if (event->is<Event::Closed>())
                 window.close();
-            else if (const auto* resizeEvent = event->getIf<Event::Resized>())
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
                 view.setSize(Vector2f(resizeEvent->size));
                 window.setView(view);
@@ -1916,13 +1917,13 @@ void OptionsMenu()
 // SECTION 1: CORE CONFIGURATION & LAYOUT SETTINGS
 // Contains the hardcoded layout values. Change these to shift the menu!
 // =====================================================================
-const float LAYOUT_LABEL_X = 370.f; // Right-aligned edge for text (Sound:, Music:)
-const float LAYOUT_BUBBLE_START_X = 390.f;// X position for the first column of bubbles
-const float LAYOUT_ROW_SPACING = 45.f; // Vertical spacing for Top 3 options
-const float LAYOUT_COL_SPACING = 43.f; // Horizontal spacing for bubbles (Mouse Speed/Game Detail)
-const float POS_Y_TOP_OPTIONS = 170.f; // Y start for Sound, Music, Full Screen
-const float POS_Y_MOUSE_SPEED = 310.f; // Y position for Mouse Speed
-const float POS_Y_GAME_DETAIL = 360.f; // Y position for Game Detail
+const float LAYOUT_LABEL_X = 370.f;        // Right-aligned edge for text (Sound:, Music:)
+const float LAYOUT_BUBBLE_START_X = 390.f; // X position for the first column of bubbles
+const float LAYOUT_ROW_SPACING = 45.f;     // Vertical spacing for Top 3 options
+const float LAYOUT_COL_SPACING = 43.f;     // Horizontal spacing for bubbles (Mouse Speed/Game Detail)
+const float POS_Y_TOP_OPTIONS = 170.f;     // Y start for Sound, Music, Full Screen
+const float POS_Y_MOUSE_SPEED = 310.f;     // Y position for Mouse Speed
+const float POS_Y_GAME_DETAIL = 360.f;     // Y position for Game Detail
 // =====================================================================
 // SECTION 2: GLOBAL ENGINE VARIABLES
 // Contains the Window, Camera View, and Audio systems.
@@ -1951,7 +1952,8 @@ Texture texUncheckedNormal, texUncheckedHover;
 Texture texCheckedNormal, texCheckedHover;
 Texture texDoneNormal, texDoneHover;
 // Menu Data Structure
-struct MenuOption {
+struct MenuOption
+{
     optional<Text> text;
     optional<Sprite> checkbox;
     bool isChecked = false;
@@ -1967,34 +1969,41 @@ bool prevMousePressed = false;
 // SECTION 4: HELPER UTILITY FUNCTIONS
 // Reusable code blocks for aligning text and drawing sprites cleanly.
 // =====================================================================
-void setRightAligned(optional<Text>& txt, float x, float y) {
-    if (txt) {
+void setRightAligned(optional<Text> &txt, float x, float y)
+{
+    if (txt)
+    {
         FloatRect bounds = txt->getLocalBounds();
-        txt->setOrigin({ bounds.size.x, bounds.size.y / 2.f });
-        txt->setPosition({ x, y });
+        txt->setOrigin({bounds.size.x, bounds.size.y / 2.f});
+        txt->setPosition({x, y});
     }
 }
-void setTopCentered(optional<Text>& txt, float x, float y) {
-    if (txt) {
+void setTopCentered(optional<Text> &txt, float x, float y)
+{
+    if (txt)
+    {
         FloatRect bounds = txt->getLocalBounds();
-        txt->setOrigin({ bounds.size.x / 2.f, 0.f });
-        txt->setPosition({ x, y });
+        txt->setOrigin({bounds.size.x / 2.f, 0.f});
+        txt->setPosition({x, y});
     }
 }
-void drawTextWithShadow(RenderWindow& win, optional<Text>& textObj) {
-    if (textObj) {
+void drawTextWithShadow(RenderWindow &win, optional<Text> &textObj)
+{
+    if (textObj)
+    {
         Text shadow = *textObj;
         shadow.setFillColor(Color(10, 20, 40, 180));
         shadow.setOutlineThickness(0.f);
-        shadow.move({ 1.f, 1.f });
+        shadow.move({1.f, 1.f});
         win.draw(shadow);
         win.draw(*textObj);
     }
 }
-void drawCenteredSprite(RenderWindow& win, Sprite& sprite, Texture& tex, int alpha) {
+void drawCenteredSprite(RenderWindow &win, Sprite &sprite, Texture &tex, int alpha)
+{
     sprite.setTexture(tex, true);
     FloatRect b = sprite.getLocalBounds();
-    sprite.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+    sprite.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
     sprite.setColor(Color(255, 255, 255, alpha));
     win.draw(sprite);
 }
@@ -2007,53 +2016,61 @@ void StartOptions()
     window.setFramerateLimit(60);
     window.setView(view);
     srand(static_cast<unsigned int>(time(NULL)));
-    if (!globalFont.openFromFile("Assets/Fonts/Barmeno.ttf")) cout << "Failed to load font!" << endl; // [MODIFIED] Corrected path based on context
+    if (!globalFont.openFromFile("Assets/Fonts/Barmeno.ttf"))
+        cout << "Failed to load font!" << endl; // [MODIFIED] Corrected path based on context
     globalFont.setSmooth(false);
     screenDarkener.setSize(Vector2f(WindowWidth, WindowHeight));
     screenDarkener.setFillColor(Color(0, 0, 0, 95));
     // [MODIFIED] We don't need main_bg image anymore as requested
 
-    if (texBgPlank.loadFromFile("Assets/Options/plank.png")) { // [MODIFIED] Corrected path
+    if (texBgPlank.loadFromFile("Assets/Options/plank.png"))
+    { // [MODIFIED] Corrected path
         texBgPlank.setSmooth(true);
         sprBgPlank.emplace(texBgPlank);
         FloatRect b = sprBgPlank->getLocalBounds();
-        sprBgPlank->setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        sprBgPlank->setPosition({ WindowWidth / 2.f , 280.f });
+        sprBgPlank->setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        sprBgPlank->setPosition({WindowWidth / 2.f, 280.f});
     }
-    if (texCorals.loadFromFile("Assets/Options/corals.png")) { // [MODIFIED] Corrected path
+    if (texCorals.loadFromFile("Assets/Options/corals.png"))
+    { // [MODIFIED] Corrected path
         texCorals.setSmooth(true);
         sprCorals.emplace(texCorals);
         FloatRect b = sprCorals->getLocalBounds();
-        sprCorals->setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        sprCorals->setPosition({ (WindowWidth - 2) / 2.f, 315.f });
+        sprCorals->setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        sprCorals->setPosition({(WindowWidth - 2) / 2.f, 315.f});
         sprCorals->setColor(Color(255, 255, 255, 175));
     }
-    if (texTitle.loadFromFile("Assets/Options/options_title.png")) { // [MODIFIED] Corrected path
+    if (texTitle.loadFromFile("Assets/Options/options_title.png"))
+    { // [MODIFIED] Corrected path
         texTitle.setSmooth(true);
         sprTitle.emplace(texTitle);
         FloatRect b = sprTitle->getLocalBounds();
-        sprTitle->setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        sprTitle->setPosition({ WindowWidth / 2.f, 100.f });
-        sprTitle->setScale({ 1.f, 1.f });
+        sprTitle->setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        sprTitle->setPosition({WindowWidth / 2.f, 100.f});
+        sprTitle->setScale({1.f, 1.f});
     }
-    if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg")) { // [MODIFIED] Corrected path
+    if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
+    { // [MODIFIED] Corrected path
         waterloop.emplace(WaterSound);
         waterloop->setLooping(true);
     }
     (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg"); // [MODIFIED] Corrected path
     (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg"); // [MODIFIED] Corrected path
-    (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg"); // [MODIFIED] Corrected path
-    (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg"); // [MODIFIED] Corrected path
+    (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");     // [MODIFIED] Corrected path
+    (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");     // [MODIFIED] Corrected path
     nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
-    (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png"); // [MODIFIED] Corrected path
-    (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png"); // [MODIFIED] Corrected path
+    (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png");     // [MODIFIED] Corrected path
+    (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png");        // [MODIFIED] Corrected path
     (void)texCheckedNormal.loadFromFile("Assets/Options/shell_checkbtnchecked_normal.png"); // [MODIFIED] Corrected path
-    (void)texCheckedHover.loadFromFile("Assets/Options/_shell_checkbtnchecked_high.png"); // [MODIFIED] Corrected path
-    (void)texDoneNormal.loadFromFile("Assets/Options/done_normal.png"); // [MODIFIED] Corrected path
-    (void)texDoneHover.loadFromFile("Assets/Options/done_hover.png"); // [MODIFIED] Corrected path
-    texUncheckedNormal.setSmooth(true); texUncheckedHover.setSmooth(true);
-    texCheckedNormal.setSmooth(true); texCheckedHover.setSmooth(true);
-    texDoneNormal.setSmooth(true); texDoneHover.setSmooth(true);
+    (void)texCheckedHover.loadFromFile("Assets/Options/_shell_checkbtnchecked_high.png");   // [MODIFIED] Corrected path
+    (void)texDoneNormal.loadFromFile("Assets/Options/done_normal.png");                     // [MODIFIED] Corrected path
+    (void)texDoneHover.loadFromFile("Assets/Options/done_hover.png");                       // [MODIFIED] Corrected path
+    texUncheckedNormal.setSmooth(true);
+    texUncheckedHover.setSmooth(true);
+    texCheckedNormal.setSmooth(true);
+    texCheckedHover.setSmooth(true);
+    texDoneNormal.setSmooth(true);
+    texDoneHover.setSmooth(true);
     Color paleText(225, 235, 245);
     mouseLabel.emplace(globalFont);
     mouseLabel->setString("Mouse Speed:");
@@ -2068,52 +2085,57 @@ void StartOptions()
     versionLabel.emplace(globalFont);
     versionLabel->setString("Game Version: 1.0.0");
     versionLabel->setCharacterSize(16);
-    versionLabel->setPosition({ 170.f, 423.f });
+    versionLabel->setPosition({170.f, 423.f});
     versionLabel->setFillColor(Color(200, 210, 220));
-    const char* labels[] = { "Sound:", "Music:", "Full Screen:", "Slow", "", "", "Fast", "Low", "", "High", "Done" };
-    for (int i = 0; i < NumOptions; i++) {
+    const char *labels[] = {"Sound:", "Music:", "Full Screen:", "Slow", "", "", "Fast", "Low", "", "High", "Done"};
+    for (int i = 0; i < NumOptions; i++)
+    {
         OptionButtons[i].text.emplace(globalFont);
         OptionButtons[i].text->setString(labels[i]);
         OptionButtons[i].isCheckbox = true;
         OptionButtons[i].isHovered = false;
         OptionButtons[i].checkbox.emplace(texUncheckedNormal);
-        if (i < 3) {
+        if (i < 3)
+        {
             OptionButtons[i].isChecked = (i != 2);
             OptionButtons[i].text->setCharacterSize(22);
             OptionButtons[i].text->setFillColor(paleText);
             float yPos = POS_Y_TOP_OPTIONS + (i * LAYOUT_ROW_SPACING);
             setRightAligned(OptionButtons[i].text, LAYOUT_LABEL_X, yPos);
-            OptionButtons[i].checkbox->setPosition({ LAYOUT_BUBBLE_START_X, yPos + 7.f });
+            OptionButtons[i].checkbox->setPosition({LAYOUT_BUBBLE_START_X, yPos + 7.f});
         }
-        else if (i >= 3 && i <= 6) {
+        else if (i >= 3 && i <= 6)
+        {
             OptionButtons[i].isChecked = (i == 3);
             OptionButtons[i].text->setCharacterSize(14);
             OptionButtons[i].text->setFillColor(paleText);
             float startX = LAYOUT_BUBBLE_START_X + ((i - 3) * LAYOUT_COL_SPACING);
-            OptionButtons[i].checkbox->setPosition({ startX, POS_Y_MOUSE_SPEED + 7.f });
+            OptionButtons[i].checkbox->setPosition({startX, POS_Y_MOUSE_SPEED + 7.f});
             setTopCentered(OptionButtons[i].text, startX, POS_Y_MOUSE_SPEED + 20.f);
         }
-        else if (i >= 7 && i <= 9) {
+        else if (i >= 7 && i <= 9)
+        {
             OptionButtons[i].isChecked = (i == 9);
             OptionButtons[i].text->setCharacterSize(14);
             OptionButtons[i].text->setFillColor(paleText);
             float startX = LAYOUT_BUBBLE_START_X + ((i - 7) * LAYOUT_COL_SPACING);
-            OptionButtons[i].checkbox->setPosition({ startX, POS_Y_GAME_DETAIL + 7.f });
+            OptionButtons[i].checkbox->setPosition({startX, POS_Y_GAME_DETAIL + 7.f});
             setTopCentered(OptionButtons[i].text, startX, POS_Y_GAME_DETAIL + 20.f);
         }
-        else {
+        else
+        {
             OptionButtons[i].isCheckbox = false;
             OptionButtons[i].checkbox->setTexture(texDoneNormal, true);
             FloatRect plankBounds = OptionButtons[i].checkbox->getLocalBounds();
-            OptionButtons[i].checkbox->setOrigin({ plankBounds.size.x / 2.f, plankBounds.size.y / 2.f });
-            OptionButtons[i].checkbox->setPosition({ WindowWidth / 2.f, 450.f });
+            OptionButtons[i].checkbox->setOrigin({plankBounds.size.x / 2.f, plankBounds.size.y / 2.f});
+            OptionButtons[i].checkbox->setPosition({WindowWidth / 2.f, 450.f});
             OptionButtons[i].text->setCharacterSize(26);
             OptionButtons[i].text->setFillColor(Color(180, 255, 50));
             OptionButtons[i].text->setOutlineColor(Color(80, 40, 0));
             OptionButtons[i].text->setOutlineThickness(3.f);
             FloatRect textBounds = OptionButtons[i].text->getLocalBounds();
-            OptionButtons[i].text->setOrigin({ textBounds.size.x / 2.f, textBounds.size.y / 2.f });
-            OptionButtons[i].text->setPosition({ WindowWidth / 2.f, 445.f });
+            OptionButtons[i].text->setOrigin({textBounds.size.x / 2.f, textBounds.size.y / 2.f});
+            OptionButtons[i].text->setPosition({WindowWidth / 2.f, 445.f});
         }
     }
 }
@@ -2130,38 +2152,51 @@ void UpdateOptions()
         bool overText = OptionButtons[i].text && OptionButtons[i].text->getGlobalBounds().contains(MousePosition);
         bool overBubble = false;
         bool overDoneButton = false;
-        if (OptionButtons[i].isCheckbox && OptionButtons[i].checkbox) {
+        if (OptionButtons[i].isCheckbox && OptionButtons[i].checkbox)
+        {
             Vector2f pos = OptionButtons[i].checkbox->getPosition();
-            if (abs(MousePosition.x - pos.x) < 16.f && abs(MousePosition.y - pos.y) < 16.f) overBubble = true;
+            if (abs(MousePosition.x - pos.x) < 16.f && abs(MousePosition.y - pos.y) < 16.f)
+                overBubble = true;
         }
-        else if (!OptionButtons[i].isCheckbox && i == 10 && OptionButtons[i].checkbox) {
-            if (OptionButtons[i].checkbox->getGlobalBounds().contains(MousePosition)) overDoneButton = true;
+        else if (!OptionButtons[i].isCheckbox && i == 10 && OptionButtons[i].checkbox)
+        {
+            if (OptionButtons[i].checkbox->getGlobalBounds().contains(MousePosition))
+                overDoneButton = true;
         }
         if (overText || overBubble || overDoneButton)
         {
             OptionButtons[i].isHovered = true;
             if (currentMousePressed && !prevMousePressed)
             {
-                if (i == 10) {
+                if (i == 10)
+                {
                     // Done button: return to main menu
                     MainMenu(); // [MODIFIED] Replaced window.close()
                     return;
                 }
-                else if (i >= 3 && i <= 6) {
-                    for (int j = 3; j <= 6; j++) OptionButtons[j].isChecked = false;
+                else if (i >= 3 && i <= 6)
+                {
+                    for (int j = 3; j <= 6; j++)
+                        OptionButtons[j].isChecked = false;
                     OptionButtons[i].isChecked = true;
                     MSpeedIndex = (i - 3) + 1;
                 }
-                else if (i >= 7 && i <= 9) {
-                    for (int j = 7; j <= 9; j++) OptionButtons[j].isChecked = false;
+                else if (i >= 7 && i <= 9)
+                {
+                    for (int j = 7; j <= 9; j++)
+                        OptionButtons[j].isChecked = false;
                     OptionButtons[i].isChecked = true;
                     GraphicsIndex = i - 7;
                 }
-                else {
+                else
+                {
                     OptionButtons[i].isChecked = !OptionButtons[i].isChecked;
-                    if (i == 2) {
-                        if (OptionButtons[i].isChecked) window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2 - Options", State::Fullscreen);
-                        else window.create(VideoMode({ (unsigned int)WindowWidth, (unsigned int)WindowHeight }), "Feeding Frenzy 2 - Options", State::Windowed);
+                    if (i == 2)
+                    {
+                        if (OptionButtons[i].isChecked)
+                            window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2 - Options", State::Fullscreen);
+                        else
+                            window.create(VideoMode({(unsigned int)WindowWidth, (unsigned int)WindowHeight}), "Feeding Frenzy 2 - Options", State::Windowed);
                         view.setSize(Vector2f(window.getSize()));
                         window.setFramerateLimit(60);
                         window.setView(view);
@@ -2173,19 +2208,27 @@ void UpdateOptions()
         {
             OptionButtons[i].isHovered = false;
         }
-        if (!OptionButtons[i].isCheckbox && OptionButtons[i].text) {
-            if (OptionButtons[i].isHovered) OptionButtons[i].text->setFillColor(Color(240, 210, 0));
-            else OptionButtons[i].text->setFillColor(Color(180, 255, 50));
+        if (!OptionButtons[i].isCheckbox && OptionButtons[i].text)
+        {
+            if (OptionButtons[i].isHovered)
+                OptionButtons[i].text->setFillColor(Color(240, 210, 0));
+            else
+                OptionButtons[i].text->setFillColor(Color(180, 255, 50));
         }
     }
-    if (OptionButtons[0].isChecked) {
-        if (waterloop && waterloop->getStatus() != Sound::Status::Playing) {
+    if (OptionButtons[0].isChecked)
+    {
+        if (waterloop && waterloop->getStatus() != Sound::Status::Playing)
+        {
             waterloop->play();
         }
-        if (sfxTimer.getElapsedTime().asSeconds() > nextSfxDelay) {
+        if (sfxTimer.getElapsedTime().asSeconds() > nextSfxDelay)
+        {
             int randomBuffer = rand() % NUM_SFX_BUFFERS;
-            for (int c = 0; c < NUM_SOUND_CHANNELS; c++) {
-                if (!sfxChannels[c] || sfxChannels[c]->getStatus() == Sound::Status::Stopped) {
+            for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
+            {
+                if (!sfxChannels[c] || sfxChannels[c]->getStatus() == Sound::Status::Stopped)
+                {
                     sfxChannels[c].emplace(sfxBuffers[randomBuffer]);
                     float randomPitch = (rand() % 30 + 85) / 100.f;
                     sfxChannels[c]->setPitch(randomPitch);
@@ -2198,22 +2241,30 @@ void UpdateOptions()
             nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
         }
     }
-    else {
-        if (waterloop) waterloop->stop();
-        for (int c = 0; c < NUM_SOUND_CHANNELS; c++) {
-            if (sfxChannels[c]) sfxChannels[c]->stop();
+    else
+    {
+        if (waterloop)
+            waterloop->stop();
+        for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
+        {
+            if (sfxChannels[c])
+                sfxChannels[c]->stop();
         }
     }
 
     // [ADDED] Logic for Music toggle
     isMusicEnabled = OptionButtons[1].isChecked;
-    if (isMusicEnabled) {
-        if (mainmenumusic.getStatus() != Music::Status::Playing) {
+    if (isMusicEnabled)
+    {
+        if (mainmenumusic.getStatus() != Music::Status::Playing)
+        {
             mainmenumusic.play();
         }
     }
-    else {
-        if (mainmenumusic.getStatus() == Music::Status::Playing) {
+    else
+    {
+        if (mainmenumusic.getStatus() == Music::Status::Playing)
+        {
             mainmenumusic.pause();
         }
     }
@@ -2234,53 +2285,71 @@ void DrawOptions()
 
     window.draw(screenDarkener);
     // --- UPDATED: The Bulletproof 4-Way Outline Trick ---
-    if (sprBgPlank) {
+    if (sprBgPlank)
+    {
         Sprite plankOutline = *sprBgPlank;
         // --- ALPHA LOWERED TO 90 for a softer, more transparent shadow! ---
         plankOutline.setColor(Color(0, 0, 0, 90));
         Vector2f pos = sprBgPlank->getPosition();
         float outlineThickness = 3.f; // The thickness of the shadow edge
         // Draw the soft shadow shifted in 4 directions
-        plankOutline.setPosition({ pos.x - outlineThickness, pos.y }); window.draw(plankOutline);
-        plankOutline.setPosition({ pos.x + outlineThickness, pos.y }); window.draw(plankOutline);
-        plankOutline.setPosition({ pos.x, pos.y - outlineThickness }); window.draw(plankOutline);
-        plankOutline.setPosition({ pos.x, pos.y + outlineThickness }); window.draw(plankOutline);
+        plankOutline.setPosition({pos.x - outlineThickness, pos.y});
+        window.draw(plankOutline);
+        plankOutline.setPosition({pos.x + outlineThickness, pos.y});
+        window.draw(plankOutline);
+        plankOutline.setPosition({pos.x, pos.y - outlineThickness});
+        window.draw(plankOutline);
+        plankOutline.setPosition({pos.x, pos.y + outlineThickness});
+        window.draw(plankOutline);
         // Restore original position and draw the colorful plank on top
         sprBgPlank->setPosition(pos);
         window.draw(*sprBgPlank);
     }
-    if (sprCorals) window.draw(*sprCorals);
-    if (sprTitle) window.draw(*sprTitle);
+    if (sprCorals)
+        window.draw(*sprCorals);
+    if (sprTitle)
+        window.draw(*sprTitle);
     drawTextWithShadow(window, mouseLabel);
     drawTextWithShadow(window, detailLabel);
     drawTextWithShadow(window, versionLabel);
     for (int i = 0; i < NumOptions; i++)
     {
-        if (i >= 3 && i <= 9) {
-            if (OptionButtons[i].text) drawTextWithShadow(window, OptionButtons[i].text);
+        if (i >= 3 && i <= 9)
+        {
+            if (OptionButtons[i].text)
+                drawTextWithShadow(window, OptionButtons[i].text);
         }
-        else if (i == 10) {
-            OptionButtons[i].checkbox->setScale({ 1.0f, 1.0f });
+        else if (i == 10)
+        {
+            OptionButtons[i].checkbox->setScale({1.0f, 1.0f});
             drawCenteredSprite(window, *OptionButtons[i].checkbox, texDoneNormal, 230);
-            if (OptionButtons[i].isHovered) {
-                OptionButtons[i].checkbox->setScale({ 1.05f, 1.05f });
+            if (OptionButtons[i].isHovered)
+            {
+                OptionButtons[i].checkbox->setScale({1.05f, 1.05f});
                 drawCenteredSprite(window, *OptionButtons[i].checkbox, texDoneHover, 220);
             }
             drawTextWithShadow(window, OptionButtons[i].text);
             continue;
         }
-        else {
+        else
+        {
             drawTextWithShadow(window, OptionButtons[i].text);
         }
-        if (OptionButtons[i].isCheckbox && OptionButtons[i].checkbox) {
-            if (OptionButtons[i].isHovered && OptionButtons[i].isChecked) OptionButtons[i].checkbox->setScale({ 1.1f, 1.1f });
-            else OptionButtons[i].checkbox->setScale({ 1.0f, 1.0f });
+        if (OptionButtons[i].isCheckbox && OptionButtons[i].checkbox)
+        {
+            if (OptionButtons[i].isHovered && OptionButtons[i].isChecked)
+                OptionButtons[i].checkbox->setScale({1.1f, 1.1f});
+            else
+                OptionButtons[i].checkbox->setScale({1.0f, 1.0f});
             int stateOpacity = OptionButtons[i].isHovered ? 255 : 210;
-            if (OptionButtons[i].isHovered) {
+            if (OptionButtons[i].isHovered)
+            {
                 drawCenteredSprite(window, *OptionButtons[i].checkbox, texUncheckedHover, 150);
             }
-            if (OptionButtons[i].isChecked) drawCenteredSprite(window, *OptionButtons[i].checkbox, texCheckedNormal, stateOpacity);
-            else drawCenteredSprite(window, *OptionButtons[i].checkbox, texUncheckedNormal, stateOpacity);
+            if (OptionButtons[i].isChecked)
+                drawCenteredSprite(window, *OptionButtons[i].checkbox, texCheckedNormal, stateOpacity);
+            else
+                drawCenteredSprite(window, *OptionButtons[i].checkbox, texUncheckedNormal, stateOpacity);
         }
     }
     window.display();
@@ -2293,13 +2362,15 @@ void UpdateMainMenuFish()
     MinowFishanimation();
     BarracudaFishanimation();
     QueenTriggerFish();
-    for (auto& obj : smallfishs) {
-        obj.shape.setPosition({ obj.sprite.getPosition().x, obj.sprite.getPosition().y });
+    for (auto &obj : smallfishs)
+    {
+        obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
         obj.update(286, 126);
-        if (obj.sprite.getPosition().x <= 0 || obj.sprite.getPosition().x >= WindowWidth) {
+        if (obj.sprite.getPosition().x <= 0 || obj.sprite.getPosition().x >= WindowWidth)
+        {
             obj.velocityX_AXIS *= -1;
             obj.changedir *= -1;
-            obj.sprite.setScale({ 0.2f * obj.changedir, 0.2f });
+            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
         }
     }
 }
