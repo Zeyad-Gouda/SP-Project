@@ -20,7 +20,6 @@
 using namespace std; // عشان نكتب أوامر C++ العادية بسهولة
 using namespace sf;  // عشان نستخدم أوامر SFML من غير تعقيد
 
-void PortView();
 void loading_screen();
 void StartLoadingScreen();
 void UpdateLoadingScreen();
@@ -62,6 +61,15 @@ void DrawOptions();
 // [ADDED] Forward declarations for background fish updates
 void UpdateMainMenuFish();
 void DrawMainMenuBackground();
+//sound effects for each button
+void PlayingSound();
+//function quit 
+void QuitGame();
+void StartQuit();
+void UpdateQuit();
+void DrawQuit();
+void FadeOutToBlack();
+void FadeInFromBlack();
 
 float getRandom(float min, float max)
 {
@@ -262,6 +270,8 @@ float QTvelocityX_AXIS = -2;
 float QTvelocityY_AXIS = -2;
 RectangleShape n;
 int num = 0;
+//sound (repeating flag)
+bool playsound = 1;
 //================================= Switch User ==================================
 Texture FullTex;
 Sprite Full(FullTex);
@@ -350,6 +360,29 @@ Sprite pearlSprite1(pearlTexture);
 Sprite pearlSprite2(pearlTexture);
 Sprite pearlSprite3(pearlTexture);
 Sprite pearlSprite4(pearlTexture);
+
+//exit
+Texture quit_bg("Assets/Quit/bg_quit.png");
+Sprite quit_bg_sprite(quit_bg);
+Texture quit_button("Assets/Quit/Button.png");
+Sprite quit_button_sprite(quit_button);
+Texture quit_button_hover("Assets/Quit/Button High.png");
+Sprite quit_button_hover_sprite(quit_button_hover);
+Texture quit_icon("Assets/Quit/quitgame_icon.png");
+Sprite quit_icon_sprite(quit_icon);
+
+// --- متغيرات خاصة بالـ Quit Screen ---
+// فلات (Flags) عشان نعرف مين اتضغط
+bool quit_yes_pressed = false;
+bool quit_no_pressed = false;
+
+// التيكست (نصوص الأزرار)
+Text quit_yes_text(btnFont, "Yes", 30);
+Text quit_no_text(btnFont, "No!", 30);
+Text quit_title_text(btnFont, "Are you sure you want to quit", 30); // <--- ضيف السطر ده
+Text quit_title_text2(btnFont, "Feeding Frenzy 2?", 30); // <--- ضيف السطر ده
+
+
 // مكان وحجم اللآلئ قبل الكسب
 sf::Vector2f lockedPos1 = {220.f, 87.f};
 sf::Vector2f lockedScale1 = {0.08f, 0.08f};
@@ -373,6 +406,7 @@ static sf::Text staticTxt(font, "");
 static sf::Text nowLoadingTxt(font, "");
 static sf::Text menuTxt(font, "");
 static sf::Text levelTxt(font, "");
+static sf::Text loadingtxt(font, "");
 bool level1Unlocked = true;
 bool level2Unlocked = false;
 bool level3Unlocked = false;
@@ -395,6 +429,61 @@ PearlData pearls[] = {
     {&pearlSprite3, 25.f, "Level 3", &level3Unlocked, lockedPos3, lockedScale3, unlockedPos3, unlockedScale3},
     {&pearlSprite4, 25.f, "Level 4", &level4Unlocked, lockedPos4, lockedScale4, unlockedPos4, unlockedScale4},
 };
+
+// =====================================================================
+// SECTION 1: CORE CONFIGURATION & LAYOUT SETTINGS
+// Contains the hardcoded layout values. Change these to shift the menu!
+// =====================================================================
+const float LAYOUT_LABEL_X = 370.f;        // Right-aligned edge for text (Sound:, Music:)
+const float LAYOUT_BUBBLE_START_X = 390.f; // X position for the first column of bubbles
+const float LAYOUT_ROW_SPACING = 45.f;     // Vertical spacing for Top 3 options
+const float LAYOUT_COL_SPACING = 43.f;     // Horizontal spacing for bubbles (Mouse Speed/Game Detail)
+const float POS_Y_TOP_OPTIONS = 170.f;     // Y start for Sound, Music, Full Screen
+const float POS_Y_MOUSE_SPEED = 310.f;     // Y position for Mouse Speed
+const float POS_Y_GAME_DETAIL = 360.f;     // Y position for Game Detail
+// =====================================================================
+// SECTION 2: GLOBAL ENGINE VARIABLES
+// Contains the Window, Camera View, and Audio systems.
+// =====================================================================
+SoundBuffer WaterSound;
+optional<Sound> waterloop;
+const int NUM_SFX_BUFFERS = 4;
+SoundBuffer sfxBuffers[NUM_SFX_BUFFERS];
+const int NUM_SOUND_CHANNELS = 5;
+optional<Sound> sfxChannels[NUM_SOUND_CHANNELS];
+Clock sfxTimer;
+float nextSfxDelay = 0.f;
+// =====================================================================
+// SECTION 3: ASSETS & UI STATE
+// Contains all loaded Fonts, Textures, Sprites, and the UI array.
+// =====================================================================
+Font globalFont;
+RectangleShape screenDarkener;
+// Background Layers
+Texture texBgMain, texBgPlank, texTitle, texCorals;
+optional<Sprite> sprBgMain, sprBgPlank, sprTitle, sprCorals;
+// Standalone Labels
+optional<Text> mouseLabel, detailLabel, versionLabel;
+// Button Textures
+Texture texUncheckedNormal, texUncheckedHover;
+Texture texCheckedNormal, texCheckedHover;
+Texture texDoneNormal, texDoneHover;
+// Menu Data Structure
+struct MenuOption
+{
+    optional<Text> text;
+    optional<Sprite> checkbox;
+    bool isChecked = false;
+    bool isHovered = false;
+    bool isCheckbox = true;
+};
+const int NumOptions = 11;
+MenuOption OptionButtons[NumOptions];
+int MSpeedIndex = 1;
+int GraphicsIndex = 2;
+bool prevMousePressed = false;
+bool shouldCloseOptions = false; // متغير للتحكم في الخروج من الـ Options
+
 // متغيرات الـ loading bar - عدل هنا
 float barX = 258.f;     // مكان البار من الشمال
 float barY = 495.f;     // مكان البار من فوق
@@ -404,48 +493,65 @@ float barSpeed = 150.f; // سرعة الـ loading
 // بيانات حالة الـ loading
 bool isLoading = false;
 float loadProgress = 0.f;
+
+// متغيرات الـ Fade Transition
+RectangleShape fadeRect;
+Clock fadeClock;
+bool isFadingOut = false; // هل احنا في مرحلة التلاشي للأسود؟
+bool isFadingIn = false;  // هل احنا في مرحلة الظهور من الأسود؟
+float fadeAlpha = 0.f;    // درجة اللون (من 0 لـ 255)
+
+
 int main()
 {
     cout << "SFML 3.0 and Standard Library are working!" << endl;
+
+    // [تعديل] فتح الشاشة في وضع Full Screen مباشرة
+    window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2", State::Fullscreen);
+
     StartLoadingScreen();
     Clock clock;
     Clock totalClock;
+
+    // [تعديل] تجهيز مستطيل التلاشي (Fade Overlay)
+    fadeRect.setSize({WindowWidth, WindowHeight});
+    fadeRect.setFillColor(Color(0, 0, 0, 0)); // أسود بشفافية صفر
+    fadeRect.setPosition({0.f, 0.f});
+
+    // [تعديل] ضبط الكاميرا: هنا بنلغي حسابات النسبة ونخليه يملأ الشاشة خالص
     view.setSize({800.f, 600.f});
     view.setCenter({400.f, 300.f});
+    // ده السطر السحري اللي بيخلي الشاشة تتمدد وتملى الفراغات
+    view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
+    
+    window.setView(view);
+    window.setFramerateLimit(60); 
+
     // ── Loading Screen Loop ──
     while (window.isOpen())
     {
+        // ... باقي كود الـ main زي ما هو ...
         deltaTime = clock.restart().asSeconds();
         float totalTime = totalClock.getElapsedTime().asSeconds();
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
                 window.close();
-            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
-            {
-                float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
-                float viewRatio = 800.f / 600.f;
-                float sizeX = 1.f, sizeY = 1.f, posX = 0.f, posY = 0.f;
-                if (windowRatio > viewRatio)
-                {
-                    sizeX = viewRatio / windowRatio;
-                    posX = (1.f - sizeX) / 2.f;
-                }
-                else
-                {
-                    sizeY = windowRatio / viewRatio;
-                    posY = (1.f - sizeY) / 2.f;
-                }
-                view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
-            }
+             else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+             {
+                 // هنا كمان نضبط الـ Viewport عشان نضمن إنه مبيحسبش نسب
+                 view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
+             }
         }
         window.setView(view);
         window.clear(Color::Black);
-        if (DrawLoadingScreen(totalTime)) // returns true when loading is done
+        if (DrawLoadingScreen(totalTime))
             break;
     }
+
     // ── Main Menu Loop ──
     MainMenu();
+     
     window.setFramerateLimit(30);
     while (window.isOpen())
     {
@@ -474,7 +580,7 @@ void loading_screen()
         cout << "!!! Error: Could not find loadbg.png !!!" << endl; // لو مش موجودة اطبع غلط
     }
     Background_Loading_sprite.setTexture(Background_Loading); // ربط الصورة بالجسم
-    Background_Loading_sprite.setPosition({0, 0});            // حطها في ركن الشاشة
+    Background_Loading_sprite.setPosition({0, 0});         // حطها في ركن الشاشة
     Vector2u texture_Size = Background_Loading.getSize();     // هات مقاسها الحقيقي
     float ScaleX = WindowWidth / texture_Size.x;              // احسب نسبة التكبير بالعرض
     float ScaleY = WindowHeight / texture_Size.y;             // احسب نسبة التكبير بالطول
@@ -779,127 +885,192 @@ bool DrawLoadingScreen(float totalTime)
             }
         }
     }
+// --- منطق الـ Fade Out والخروج ---
     if (particlesFinished)
     {
-        if (!transitionStarted)
+            if (!transitionStarted)
         {
             transitionStarted = true;
-            endTimer = totalTime;
+            fadeClock.restart(); 
+            fadeAlpha = 0.f;
         }
-        if (totalTime - endTimer >= 0.00001f)
-        {
-            window.clear(Color::Black);
-            window.display();
-            return true; // ← loading screen DONE
-        }
-    }
-    window.display();
-    return false; // ← still loading
+
+        // نفس منطق الـ Loading Screen بالظبط
+        fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+        
+        window.draw(fadeRect);
+        window.display();
+
+        if (fadeAlpha >= 255.f)
+            return true;
+
+        return false;
+}
+window.display();
+return false;
 }
 void MainMenu()
 {
+    // ضبط الكاميرا للملء الكامل
+    view.setSize({WindowWidth, WindowHeight});
+    view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
+    view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+    
+    window.setView(view);
     StartMainMenu();
+
+    // [تعديل] بداية الظهور من الأسود
+    FadeInFromBlack();
+
+    Clock frameClock; 
+
+
     while (window.isOpen())
     {
-        // totaltime += dt;
+        // ... (Events) ...
+        
+        // بعد ما تطلع من الـ Events:
+        deltaTime = frameClock.restart().asSeconds();
+        totaltime += deltaTime;
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape))
             {
                 window.close();
             }
+            
+            // [تعديل مهم] الكود كله جوه الـ MouseButtonReleased
             if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
             {
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
-                    if (startgamebutton.getGlobalBounds().contains(mousePos))
+
+                    // --- زرار Start Game / Time Attack ---
+                    if (startgamebutton.getGlobalBounds().contains(mousePos) || timeattackbutton.getGlobalBounds().contains(mousePos))
                     {
-                        cout << "Start Game Clicked!" << endl;
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                        FadeOutToBlack();
+
+                        // 2. ننتقل للشاشة الجديدة
                         Select_level();
-                        return;
+
+                        // 3. لما نرجع، نعمل Fade In تاني
+                        FadeInFromBlack();
                     }
+
+                    // --- زرار Switch User ---
                     if (switchuserbutton.getGlobalBounds().contains(mousePos))
                     {
-                        cout << "Switch User Clicked!" << endl;
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                        FadeOutToBlack();
+
+                        // 2. ننتقل للشاشة الجديدة
                         SwitchUser();
-                        return;
+
+                        // 3. لما نرجع، نعمل Fade In تاني
+                        FadeInFromBlack();
                     }
-                    // [ADDED] Options button click handler (placed right after switchuser check)
+
+                    // --- زرار Options ---
                     if (optionsbutton.getGlobalBounds().contains(mousePos))
                     {
-                        OptionsMenu();
-                        return;
+                    // 1. عمل Fade Out باستخدام الدالة الجديدة
+                    FadeOutToBlack();
+
+                    // 2. ننتقل للشاشة الجديدة
+                    OptionsMenu();
+
+                    // 3. لما نرجع، نعمل Fade In تاني
+                    FadeInFromBlack();
+                    }
+
+                    // --- زرار Quit ---
+                    if (quitbutton.getGlobalBounds().contains(mousePos))
+                    {
+                    // 1. عمل Fade Out باستخدام الدالة الجديدة
+                    FadeOutToBlack();
+
+                    // 2. ننتقل للشاشة الجديدة
+                    QuitGame();
+
+                    // 3. لما نرجع، نعمل Fade In تاني
+                    FadeInFromBlack();
                     }
                 }
             }
+
             else if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
-                float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
-                float viewRatio = 800.f / 600.f;
-                float sizeX = 1.f, sizeY = 1.f, posX = 0.f, posY = 0.f;
-                if (windowRatio > viewRatio)
-                {
-                    sizeX = viewRatio / windowRatio;
-                    posX = (1.f - sizeX) / 2.f;
-                }
-                else
-                {
-                    sizeY = windowRatio / viewRatio;
-                    posY = (1.f - sizeY) / 2.f;
-                }
-                view.setViewport(sf::FloatRect({posX, posY}, {sizeX, sizeY}));
+                view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
             }
-            window.setView(view);
-            window.clear(Color::Black);
         }
-        background.setTexture(mainbackground);
+        
         window.setView(view);
+        background.setTexture(mainbackground);
         UpdateMainMenu();
-        DrawMainMenu();
+        DrawMainMenu(); // بتعمل display برضو
+
+        // [تعديل] رسم الـ Fade In (ظهور من السواد) فوق كل حاجة
+        if (fadeAlpha > 0.f)
+        {
+            fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
+            fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+            window.draw(fadeRect);
+            window.display();
+        }
     }
 }
 void StartMainMenu()
 {
+    if (!swayShader.loadFromFile("sway.frag", Shader::Type::Fragment))
+    {                                            // تحميل كود حركة المية
+        cout << "Error loading shader!" << endl; // لو مش موجود اطبع غلط
+    }
+
+    smallfishs.clear();
     // [MODIFIED] Check if music is enabled before playing
     if (isMusicEnabled && mainmenumusic.getStatus() != Music::Status::Playing)
         mainmenumusic.play();
     mainmenumusic.setLooping(true);
+
     srand(time(0));
-    // creating small fish objects
-    for (int i = 0; i < 3; i++)
+	// creating small fish objects
+    for (int i = 0; i < 8; i++)
     {
-        AnimatedObject obj{minowfishtex, 286, 126};
-        obj.velocityX_AXIS = -2;
-        obj.changedir = 1;
-        obj.shape.setFillColor(Color::Green);
-        obj.shape.setSize(Vector2f{57, 25});
-        obj.shape.setOrigin(obj.shape.getLocalBounds().size / 2.f);
+        AnimatedObject obj{ minowfishtex  , 286,126 };
+
+        if (i == 2 || i == 4 || i == 6)
+        {
+			obj.velocityY_AXIS = -obj.velocityY_AXIS;
+        }
+
+        obj.changedir = 1; 
+        obj.shape.setFillColor(Color::Green); 
+        obj.shape.setSize (Vector2f{ 57 ,25 }); 
+        obj.shape.setOrigin(obj.shape.getLocalBounds().size / 2.f); 
         obj.sprite.setTexture(minowfishtex);
-        obj.sprite.setOrigin({285 / 2, 126 / 2});
-        obj.sprite.setPosition(Vector2f({window.getSize().x / 2.0f + 10000, window.getSize().y / 2.0f + (i * 50)}));
-        if (i == 0)
-        {
-            obj.sprite.setPosition({1100, 360});
-        }
-        if (i == 2)
-        {
-            obj.sprite.setPosition({900, 360});
-        }
-        obj.sprite.setScale({float(obj.changedir * 0.2), 0.2});
-        obj.velocity = Vector2f({obj.velocityX_AXIS, 0});
+        obj.sprite.setOrigin({ 285 / 2,126 / 2 });
+        obj.sprite.setPosition(Vector2f({ WindowWidth / 2.0f + (i * 100) , WindowHeight / 2.0f + (i * rand()%100)}));
+       
+        obj.sprite.setScale({float(obj.changedir * 0.2),0.2}); 
         smallfishs.push_back(obj);
+       
+
+
     }
-    // frame rate limit
+    
+
     window.setFramerateLimit(30);
     // set up Textures smooth
     logo.setSmooth(true);
     mainbackground.setSmooth(true);
-    // fish22.setSmooth(true);
     timeattackpressed.setSmooth(true);
-    timeattacktex.setSmooth(true);
+    timeattacktex.setSmooth(true); 
     optionstex.setSmooth(true);
-    optionspressed.setSmooth(true);
+    optionspressed.setSmooth(true); 
     quittex.setSmooth(true);
     quitpressed.setSmooth(true);
     highscorepressed.setSmooth(true);
@@ -912,103 +1083,181 @@ void StartMainMenu()
     Greenfishswim.setSmooth(true);
     Barracudatex.setRepeated(true);
     QueenTrigerTEX.setSmooth(true);
-    startgametex.setSmooth(true);
-    startgamepressed.setSmooth(true);
-    // Barracudatex.setSmooth(true);
+    startgametex.setSmooth(true); 
+    startgamepressed.setSmooth(true); 
+    
+    // ... (كود الموسيقى والـ random) ...
+
     // setting up sprites
     background.setOrigin(background.getLocalBounds().size / 2.0f);
-    background.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f}));
-    background.setScale(Vector2f({1.6f, 1.2f}));
+    // الخطأ هنا كان using window.getSize().x بدل WindowWidth
+    background.setPosition(Vector2f({ WindowWidth / 2.0f, WindowHeight / 2.0f })); 
+    // ... باقي الكود ...
+    
     logosp.setOrigin(logosp.getLocalBounds().size / 2.0f);
-    logosp.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f - 240}));
-    logosp.setScale(Vector2f({1.2f, 1.1f}));
-    Barracudacollieder.setFillColor(Color::Green);
-    Barracudacollieder.setOrigin(Barracudacollieder.getLocalBounds().size / 2.0f);
-    MFcollieder.setFillColor(Color::Green);
-    MFcollieder.setOrigin(MFcollieder.getLocalBounds().size / 2.0f);
-    Greenfish.setPosition(Vector2f({window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f}));
-    Greenfish.setOrigin(Greenfish.getLocalBounds().size / 26.f);
-    Greenfish.setScale(Vector2f({1.0f, 1.0f}));
+    logosp.setPosition(Vector2f({ WindowWidth / 2.0f, WindowHeight / 2.0f - 200 })); // تم التعديل
+
+    // ... (كود الـ Colliders) ...
+
+    Greenfish.setPosition(Vector2f({ WindowWidth / 2.0f - 300 , WindowHeight / 2.0f })); // تم التعديل
+    // ... (باقي كود الـ Greenfish) ...
+
     startgamebutton.setOrigin(startgamebutton.getLocalBounds().size / 2.0f);
-    startgamebutton.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f - 80}));
-    startgamebutton.setScale({1.5, 1.5});
+    startgamebutton.setPosition(Vector2f({ WindowWidth / 2.0f, WindowHeight / 2.0f - 50 })); // تم التعديل
+    
     timeattackbutton.setOrigin(timeattackbutton.getLocalBounds().size / 2.0f);
-    timeattackbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 10, window.getSize().y / 2.0f + 50}));
-    timeattackbutton.setScale({1.5, 1.5});
+    timeattackbutton.setPosition(Vector2f({ WindowWidth / 2.0f + 10, WindowHeight / 2.0f + 50})); // تم التعديل
+
     highscorebutton.setOrigin(highscorebutton.getLocalBounds().size / 2.0f);
-    highscorebutton.setPosition(Vector2f({window.getSize().x / 2.0f + -150, window.getSize().y / 2.0f + 140}));
-    highscorebutton.setScale({1.5, 1.5});
+    highscorebutton.setPosition(Vector2f({ WindowWidth / 2.0f + -150, WindowHeight / 2.0f + 140 })); // تم التعديل
+ 
     optionsbutton.setOrigin(optionsbutton.getLocalBounds().size / 2.0f);
-    optionsbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 120, window.getSize().y / 2.0f + 150}));
-    optionsbutton.setScale({1.5, 1.5});
+    optionsbutton.setPosition(Vector2f({ WindowWidth / 2.0f + 120, WindowHeight / 2.0f + 150 })); // تم التعديل
+
     quitbutton.setOrigin(quitbutton.getLocalBounds().size / 2.0f);
-    quitbutton.setPosition(Vector2f({window.getSize().x / 2.0f, window.getSize().y / 2.0f + 230}));
-    quitbutton.setScale({1.5, 1.5});
+    quitbutton.setPosition(Vector2f({ WindowWidth / 2.0f  , WindowHeight / 2.0f + 230 })); // تم التعديل
+
     switchuserbutton.setOrigin(switchuserbutton.getLocalBounds().size / 2.0f);
-    switchuserbutton.setPosition(Vector2f({window.getSize().x / 2.0f + 460, window.getSize().y / 2.0f + 300}));
-    switchuserbutton.setScale({1.5, 1.5});
+    switchuserbutton.setPosition(Vector2f({ WindowWidth / 2.0f + 300, WindowHeight / 2.0f + 250 })); // تم التعديل
+  
     creditsbutton.setOrigin(creditsbutton.getLocalBounds().size / 2.0f);
-    creditsbutton.setPosition(Vector2f({window.getSize().x / 2.0f - 450, window.getSize().y / 2.0f + 290}));
-    creditsbutton.setScale({1.5, 1.5});
-    Minowfish.setPosition(Vector2f({window.getSize().x / 2.0f - 300, window.getSize().y / 2.0f}));
-    Minowfish.setOrigin({285 / 2, 126 / 2});
-    Minowfish.setScale({0.2, 0.2});
-    Barracuda.setPosition(Vector2f({window.getSize().x / 2.0f + 400, window.getSize().y / 2.0f}));
-    Barracuda.setOrigin(Barracuda.getLocalBounds().size / 28.f);
-    QueenTrigger.setOrigin({298 / 2, 216 / 2});
-    QueenTriggercollieder.setFillColor(Color::Green);
-    QueenTriggercollieder.setOrigin(QueenTriggercollieder.getLocalBounds().size / 2.0f);
-    QueenTrigger.setPosition({1450, 360});
-    b.setFillColor(Color::Red);
-    b.setOrigin(b.getLocalBounds().size / 2.f);
-    b.setPosition({1280, 720});
-    // Barracuda.setScale({2,2});
+    creditsbutton.setPosition(Vector2f({ WindowWidth / 2.0f - 300, WindowHeight / 2.0f + 240 })); // تم التعديل
+
+    // ... (كود الـ Barracuda) ...
+    Barracuda.setPosition(Vector2f({ WindowWidth / 2.f - 700 , WindowHeight / 2.f - 200})); // تم التعديل
+    
+    // ... (كود الـ QueenTrigger) ...
+    QueenTrigger.setPosition({1450, 360}); // هنا المفروض تعدله عشان يظهر جوه الشاشة، مثلاً:
+    // QueenTrigger.setPosition({ WindowWidth - 100.f, WindowHeight / 2.f }); 
+    // (لكن سيب زي ما هو لو عايزاه يظهر من بره)
 }
+   
 void UpdateMainMenu()
 {
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
-    // COLLIDERS UPDATE
-    Barracudacollieder.setPosition(Vector2f(Barracuda.getPosition().x, Barracuda.getPosition().y + 50));
-    QueenTriggercollieder.setPosition(Vector2f(QueenTrigger.getPosition().x, QueenTrigger.getPosition().y));
-    MFcollieder.setPosition(Vector2f(Minowfish.getPosition().x, Minowfish.getPosition().y));
-    // mouse position
-    Vector2i mouseLocalPos = Mouse::getPosition(window); // Get the mouse position relative to the window
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
-    // MOVING THE SMALL FISHES AND THIER ANIMATION AND CHANGING DIRECTION IF THEY HIT THE WALL
-    for (auto &obj : smallfishs)
+	// COLLIDERS UPDATE
+    if (Barracuda.getScale().x == -1)
     {
-        obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+        Barracudacollieder.setPosition(Vector2f(Barracuda.getPosition().x + 80, Barracuda.getPosition().y + 35));
+
+    }
+    else
+    {
+        Barracudacollieder.setPosition(Vector2f(Barracuda.getPosition().x - 80, Barracuda.getPosition().y + 35));
+    }
+    QueenTriggercollieder.setPosition(Vector2f(QueenTrigger.getPosition().x, QueenTrigger.getPosition().y ));
+    MFcollieder.setPosition(Vector2f(Minowfish.getPosition().x, Minowfish.getPosition().y ));
+    // mouse position 
+    Vector2i mouseLocalPos = Mouse::getPosition(window); // Get the mouse position relative to the window
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
+    
+	// MOVING THE SMALL FISHES AND THIER ANIMATION AND CHANGING DIRECTION IF THEY HIT THE WALL
+    for (auto& obj : smallfishs)
+    {
+        obj.shape.setPosition({ obj.sprite.getPosition().x, obj.sprite.getPosition().y });
         obj.update(286, 126);
-        if (obj.sprite.getPosition().x == window.getPosition().x - 580 || obj.sprite.getPosition().x == window.getPosition().y + 580)
+        if (obj.sprite.getPosition().x == window.getPosition().x -450 || obj.sprite.getPosition().x == window.getPosition().x + 450 )
         {
             obj.velocityX_AXIS *= -1;
+           
+
             obj.changedir *= -1;
-            obj.velocity = Vector2f({obj.velocityX_AXIS, 0});
-            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
+
+            
+            obj.sprite.setScale({ float(0.2 * obj.changedir), 0.2 });
+
+
+
         }
+        if (obj.sprite.getPosition().y == window.getPosition().y - 300 || obj.sprite.getPosition().y == window.getPosition().y + 300)
+        {
+            obj.velocityY_AXIS *= -1;
+            obj.velocityX_AXIS *= -1;
+            obj.changedir *= -1;
+            obj.sprite.setScale({ float(0.2 * obj.changedir), 0.2 });
+
+
+        }
+
     }
-    MainMenuFishAnimation();
+    //GreenfishAnimation();
+    PlayingSound();
+    //MinowFishanimation(); 
     ChangingButtonShape();
+    BarracudaFishanimation();
+    QueenTriggerFish();
 }
+
+void ChangingButtonShape()
+{
+    Vector2i mouseLocalPos = Mouse::getPosition(window);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
+
+    // زرار Start Game
+    if (startgamebutton.getGlobalBounds().contains(mouseWorldPos))
+        startgamebutton.setTexture(startgamepressed);
+    else
+        startgamebutton.setTexture(startgametex);
+
+    // زرار Time Attack
+    if (timeattackbutton.getGlobalBounds().contains(mouseWorldPos))
+        timeattackbutton.setTexture(timeattackpressed);
+    else
+        timeattackbutton.setTexture(timeattacktex);
+
+    // زرار High Score
+    if (highscorebutton.getGlobalBounds().contains(mouseWorldPos))
+        highscorebutton.setTexture(highscorepressed);
+    else
+        highscorebutton.setTexture(highscoretex);
+
+    // زرار Options
+    if (optionsbutton.getGlobalBounds().contains(mouseWorldPos))
+        optionsbutton.setTexture(optionspressed);
+    else
+        optionsbutton.setTexture(optionstex);
+
+    // زرار Quit
+    if (quitbutton.getGlobalBounds().contains(mouseWorldPos))
+        quitbutton.setTexture(quitpressed);
+    else
+        quitbutton.setTexture(quittex);
+
+    // زرار Switch User
+    if (switchuserbutton.getGlobalBounds().contains(mouseWorldPos))
+        switchuserbutton.setTexture(switchuserpressed);
+    else
+        switchuserbutton.setTexture(switchusertex);
+
+    // زرار Credits
+    if (creditsbutton.getGlobalBounds().contains(mouseWorldPos))
+        creditsbutton.setTexture(creditspressed);
+    else
+        creditsbutton.setTexture(creditstex);
+}
+
 void DrawMainMenuBackground()
 {
+    window.setView(view);
     window.clear();
-    window.draw(background);
-    window.draw(Greenfish);
+    swayShader.setUniform("time", totaltime); // تحديث الوقت للـ Shader
+    window.draw(background, &swayShader);
+    // window.draw(Greenfish);
     // window.draw(MFcollieder);
     // window.draw(QueenTriggercollieder);
     window.draw(QueenTrigger);
-    window.draw(Minowfish);
-    MainMenuFishAnimation();
+    // window.draw(Minowfish);
+    // MainMenuFishAnimation();
     for (auto &obj : smallfishs)
         window.draw(obj.sprite);
-    window.draw(n);
+    // window.draw(n);
     // window.draw(Barracudacollieder);
     window.draw(Barracuda);
-    window.draw(b);
+    // window.draw(b);
 }
 void DrawMainMenu()
 {
+    window.setView(view);
     DrawMainMenuBackground();
     window.draw(startgamebutton);
     window.draw(timeattackbutton);
@@ -1079,64 +1328,67 @@ void GreenfishAnimation()
         }
     }
 }
-void ChangingButtonShape()
+void PlayingSound()
 {
-    Vector2i mouseLocalPos = Mouse::getPosition(window);
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
-    // متغيرات عشان نمنع تكرار الصوت
-    static bool wasHoveringStart = false;
-    static bool wasHoveringTime = false;
-    static bool wasHoveringHigh = false;
-    static bool wasHoveringOptions = false;
-    static bool wasHoveringQuit = false;
-    static bool wasHoveringSwitch = false;
-    static bool wasHoveringCredits = false;
-    // Check start game button
-    bool isHoveringStart = startgamebutton.getGlobalBounds().contains(mouseWorldPos);
-    if (isHoveringStart)
+    Vector2i mouseLocalPos = Mouse::getPosition(window); 
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
+
+    bool isHovering = false;
+
+    // 1. أزرار الـ Main Menu
+    if (startgamebutton.getGlobalBounds().contains(mouseWorldPos) || 
+        timeattackbutton.getGlobalBounds().contains(mouseWorldPos) || 
+        highscorebutton.getGlobalBounds().contains(mouseWorldPos) || 
+        optionsbutton.getGlobalBounds().contains(mouseWorldPos) || 
+        quitbutton.getGlobalBounds().contains(mouseWorldPos) || 
+        switchuserbutton.getGlobalBounds().contains(mouseWorldPos) || 
+        creditsbutton.getGlobalBounds().contains(mouseWorldPos))
     {
-        startgamebutton.setTexture(startgamepressed);
-        if (!wasHoveringStart)
+        isHovering = true;
+    }
+
+    // 2. أزرار الـ Switch User
+    if (NewButton.getGlobalBounds().contains(mouseWorldPos) ||
+        SelectButton.getGlobalBounds().contains(mouseWorldPos) ||
+        DeleteButton.getGlobalBounds().contains(mouseWorldPos))
+    {
+        isHovering = true;
+    }
+
+    // 3. أزرار شاشة Quit (هنفحص التيكست لأنه اللي ثابت)
+    if (quit_yes_text.getGlobalBounds().contains(mouseWorldPos) ||
+        quit_no_text.getGlobalBounds().contains(mouseWorldPos))
+    {
+        isHovering = true;
+    }
+
+    // 4. زرار Back in Select Level
+    if (mySprite.getGlobalBounds().contains(mouseWorldPos))
+    {
+        isHovering = true;
+    }
+    
+    // 5. زرار Done in Options
+    // بنفحص الـ Checkbox اللي هو زرار Done
+    if (OptionButtons[10].checkbox.has_value() && 
+        OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos))
+    {
+        isHovering = true;
+    }
+
+    // لو وقف على أي زرار -> شغل الصوت مرة واحدة
+    if (isHovering)
+    {
+        if (playsound)
         {
             buttonpressedsound.play();
-            wasHoveringStart = true;
+            playsound = 0;
         }
     }
     else
     {
-        startgamebutton.setTexture(startgametex);
-        wasHoveringStart = false;
+        playsound = 1;
     }
-    // Time attack button
-    if (timeattackbutton.getGlobalBounds().contains(mouseWorldPos))
-        timeattackbutton.setTexture(timeattackpressed);
-    else
-        timeattackbutton.setTexture(timeattacktex);
-    // High score button
-    if (highscorebutton.getGlobalBounds().contains(mouseWorldPos))
-        highscorebutton.setTexture(highscorepressed);
-    else
-        highscorebutton.setTexture(highscoretex);
-    // Options button
-    if (optionsbutton.getGlobalBounds().contains(mouseWorldPos))
-        optionsbutton.setTexture(optionspressed);
-    else
-        optionsbutton.setTexture(optionstex);
-    // Quit button
-    if (quitbutton.getGlobalBounds().contains(mouseWorldPos))
-        quitbutton.setTexture(quitpressed);
-    else
-        quitbutton.setTexture(quittex);
-    // Switch user button
-    if (switchuserbutton.getGlobalBounds().contains(mouseWorldPos))
-        switchuserbutton.setTexture(switchuserpressed);
-    else
-        switchuserbutton.setTexture(switchusertex);
-    // Credits button
-    if (creditsbutton.getGlobalBounds().contains(mouseWorldPos))
-        creditsbutton.setTexture(creditspressed);
-    else
-        creditsbutton.setTexture(creditstex);
 }
 void MinowFishanimation()
 {
@@ -1275,12 +1527,20 @@ void Select_level()
         float dt = clock.restart().asSeconds();
         while (auto event = window.pollEvent())
         {
+            
             if (event->is<Event::Closed>())
                 window.close();
+            
+            else if (const auto* resizeEvent = event->getIf<Event::Resized>())
+            {
+                view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+                window.setView(view);
+            }
+
             if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
-                    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window));
+                    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
                     // زرار Back to Menu
                     if (mySprite.getGlobalBounds().contains(mf))
                     {
@@ -1318,6 +1578,8 @@ void centerText(Text &text)
 // ─── 1. StartSelectLevel ───
 void StartSelectLevel()
 {
+    isLoading = false;
+    loadProgress = 0.f; 
     // تحميل الأصول
     // 1. تحميل الخلفية
     if (!bgTexture.loadFromFile("Assets/Select_level/gamemap_bg.jpeg"))
@@ -1379,11 +1641,13 @@ void StartSelectLevel()
     font.setSmooth(true);
     // إعداد النصوص
     staticTxt = Text(font, "NEW GAME", 25);
-    staticTxt.setPosition({345.f, 495.f});
+    staticTxt.setPosition({356.f, 493.f});
     menuTxt = Text(font, "menu", 20);
     menuTxt.setPosition({390.f, 570.f});
     levelTxt = Text(font, "choose level", 24);
     centerText(levelTxt);
+    loadingtxt = Text(font, "Now Loading...", 24);
+    loadingtxt.setPosition({356.f, 493.f});
     // ملء بيانات الـ pearls من القيم اللي بعتها
     pearls[0] = {&pearlSprite1, 25.f, "Level 1", &level1Unlocked, {205.f, 75.f}, {0.13f, 0.13f}, {220.f, 100.f}, {0.13f, 0.13f}};
     pearls[1] = {&pearlSprite2, 25.f, "Level 2", &level2Unlocked, {235.f, 125.f}, {0.15f, 0.15f}, {248.f, 148.f}, {0.15f, 0.15f}};
@@ -1393,7 +1657,8 @@ void StartSelectLevel()
 // ─── 2. UpdateSelectLevel ───
 void UpdateSelectLevel(float dt)
 {
-    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window));
+    PlayingSound();
+    Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window),view);
     levelTxt.setString("choose level");
     centerText(levelTxt);
     for (int i = 0; i < 4; ++i)
@@ -1442,6 +1707,7 @@ void UpdateSelectLevel(float dt)
 // ─── 3. DrawSelectLevel ───
 void DrawSelectLevel()
 {
+    window.setView(view);
     window.clear();
     window.draw(bgSprite);
     window.draw(signSprite);
@@ -1462,6 +1728,7 @@ void DrawSelectLevel()
         bar.setScale({sx, sy});
         bar.setTextureRect(IntRect({0, 0}, {(int)(loadProgress / sx), (int)loadBarTexture.getSize().y}));
         window.draw(bar);
+        window.draw(loadingtxt);
     }
     else
     {
@@ -1469,6 +1736,7 @@ void DrawSelectLevel()
     }
     window.display();
 }
+
 void SwitchUser()
 {
     StartSwitchUser();
@@ -1548,27 +1816,15 @@ void CreateButton(Sprite &sprite, Texture &texture, const string &filePath,
 }
 void UpdateSwitchUser()
 {
-    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
+    PlayingSound();
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window),view);
     while (auto event = window.pollEvent())
     {
         if (event->is<Event::Closed>())
             window.close();
         else if (const auto *resizeEvent = event->getIf<Event::Resized>())
         {
-            float windowRatio = (float)resizeEvent->size.x / (float)resizeEvent->size.y;
-            float viewRatio = 800.f / 600.f;
-            float sizeX = 1.f, sizeY = 1.f, posX = 0.f, posY = 0.f;
-            if (windowRatio > viewRatio)
-            {
-                sizeX = viewRatio / windowRatio;
-                posX = (1.f - sizeX) / 2.f;
-            }
-            else
-            {
-                sizeY = windowRatio / viewRatio;
-                posY = (1.f - sizeY) / 2.f;
-            }
-            view.setViewport(FloatRect({posX, posY}, {sizeX, sizeY}));
+            view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
             window.setView(view);
         }
         if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
@@ -1891,80 +2147,37 @@ void DisplaySwitchUser()
 // [ADDED] Full OptionsMenu wrapper function (placed after DisplaySwitchUser)
 void OptionsMenu()
 {
+    shouldCloseOptions = false; // تصفير المتغير
     StartOptions();
-    Clock clock; // [ADDED]
+    Clock clock;
     while (window.isOpen())
     {
-        float dt = clock.restart().asSeconds(); // [ADDED]
+        float dt = clock.restart().asSeconds();
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
                 window.close();
             else if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
-                view.setSize(Vector2f(resizeEvent->size));
+                // [تعديل] هنا المشكلة التانية كانت بتحصل
+                // view.setSize(Vector2f(resizeEvent->size)); // <-- امسح السطر ده خالص أو علقه
+                view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f})); // خليه يملأ الشاشة
                 window.setView(view);
             }
         }
-        // [ADDED] Update main menu so fishes keep swimming in the background
-        UpdateMainMenuFish();
+        
+        // UpdateMainMenuFish(); // تحريك السمك
 
-        UpdateOptions();
+        UpdateOptions(); // تشغيل المنطق
+
+        // [تعديل] الخروج من اللوب لو تم الضغط على Done
+        if (shouldCloseOptions) 
+            return; // يرجع لـ MainMenu اللي كانت ناداه
+
         DrawOptions();
     }
 }
-// =====================================================================
-// SECTION 1: CORE CONFIGURATION & LAYOUT SETTINGS
-// Contains the hardcoded layout values. Change these to shift the menu!
-// =====================================================================
-const float LAYOUT_LABEL_X = 370.f;        // Right-aligned edge for text (Sound:, Music:)
-const float LAYOUT_BUBBLE_START_X = 390.f; // X position for the first column of bubbles
-const float LAYOUT_ROW_SPACING = 45.f;     // Vertical spacing for Top 3 options
-const float LAYOUT_COL_SPACING = 43.f;     // Horizontal spacing for bubbles (Mouse Speed/Game Detail)
-const float POS_Y_TOP_OPTIONS = 170.f;     // Y start for Sound, Music, Full Screen
-const float POS_Y_MOUSE_SPEED = 310.f;     // Y position for Mouse Speed
-const float POS_Y_GAME_DETAIL = 360.f;     // Y position for Game Detail
-// =====================================================================
-// SECTION 2: GLOBAL ENGINE VARIABLES
-// Contains the Window, Camera View, and Audio systems.
-// =====================================================================
-SoundBuffer WaterSound;
-optional<Sound> waterloop;
-const int NUM_SFX_BUFFERS = 4;
-SoundBuffer sfxBuffers[NUM_SFX_BUFFERS];
-const int NUM_SOUND_CHANNELS = 5;
-optional<Sound> sfxChannels[NUM_SOUND_CHANNELS];
-Clock sfxTimer;
-float nextSfxDelay = 0.f;
-// =====================================================================
-// SECTION 3: ASSETS & UI STATE
-// Contains all loaded Fonts, Textures, Sprites, and the UI array.
-// =====================================================================
-Font globalFont;
-RectangleShape screenDarkener;
-// Background Layers
-Texture texBgMain, texBgPlank, texTitle, texCorals;
-optional<Sprite> sprBgMain, sprBgPlank, sprTitle, sprCorals;
-// Standalone Labels
-optional<Text> mouseLabel, detailLabel, versionLabel;
-// Button Textures
-Texture texUncheckedNormal, texUncheckedHover;
-Texture texCheckedNormal, texCheckedHover;
-Texture texDoneNormal, texDoneHover;
-// Menu Data Structure
-struct MenuOption
-{
-    optional<Text> text;
-    optional<Sprite> checkbox;
-    bool isChecked = false;
-    bool isHovered = false;
-    bool isCheckbox = true;
-};
-const int NumOptions = 11;
-MenuOption OptionButtons[NumOptions];
-int MSpeedIndex = 1;
-int GraphicsIndex = 2;
-bool prevMousePressed = false;
+
 // =====================================================================
 // SECTION 4: HELPER UTILITY FUNCTIONS
 // Reusable code blocks for aligning text and drawing sprites cleanly.
@@ -1999,13 +2212,16 @@ void drawTextWithShadow(RenderWindow &win, optional<Text> &textObj)
         win.draw(*textObj);
     }
 }
-void drawCenteredSprite(RenderWindow &win, Sprite &sprite, Texture &tex, int alpha)
-{
-    sprite.setTexture(tex, true);
-    FloatRect b = sprite.getLocalBounds();
-    sprite.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-    sprite.setColor(Color(255, 255, 255, alpha));
-    win.draw(sprite);
+void drawCenteredSprite(sf::RenderWindow& window, sf::Sprite& sprite, sf::Texture& texture, int opacity) {
+    sprite.setTexture(texture);
+    sprite.setColor(sf::Color(255, 255, 255, opacity));
+    
+    // تأكد إنك مش بتعيد حساب الـ Origin بناء على WindowWidth القديم
+    // الـ Origin يكون نص حجم التكستشر نفسها
+    auto textureSize = sf::Vector2f(texture.getSize());
+    sprite.setOrigin(textureSize / 2.f);
+    
+    window.draw(sprite);
 }
 // =====================================================================
 // SECTION 5: INITIALIZATION (START)
@@ -2097,8 +2313,11 @@ void StartOptions()
         OptionButtons[i].checkbox.emplace(texUncheckedNormal);
         if (i < 3)
         {
-            OptionButtons[i].isChecked = (i != 2);
-            OptionButtons[i].text->setCharacterSize(22);
+            // أول خيارين (Sound و Music) يبقوا شغالين، والتالت (Full Screen) يبقى شغال برضو
+            if (i == 2) 
+                OptionButtons[i].isChecked = true; // عشان اشتغلنا Full Screen
+            else 
+                OptionButtons[i].isChecked = true; // الصوت والموسيقى            OptionButtons[i].text->setCharacterSize(22);
             OptionButtons[i].text->setFillColor(paleText);
             float yPos = POS_Y_TOP_OPTIONS + (i * LAYOUT_ROW_SPACING);
             setRightAligned(OptionButtons[i].text, LAYOUT_LABEL_X, yPos);
@@ -2145,13 +2364,16 @@ void StartOptions()
 // =====================================================================
 void UpdateOptions()
 {
-    auto MousePosition = window.mapPixelToCoords(Mouse::getPosition(window));
+    PlayingSound();
+    auto MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool currentMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
+
     for (int i = 0; i < NumOptions; i++)
     {
         bool overText = OptionButtons[i].text && OptionButtons[i].text->getGlobalBounds().contains(MousePosition);
         bool overBubble = false;
         bool overDoneButton = false;
+
         if (OptionButtons[i].isCheckbox && OptionButtons[i].checkbox)
         {
             Vector2f pos = OptionButtons[i].checkbox->getPosition();
@@ -2163,15 +2385,16 @@ void UpdateOptions()
             if (OptionButtons[i].checkbox->getGlobalBounds().contains(MousePosition))
                 overDoneButton = true;
         }
+
         if (overText || overBubble || overDoneButton)
         {
             OptionButtons[i].isHovered = true;
+
             if (currentMousePressed && !prevMousePressed)
             {
                 if (i == 10)
                 {
-                    // Done button: return to main menu
-                    MainMenu(); // [MODIFIED] Replaced window.close()
+                    shouldCloseOptions = true;
                     return;
                 }
                 else if (i >= 3 && i <= 6)
@@ -2188,19 +2411,28 @@ void UpdateOptions()
                     OptionButtons[i].isChecked = true;
                     GraphicsIndex = i - 7;
                 }
-                else
+                // [تعديل] عالجنا الـ Fullscreen لوحده عشان نضمن إنه بيملأ الشاشة
+                else if (i == 2) 
                 {
                     OptionButtons[i].isChecked = !OptionButtons[i].isChecked;
-                    if (i == 2)
-                    {
-                        if (OptionButtons[i].isChecked)
-                            window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2 - Options", State::Fullscreen);
-                        else
-                            window.create(VideoMode({(unsigned int)WindowWidth, (unsigned int)WindowHeight}), "Feeding Frenzy 2 - Options", State::Windowed);
-                        view.setSize(Vector2f(window.getSize()));
-                        window.setFramerateLimit(60);
-                        window.setView(view);
-                    }
+
+                    if (OptionButtons[i].isChecked)
+                        window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2", State::Fullscreen);
+                    else
+                        window.create(VideoMode({800, 600}), "Feeding Frenzy 2", State::Windowed);
+
+                    // ضبط الكاميرا للملء الكامل (مفيش كود نسب هنا)
+                    view.setSize({800.f, 600.f});
+                    view.setCenter({400.f, 300.f});
+                    view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+                    
+                    window.setView(view);
+                    window.setFramerateLimit(60);
+                }
+                // [تعديل] باقي الأزرار (Sound و Music)
+                else 
+                {
+                    OptionButtons[i].isChecked = !OptionButtons[i].isChecked;
                 }
             }
         }
@@ -2208,6 +2440,8 @@ void UpdateOptions()
         {
             OptionButtons[i].isHovered = false;
         }
+
+        // تغيير لون التيكست
         if (!OptionButtons[i].isCheckbox && OptionButtons[i].text)
         {
             if (OptionButtons[i].isHovered)
@@ -2216,57 +2450,32 @@ void UpdateOptions()
                 OptionButtons[i].text->setFillColor(Color(180, 255, 50));
         }
     }
+
+    // تشغيل الصوت
     if (OptionButtons[0].isChecked)
     {
         if (waterloop && waterloop->getStatus() != Sound::Status::Playing)
-        {
             waterloop->play();
-        }
-        if (sfxTimer.getElapsedTime().asSeconds() > nextSfxDelay)
-        {
-            int randomBuffer = rand() % NUM_SFX_BUFFERS;
-            for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
-            {
-                if (!sfxChannels[c] || sfxChannels[c]->getStatus() == Sound::Status::Stopped)
-                {
-                    sfxChannels[c].emplace(sfxBuffers[randomBuffer]);
-                    float randomPitch = (rand() % 30 + 85) / 100.f;
-                    sfxChannels[c]->setPitch(randomPitch);
-                    sfxChannels[c]->setVolume(50.f);
-                    sfxChannels[c]->play();
-                    break;
-                }
-            }
-            sfxTimer.restart();
-            nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
-        }
+        // ... (كود الـ SFX لو عايز تضيفه) ...
     }
     else
     {
-        if (waterloop)
-            waterloop->stop();
+        if (waterloop) waterloop->stop();
         for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
-        {
-            if (sfxChannels[c])
-                sfxChannels[c]->stop();
-        }
+            if (sfxChannels[c]) sfxChannels[c]->stop();
     }
 
-    // [ADDED] Logic for Music toggle
+    // تشغيل الموسيقى
     isMusicEnabled = OptionButtons[1].isChecked;
     if (isMusicEnabled)
     {
         if (mainmenumusic.getStatus() != Music::Status::Playing)
-        {
             mainmenumusic.play();
-        }
     }
     else
     {
         if (mainmenumusic.getStatus() == Music::Status::Playing)
-        {
             mainmenumusic.pause();
-        }
     }
 
     prevMousePressed = currentMousePressed;
@@ -2277,6 +2486,7 @@ void UpdateOptions()
 // =====================================================================
 void DrawOptions()
 {
+    window.setView(view);
     // [MODIFIED] Removed window.clear(Color::Black); and sprBgMain drawing,
     // instead we draw the main menu background to keep fishes visible.
     // window.clear(Color::Black);
@@ -2372,5 +2582,303 @@ void UpdateMainMenuFish()
             obj.changedir *= -1;
             obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
         }
+    }
+}
+
+void QuitGame()
+{
+    StartQuit();
+    
+    while (window.isOpen())
+    {
+        while (const optional event = window.pollEvent())
+        {
+            if (event->is<Event::Closed>())
+            {
+                window.close();
+                return;
+            }
+
+            // [تعديل] هنا بنستقبل حدث رفع زرار الماوس
+            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
+            {
+                if (mouseEvent->button == Mouse::Button::Left)
+                {
+                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+
+                    // لازم نحدد مكان الأزرار عشان نفحص الـ Bounds
+                    Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
+                    Vector2f noPos = {WindowWidth / 2.f + 100.f, WindowHeight / 2.f + 90.f};
+
+                    // فحص زرار Yes
+                    quit_button_sprite.setPosition(yesPos);
+                    if (quit_button_sprite.getGlobalBounds().contains(mousePos))
+                    {
+                        window.close(); // اقفل اللعبة
+                        return;
+                    }
+
+                    // فحص زرار No
+                    quit_button_sprite.setPosition(noPos);
+                    if (quit_button_sprite.getGlobalBounds().contains(mousePos))
+                    {
+                        return; // ارجع للمينيو (الـ Event اتستهلك هنا وممش هيرح للـ Menu)
+                    }
+                }
+            }
+        }
+        
+        window.setView(view); 
+        
+        UpdateQuit(); // بس خليها للرسم والـ Hover بس
+
+        DrawQuit(); 
+    }
+}
+
+void StartQuit()
+{
+    // --- [1] تحميل الخط ---
+    if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
+    {
+        cout << "Error: Could not load font!" << endl;
+    }
+
+    // --- [2] تحميل وتجهيز الخلفية ---
+    if (!quit_bg.loadFromFile("Assets/Quit/bg_quit.png")) 
+        cout << "Error Loading Quit BG!" << endl;
+    
+    quit_bg_sprite.setTexture(quit_bg);
+    quit_bg.setSmooth(true);
+
+    // تحديد حجم الخلفية
+    float targetWidth = 500.f;  
+    float targetHeight = 300.f; 
+    Vector2u texture_Size = quit_bg.getSize();
+    float ScaleX = targetWidth / texture_Size.x;
+    float ScaleY = targetHeight / texture_Size.y;
+
+    quit_bg_sprite.setOrigin({texture_Size.x / 2.f, texture_Size.y / 2.f});
+    quit_bg_sprite.setPosition({WindowWidth / 2.f, WindowHeight / 2.f});
+    quit_bg_sprite.setScale({ScaleX, ScaleY});
+
+    // --- [3] تجهيز الأيقونة ---
+    quit_icon_sprite.setOrigin({quit_icon.getSize().x / 2.f, quit_icon.getSize().y / 2.f});
+    quit_icon_sprite.setPosition({WindowWidth / 2.f, WindowHeight / 2.f - 133.f});
+    quit_icon_sprite.setScale({0.25f, 0.25f});
+
+    // --- [4] تجهيز الأزرار (Sprites) ---
+    quit_button.setSmooth(true);
+    quit_button_hover.setSmooth(true);
+    quit_button_sprite.setTexture(quit_button);
+    quit_button_hover_sprite.setTexture(quit_button_hover);
+
+    // نوسط السبرايت (الزرار نفسه)
+    Vector2f btnSize = { (float)quit_button.getSize().x, (float)quit_button.getSize().y };
+    quit_button_sprite.setOrigin({btnSize.x / 2.f, btnSize.y / 2.f});
+    quit_button_hover_sprite.setOrigin({btnSize.x / 2.f, btnSize.y / 2.f});
+
+    // --- [5] تجهيز النصوص (Texts) ---
+    
+    // 1. نص السؤال (Title)
+    quit_title_text.setFont(btnFont);
+    quit_title_text.setString("Are you sure you want to quit");
+    quit_title_text.setCharacterSize(28);
+    quit_title_text.setFillColor(Color(255, 255, 255)); // ابيض
+    quit_title_text.setOutlineThickness(2);
+    quit_title_text.setOutlineColor(Color(80, 40, 0));
+    FloatRect titleBounds = quit_title_text.getLocalBounds();
+    // معادلة التوسيط الصح في SFML 3
+    quit_title_text.setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, titleBounds.position.y + titleBounds.size.y / 2.f});
+    quit_title_text.setPosition({WindowWidth / 2.f, WindowHeight / 2.f - 30.f});
+
+    quit_title_text2.setFont(btnFont);
+    quit_title_text2.setString("Feeding Frenzy 2?");
+    quit_title_text2.setCharacterSize(28);
+    quit_title_text2.setFillColor(Color(255, 255, 255)); // ابيض
+    quit_title_text2.setOutlineThickness(2);
+    quit_title_text2.setOutlineColor(Color(80, 40, 0));
+    FloatRect titleBounds2 = quit_title_text2.getLocalBounds();
+    // معادلة التوسيط الصح في SFML 3
+    quit_title_text2.setOrigin({titleBounds2.position.x + titleBounds2.size.x / 2.f, titleBounds2.position.y + titleBounds2.size.y / 2.f});
+    quit_title_text2.setPosition({WindowWidth / 2.f, WindowHeight / 2.f + 10.f});  
+
+    // 2. زرار Yes
+    quit_yes_text.setFont(btnFont);
+    quit_yes_text.setString("Yes");
+    quit_yes_text.setCharacterSize(24);
+    // اللون الأخضر الفاتح المطلوب
+    quit_yes_text.setFillColor(Color(180, 255, 100)); 
+    quit_yes_text.setOutlineThickness(2);
+    quit_yes_text.setOutlineColor(Color(20, 60, 0));
+    
+    FloatRect yesBounds = quit_yes_text.getLocalBounds();
+    // معادلة التوسيط عشان يبقى في نص الزرار
+    quit_yes_text.setOrigin({yesBounds.position.x + yesBounds.size.x / 2.f, yesBounds.position.y + yesBounds.size.y / 2.f});
+    
+    // مكان الزرار (نزلت قيمة Y عشان ينزلوا تحت)
+    quit_yes_text.setPosition({WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f}); 
+
+
+    // 3. زرار No
+    quit_no_text.setFont(btnFont);
+    quit_no_text.setString("No!");
+    quit_no_text.setCharacterSize(24);
+    quit_no_text.setFillColor(Color(180, 255, 100)); // نفس اللون الأخضر
+    quit_no_text.setOutlineThickness(2);
+    quit_no_text.setOutlineColor(Color(20, 60, 0));
+    
+    FloatRect noBounds = quit_no_text.getLocalBounds();
+    quit_no_text.setOrigin({noBounds.position.x + noBounds.size.x / 2.f, noBounds.position.y + noBounds.size.y / 2.f});
+    
+    // مكان الزرار (نفس المستوى بتاع Yes)
+    quit_no_text.setPosition({WindowWidth / 2.f + 100.f, WindowHeight / 2.f + 90.f}); 
+
+    // تصفير الفلات
+    quit_yes_pressed = false;
+    quit_no_pressed = false;
+}
+void UpdateQuit()
+{
+    PlayingSound();
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+    
+    Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
+    Vector2f noPos = {WindowWidth / 2.f + 100.f, WindowHeight / 2.f + 90.f};
+
+    // --- منطق Hover لزرار Yes ---
+    quit_button_sprite.setPosition(yesPos);
+    FloatRect yesBounds = quit_button_sprite.getGlobalBounds();
+
+    if (yesBounds.contains(mousePos))
+    {
+        quit_yes_text.setFillColor(Color(255, 255, 0)); // أصفر
+    }
+    else
+    {
+        quit_yes_text.setFillColor(Color(180, 255, 100)); // أخضر
+    }
+
+    // --- منطق Hover لزرار No ---
+    quit_button_sprite.setPosition(noPos);
+    FloatRect noBounds = quit_button_sprite.getGlobalBounds();
+
+    if (noBounds.contains(mousePos))
+    {
+        quit_no_text.setFillColor(Color(255, 255, 0)); // أصفر
+    }
+    else
+    {
+        quit_no_text.setFillColor(Color(180, 255, 100)); // أخضر
+    }
+}
+
+void DrawQuit()
+{
+    // 1. خلفية المينيو
+    DrawMainMenuBackground();
+
+    // 2. خلفية شاشة الخروج
+    window.draw(quit_bg_sprite);
+    
+    // 3. الأيقونة
+    window.draw(quit_icon_sprite);
+
+    // 4. نص السؤال
+    window.draw(quit_title_text);
+
+    window.draw(quit_title_text2);
+
+    // 5. زرار Yes
+    Vector2f yesPos = quit_yes_text.getPosition();
+    if (quit_yes_text.getFillColor() == Color(255, 255, 0))
+    {
+        quit_button_hover_sprite.setPosition(yesPos);
+        window.draw(quit_button_hover_sprite);
+    }
+    else
+    {
+        quit_button_sprite.setPosition(yesPos);
+        window.draw(quit_button_sprite);
+    }
+    window.draw(quit_yes_text);
+
+    // 6. زرار No
+    Vector2f noPos = quit_no_text.getPosition();
+    if (quit_no_text.getFillColor() == Color(255, 255, 0))
+    {
+        quit_button_hover_sprite.setPosition(noPos);
+        window.draw(quit_button_hover_sprite);
+    }
+    else
+    {
+        quit_button_sprite.setPosition(noPos);
+        window.draw(quit_button_sprite);
+    }
+    window.draw(quit_no_text);
+    
+    window.display();
+}
+
+// دالة للتلاشي للأسود (Fade Out) - بتستخدم لما تخرج من شاشة
+void FadeOutToBlack() {
+    fadeAlpha = 0.f;
+    fadeClock.restart();
+
+    while (fadeAlpha < 255.f)
+    {
+        // نحسب الـ Alpha بنفس السرعة اللي في Loading Screen
+        fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+
+        // مهم جداً: نرسم الشاشة الحالية (المينيو) تحت الـ Overlay
+        window.setView(view);
+        UpdateMainMenuFish(); // عشان السمك يتحرك وهو بيختفي
+        DrawMainMenuBackground();
+        window.draw(startgamebutton);
+        window.draw(timeattackbutton);
+        window.draw(highscorebutton);
+        window.draw(optionsbutton);
+        window.draw(quitbutton);
+        window.draw(switchuserbutton);
+        window.draw(creditsbutton);
+        window.draw(logosp);
+
+        // نرسم المستطيل الأسود فوق كل حاجة
+        window.draw(fadeRect);
+        window.display();
+    }
+}
+
+// دالة للظهور من الأسود (Fade In) - بتستخدم لما تدخل شاشة جديدة
+void FadeInFromBlack() {
+    fadeAlpha = 255.f;
+    fadeClock.restart();
+
+    while (fadeAlpha > 0.f)
+    {
+        fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+
+        // نرسم الشاشة الجديدة (المينيو أو غيرها) تحت الـ Overlay
+        // هنا بنستدعي الـ Update و Draw اللي في اللوب اللي احنا فيه
+        // لكن عشان الدالة دي بتتستدعي من جوه اللوب، لازم نعمل الآبديت والدراو للشاشة اللي احنا فيها
+        
+        // هنحتاج نعمل Overload أو نمرر الدوال.. 
+        // بس عشان تبقى سهلة، هنعمل الكود بتاع الرسم يدوي هنا للـ Main Menu
+        window.setView(view);
+        UpdateMainMenuFish();
+        DrawMainMenuBackground();
+        window.draw(startgamebutton);
+        window.draw(timeattackbutton);
+        window.draw(highscorebutton);
+        window.draw(optionsbutton);
+        window.draw(quitbutton);
+        window.draw(switchuserbutton);
+        window.draw(creditsbutton);
+        window.draw(logosp);
+
+        window.draw(fadeRect);
+        window.display();
     }
 }
