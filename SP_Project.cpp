@@ -83,6 +83,10 @@ void Highscore();
 void StartHighscore();
 void UpdateHighscore();
 void DrawHighscore();
+void Credits();
+void StartCredits();
+bool UpdateCredits();
+void DrawCredits();
 
 float getRandom(float min, float max)
 {
@@ -515,6 +519,7 @@ bool isFadingOut = false; // هل احنا في مرحلة التلاشي للأ
 bool isFadingIn = false;  // هل احنا في مرحلة الظهور من الأسود؟
 float fadeAlpha = 0.f;    // درجة اللون (من 0 لـ 255)
 
+
 // highscore
 // --- Global Data Structures ---
 struct HighScoreEntry
@@ -589,6 +594,15 @@ const Color colorListText(240, 240, 240);
 const Color colorDoneText(180, 255, 100);
 const Color colorResetText(255, 255, 150);
 const Color colorHoverHighlight(255, 255, 0);
+
+//credits
+Font fontcredits("Assets/Fonts/trebuc.ttf");             // الخط (فاضي في الأول)
+optional<Text>creditsText;
+Text textHSDoneButtoncredits(fontHSDone, "Done", 30);
+Texture texHSDoneNormalcredits("Assets/Credits/done_normal.png");
+Texture texHSDoneHovercredits("Assets/Credits/done_hover.png");
+Sprite sprHSDonePlankcredits(texHSDoneNormalcredits);
+
 
 int main()
 {
@@ -998,9 +1012,7 @@ bool DrawLoadingScreen(float totalTime)
     window.display();
     return false;
 }
-void MainMenu()
-{
-    // ضبط الكاميرا للملء الكامل
+void MainMenu() {
     view.setSize({WindowWidth, WindowHeight});
     view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
     view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
@@ -1008,82 +1020,44 @@ void MainMenu()
     window.setView(view);
     StartMainMenu();
 
-    // [تعديل] بداية الظهور من الأسود
+    // Fade In للمينيو
     FadeInFromBlack();
 
     Clock frameClock;
 
-    while (window.isOpen())
-    {
-        // ... (Events) ...
-
-        // بعد ما تطلع من الـ Events:
+    while (window.isOpen()) {
         deltaTime = frameClock.restart().asSeconds();
         totaltime += deltaTime;
 
-        while (const optional event = window.pollEvent())
-        {
-            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape))
-            {
-                window.close();
-            }
+        while (const optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape)) window.close();
 
-            // [تعديل مهم] الكود كله جوه الـ MouseButtonReleased
-            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
-            {
-                if (mouseEvent->button == Mouse::Button::Left)
-                {
+            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>()) {
+                if (mouseEvent->button == Mouse::Button::Left) {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
                     // --- زرار Start Game / Time Attack ---
-                    if (startgamebutton.getGlobalBounds().contains(mousePos) || timeattackbutton.getGlobalBounds().contains(mousePos))
-                    {
-                        // 1. عمل Fade Out باستخدام الدالة الجديدة
-                        FadeOutToBlack();
-
-                        // 2. ننتقل للشاشة الجديدة
+                    if (startgamebutton.getGlobalBounds().contains(mousePos) || timeattackbutton.getGlobalBounds().contains(mousePos)) {
+                        FadeOutToBlack(); // نختفي والمينيو مرسوم
                         Select_level();
-
-                        // 3. لما نرجع، نعمل Fade In تاني
-                        FadeInFromBlack();
+                        FadeInFromBlack(); // نظهر والمينيو مرسوم
                     }
-
                     // --- زرار Switch User ---
-                    if (switchuserbutton.getGlobalBounds().contains(mousePos))
-                    {
-                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                    if (switchuserbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
-
-                        // 2. ننتقل للشاشة الجديدة
                         SwitchUser();
-
-                        // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
-
                     // --- زرار Options ---
-                    if (optionsbutton.getGlobalBounds().contains(mousePos))
-                    {
-                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                    if (optionsbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
-
-                        // 2. ننتقل للشاشة الجديدة
                         OptionsMenu();
-
-                        // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
-
                     // --- زرار Quit ---
-                    if (quitbutton.getGlobalBounds().contains(mousePos))
-                    {
-                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                    if (quitbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
-
-                        // 2. ننتقل للشاشة الجديدة
                         QuitGame();
-
-                        // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
                     if (highscorebutton.getGlobalBounds().contains(mousePos))
@@ -1097,11 +1071,20 @@ void MainMenu()
                         // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
+                    if (creditsbutton.getGlobalBounds().contains(mousePos))
+                    {
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                        FadeOutToBlack();
+
+                        // 2. ننتقل للشاشة الجديدة
+                        Credits();
+
+                        // 3. لما نرجع، نعمل Fade In تاني
+                        FadeInFromBlack();
+                    }
                 }
             }
-
-            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
-            {
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>()) {
                 view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
             }
         }
@@ -1109,16 +1092,7 @@ void MainMenu()
         window.setView(view);
         background.setTexture(mainbackground);
         UpdateMainMenu();
-        DrawMainMenu(); // بتعمل display برضو
-
-        // [تعديل] رسم الـ Fade In (ظهور من السواد) فوق كل حاجة
-        if (fadeAlpha > 0.f)
-        {
-            fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
-            fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
-            window.draw(fadeRect);
-            window.display();
-        }
+        DrawMainMenu();
     }
 }
 void StartMainMenu()
@@ -1442,11 +1416,11 @@ void PlayingSound(bool isMainMenu)
                       optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
-                      creditsbutton.getGlobalBounds().contains(mouseWorldPos));
+                      creditsbutton.getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)|| sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) || sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
     else
     {
-        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos));
+        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)||sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
     // لو وقف على أي زرار -> شغل الصوت مرة واحدة
     if (isHovering)
@@ -3002,15 +2976,13 @@ void FadeOutToBlack()
     fadeAlpha = 0.f;
     fadeClock.restart();
 
-    while (fadeAlpha < 255.f)
-    {
-        // نحسب الـ Alpha بنفس السرعة اللي في Loading Screen
+    while (fadeAlpha < 255.f) {
         fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
-        // مهم جداً: نرسم الشاشة الحالية (المينيو) تحت الـ Overlay
         window.setView(view);
-        UpdateMainMenuFish(); // عشان السمك يتحرك وهو بيختفي
+        // رسم المينيو وهو بيختفي
+        UpdateMainMenuFish();
         DrawMainMenuBackground();
         window.draw(startgamebutton);
         window.draw(timeattackbutton);
@@ -3021,7 +2993,6 @@ void FadeOutToBlack()
         window.draw(creditsbutton);
         window.draw(logosp);
 
-        // نرسم المستطيل الأسود فوق كل حاجة
         window.draw(fadeRect);
         window.display();
     }
@@ -3033,28 +3004,22 @@ void FadeInFromBlack()
     fadeAlpha = 255.f;
     fadeClock.restart();
 
-    while (fadeAlpha > 0.f)
-    {
+    while (fadeAlpha > 0.f) {
         fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
-        // نرسم الشاشة الجديدة (المينيو أو غيرها) تحت الـ Overlay
-        // هنا بنستدعي الـ Update و Draw اللي في اللوب اللي احنا فيه
-        // لكن عشان الدالة دي بتتستدعي من جوه اللوب، لازم نعمل الآبديت والدراو للشاشة اللي احنا فيها
-
-        // هنحتاج نعمل Overload أو نمرر الدوال..
-        // بس عشان تبقى سهلة، هنعمل الكود بتاع الرسم يدوي هنا للـ Main Menu
         window.setView(view);
+        // رسم المينيو وهو بيظهر
         UpdateMainMenuFish();
         DrawMainMenuBackground();
-        // window.draw(startgamebutton);
-        // window.draw(timeattackbutton);
-        // window.draw(highscorebutton);
-        // window.draw(optionsbutton);
-        // window.draw(quitbutton);
-        // window.draw(switchuserbutton);
-        // window.draw(creditsbutton);
-        // window.draw(logosp);
+        window.draw(startgamebutton);
+        window.draw(timeattackbutton);
+        window.draw(highscorebutton);
+        window.draw(optionsbutton);
+        window.draw(quitbutton);
+        window.draw(switchuserbutton);
+        window.draw(creditsbutton);
+        window.draw(logosp);
 
         window.draw(fadeRect);
         window.display();
@@ -3165,31 +3130,51 @@ void resetScores()
 void Highscore()
 {
     StartHighscore();
-    FadeInFromBlack();
-    Clock frameClock;
-    while (window.isOpen())
-    {
-        float dt = frameClock.restart().asSeconds();
-        totaltime += dt;
 
-        BarracudaFishanimation();
-        QueenTriggerFish();
-        for (auto &obj : smallfishs)
-        {
-            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
-            obj.update(286, 126);
+    // --- Fade In (ظهور من الأسود) ---
+    fadeAlpha = 255.f;
+    fadeClock.restart();
+    while (fadeAlpha > 0.f) {
+        fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
-            float posX = obj.sprite.getPosition().x;
-            if (posX <= -150.f || posX >= WindowWidth + 150.f)
-            {
-                obj.velocityX_AXIS *= -1;
-                obj.changedir *= -1;
-                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
-            }
+        window.setView(view);
+
+        // هنرسم محتوى الهاي سكور يدوياً هنا عشان متعملش Display مرتين
+        DrawMainMenuBackground(); // دي بتعمل Clear
+
+        // رسم كل عناصر الهاي سكور
+        window.draw(textHSMainTitle);
+        window.draw(textHSStoryMode);
+        window.draw(HSModeUnderline);
+        window.draw(sprHSStoryArrowLeft);
+        window.draw(sprHSStoryArrowRight);
+        window.draw(sprHSListArrowUp);
+        window.draw(sprHSListArrowDown);
+
+        for (int i = 0; i < VISIBLE_SCORES; i++) {
+            window.draw(textHSListRanks[i]);
+            window.draw(textHSListNames[i]);
+            window.draw(textHSListScores[i]);
         }
-        UpdateHighscore();
-        DrawHighscore();
+
+        window.draw(sprHSDonePlank);
+        window.draw(textHSDoneButton);
+        window.draw(sprHSResetPlank);
+        window.draw(textHSResetButton);
+
+        // رسم الشاشة السودا الشفافة
+        window.draw(fadeRect);
+        window.display(); // Display واحدة بس في الآخر
     }
+
+    // --- اللوب الأساسي ---
+    while (window.isOpen()) {
+        UpdateHighscore();
+        DrawHighscore(); // هنا بترجع تعمل Display براحتها
+    }
+    
+    // مفيش Fade Out هنا، عشان MainMenu بتعمله
 }
 
 void addNewHighScore(string name, int score, bool isStoryMode)
@@ -3465,4 +3450,148 @@ void DrawHighscore()
     window.draw(textHSResetButton);
 
     window.display();
+}
+
+
+// ==========================================
+// 1. الدالة الرئيسية (Wrapper)
+// بتنظم عملية الـ Fade In/Out واللوب الأساسي
+// ==========================================
+
+void Credits() {
+    StartCredits();
+
+    // --- 1. Fade In (ظهور من الأسود) ---
+    fadeAlpha = 255.f;
+    fadeClock.restart();
+    while (fadeAlpha > 0.f) {
+        fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+
+        window.setView(view);
+        DrawCredits(); // رسم العناصر
+        window.draw(fadeRect); // رسم الشاشة السودا
+        window.display();
+    }
+
+    // --- 2. اللوب الأساسي ---
+    while (window.isOpen()) {
+        // لو Update رجعت true، يبقى المستخدم عايز يخرج
+        if (UpdateCredits()) break;
+
+        window.setView(view);
+        DrawCredits(); // رسم العناصر
+        window.display();
+    }
+
+    // --- 3. Fade Out (تلاشي للأسود) ---
+    fadeAlpha = 0.f;
+    fadeClock.restart();
+    while (fadeAlpha < 255.f) {
+        fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
+        fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+
+        window.setView(view);
+        DrawCredits(); // رسم العناصر
+        window.draw(fadeRect); // رسم الشاشة السودا
+        window.display();
+    }
+}
+
+// ==========================================
+// 2. دالة التهيئة (Start)
+// بتحمل الخطوط وتظبط مكان الأزرار والنصوص
+// ==========================================
+void StartCredits() {
+    window.setFramerateLimit(60);
+    window.setView(view);
+
+    // تهيئة النص الأساسي
+    creditsText.emplace(fontcredits);
+    fontcredits.setSmooth(true);
+    texHSDoneNormalcredits.setSmooth(true);
+    texHSDoneHovercredits.setSmooth(true);
+    creditsText->setCharacterSize(28);
+    creditsText->setOutlineThickness(1.f);
+    creditsText->setOutlineColor(Color(0, 0, 0));
+    creditsText->setFillColor(Color(255, 255, 255));
+    creditsText->setString(
+        "Team Members:\n"
+        "1- Loay Mohamed\n\n"
+        "2- Zeyad Khalid\n"
+        "3- Mohamed Saraya\n\n"
+        "4- Mohamed El Sayed\n"
+        "5- Zeyad Gouda\n\n"
+        "6- Mohamed Yasser\n"
+        "7- Mohamed Medhat\n\n"
+        "THANK YOU FOR YOUR PLAYING!"
+    );
+    FloatRect bounds = creditsText->getLocalBounds();
+    creditsText->setOrigin({ bounds.position.x + bounds.size.x / 2.f, 0.f });
+    creditsText->setPosition({ WindowWidth / 2.f, WindowHeight / 2.f - 260.f });
+
+    // تجهيز زرار Done
+    sprHSDonePlankcredits.setPosition({ 400.f, 545.f });
+    sprHSDonePlankcredits.setOrigin({ texHSDoneNormalcredits.getSize().x / 2.f, texHSDoneNormalcredits.getSize().y / 2.f });
+
+    // تجهيز النص بتاع الزرار
+    textHSDoneButtoncredits.setPosition({ 400.f, 536.f });
+    textHSDoneButtoncredits.setOutlineThickness(2.f);
+    FloatRect doneBounds = textHSDoneButtoncredits.getLocalBounds();
+    textHSDoneButtoncredits.setOrigin({ doneBounds.size.x / 2.f, doneBounds.size.y / 2.f });
+}
+
+// ==========================================
+// 3. دالة التحديث (Update)
+// بتعالج الأحداث (Events) وتحسب الـ Hover
+// وبترجع true لو المستخدم عايز يخرج من الشاشة
+// ==========================================
+bool UpdateCredits() {
+    PlayingSound(false);
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+
+    // 1. معالجة الأحداث (Events)
+    while (const optional event = window.pollEvent()) {
+        if (event->is<Event::Closed>()) {
+            window.close();
+            return true; // خروج
+        }
+
+        if (const auto* keyPressed = event->getIf<Event::KeyPressed>()) {
+            if (keyPressed->code == Keyboard::Key::Escape) {
+                return true; // خروج
+            }
+        }
+
+        if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>()) {
+            if (mouseBtn->button == Mouse::Button::Left) {
+                if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos)) {
+                    return true; // خروج
+                }
+            }
+        }
+    }
+
+    // 2. تحديث الـ Hover (تغيير اللون والصورة)
+    if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos)) {
+        sprHSDonePlankcredits.setTexture(texHSDoneHovercredits);
+        textHSDoneButtoncredits.setFillColor(Color(255, 255, 0)); // لون أخضر فاتح
+    } else {
+        sprHSDonePlankcredits.setTexture(texHSDoneNormalcredits);
+        textHSDoneButtoncredits.setFillColor(Color(180, 255, 100)); // لون اصفر
+    }
+
+    return false; // مفيش خروج، استمر في اللوب
+}
+
+// ==========================================
+// 4. دالة الرسم (Draw)
+// برسم العناصر بس من غير ما تعمل Display
+// عشان نقدر نرسم الـ Fade فوقها
+// ==========================================
+void DrawCredits() {
+    DrawMainMenuBackground();
+    if(creditsText.has_value()) window.draw(*creditsText);
+    window.draw(sprHSDonePlankcredits);
+    window.draw(textHSDoneButtoncredits);
 }
