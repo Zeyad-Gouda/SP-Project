@@ -37,6 +37,7 @@ void BarracudaFishanimation();
 void ChangingButtonShape();
 void QueenTriggerFish();
 void SwitchUser();
+void ResetStats();
 void StartSwitchUser();
 void CreateButton(Sprite &sprite, Texture &texture, const string &filePath, // A Template for creating sprites
                   float xPosition,
@@ -64,7 +65,7 @@ void DrawOptions();
 void UpdateMainMenuFish();
 void DrawMainMenuBackground();
 // sound effects for each button
-void PlayingSound();
+void PlayingSound(bool isMainMenu);
 // function quit
 void QuitGame();
 void StartQuit();
@@ -351,6 +352,8 @@ Texture FullOKButtonTex;
 Sprite FullOKButton(FullOKButtonTex);
 Texture DupplicateOKButtonTex;
 Sprite DupplicateOKButton(DupplicateOKButtonTex);
+Text DupplicateOKBtnText(btnFont, "", 40);
+Text FullListOKBtnText(btnFont, "", 40);
 Texture DupplicateBgTex;
 Sprite DupplicateBg(DupplicateBgTex);
 Text DupplicatedUserText(btnFont, "", 40);
@@ -1246,24 +1249,37 @@ void UpdateMainMenu()
     {
         obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
         obj.update(286, 126);
-        if (obj.sprite.getPosition().x == window.getPosition().x - 450 || obj.sprite.getPosition().x == window.getPosition().x + 450)
+
+        // FIX: use <= / >= with game-space bounds, NOT window.getPosition()
+        float posX = obj.sprite.getPosition().x;
+        float posY = obj.sprite.getPosition().y;
+
+        if (posX <= -150.f || posX >= WindowWidth + 150.f)
         {
             obj.velocityX_AXIS *= -1;
-
             obj.changedir *= -1;
-
-            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
+            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            // nudge fish back inside to prevent repeated triggers
+            if (posX <= -150.f)
+                obj.sprite.setPosition({-149.f, posY});
+            else
+                obj.sprite.setPosition({WindowWidth + 149.f, posY});
         }
-        if (obj.sprite.getPosition().y == window.getPosition().y - 300 || obj.sprite.getPosition().y == window.getPosition().y + 300)
+
+        if (posY <= -100.f || posY >= WindowHeight + 100.f)
         {
             obj.velocityY_AXIS *= -1;
             obj.velocityX_AXIS *= -1;
             obj.changedir *= -1;
-            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
+            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            if (posY <= -100.f)
+                obj.sprite.setPosition({posX, -99.f});
+            else
+                obj.sprite.setPosition({posX, WindowHeight + 99.f});
         }
     }
     // GreenfishAnimation();
-    PlayingSound();
+    PlayingSound(true);
     // MinowFishanimation();
     ChangingButtonShape();
     BarracudaFishanimation();
@@ -1410,7 +1426,7 @@ void GreenfishAnimation()
         }
     }
 }
-void PlayingSound()
+void PlayingSound(bool isMainMenu)
 {
     Vector2i mouseLocalPos = Mouse::getPosition(window);
     Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
@@ -1418,46 +1434,20 @@ void PlayingSound()
     bool isHovering = false;
 
     // 1. أزرار الـ Main Menu
-    if (startgamebutton.getGlobalBounds().contains(mouseWorldPos) ||
-        timeattackbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        highscorebutton.getGlobalBounds().contains(mouseWorldPos) ||
-        optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        creditsbutton.getGlobalBounds().contains(mouseWorldPos))
+    if (isMainMenu)
     {
-        isHovering = true;
+        isHovering = (startgamebutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      timeattackbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      highscorebutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      creditsbutton.getGlobalBounds().contains(mouseWorldPos));
     }
-
-    // 2. أزرار الـ Switch User
-    if (NewButton.getGlobalBounds().contains(mouseWorldPos) ||
-        SelectButton.getGlobalBounds().contains(mouseWorldPos) ||
-        DeleteButton.getGlobalBounds().contains(mouseWorldPos))
+    else
     {
-        isHovering = true;
+        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos));
     }
-
-    // 3. أزرار شاشة Quit (هنفحص التيكست لأنه اللي ثابت)
-    if (quit_yes_text.getGlobalBounds().contains(mouseWorldPos) ||
-        quit_no_text.getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
-    // 4. زرار Back in Select Level
-    if (mySprite.getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
-    // 5. زرار Done in Options
-    // بنفحص الـ Checkbox اللي هو زرار Done
-    if (OptionButtons[10].checkbox.has_value() &&
-        OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
     // لو وقف على أي زرار -> شغل الصوت مرة واحدة
     if (isHovering)
     {
@@ -1626,7 +1616,7 @@ void Select_level()
                     // زرار Back to Menu
                     if (mySprite.getGlobalBounds().contains(mf))
                     {
-                        MainMenu();
+                        // MainMenu();
                         return;
                     }
                     // اختيار level
@@ -1739,7 +1729,7 @@ void StartSelectLevel()
 // ─── 2. UpdateSelectLevel ───
 void UpdateSelectLevel(float dt)
 {
-    PlayingSound();
+    PlayingSound(true);
     Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
     levelTxt.setString("choose level");
     centerText(levelTxt);
@@ -1822,16 +1812,62 @@ void DrawSelectLevel()
 void SwitchUser()
 {
     StartSwitchUser();
+    Clock frameClock;
     while (window.isOpen())
     {
+        float dt = frameClock.restart().asSeconds();
+        totaltime += dt;
+
+        ChangingButtonShape(); // optional — keeps menu hover states fresh
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+            // wall check (fixed version from Bug 1)
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
         UpdateSwitchUser();
+        if (isUserSelected)
+        {
+            isUserSelected = 0;
+            return;
+        }
         DisplaySwitchUser();
+    }
+}
+
+void ResetStats()
+{
+    NameEntry = false;
+    InputString = "";
+    SelectedUser = -1;
+    isUserSelected = false;
+    isListFull = false;
+    DupplicateName = false;
+    isConfirmUserDelete = false;
+    CamefromDupplicate = false;
+    JustOpenDeleteConfirm = false;
+    isCancelAddingUser = false;
+    NumberOfUsers = 0;
+    DupplicateName = false;
+    CamefromDupplicate = false;
+    for (int i = 0; i < 8; i++)
+    {
+        delete UserTexts[i];
+        UserTexts[i] = nullptr;
     }
 }
 void StartSwitchUser()
 {
-    for (int i = 0; i < 8; i++)
-        UserTexts[i] = nullptr; // Initializing Users with Null
+    ResetStats();
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
     CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2); // Background of the SwitchUser pop-up window
     X = WindowWidth * 0.25f, Y = WindowHeight * 0.78f;
@@ -1854,6 +1890,8 @@ void StartSwitchUser()
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
     CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
     // ----------- Checking to see if we already Have Users------------------
+    for (auto &user : users)
+        user = {"", 0};
     ifstream loadusers("Assets/Switch User/Users_List.txt");
     string name;
     int id;
@@ -1898,7 +1936,7 @@ void CreateButton(Sprite &sprite, Texture &texture, const string &filePath,
 }
 void UpdateSwitchUser()
 {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     while (auto event = window.pollEvent())
     {
@@ -1922,9 +1960,12 @@ void UpdateSwitchUser()
                     {
                         NameEntry = 0;
                         isCancelAddingUser = 0;
-                        for (auto &user : users) // is the name already there?
+                        if (InputString.empty())
+                            return;
+
+                        for (int i = 0; i < NumberOfUsers; i++)
                         {
-                            if (user.first == InputString)
+                            if (users[i].first == InputString)
                             {
                                 DupplicateName = 1;
                                 break;
@@ -1932,10 +1973,10 @@ void UpdateSwitchUser()
                         }
                         if (DupplicateName) // YES?
                         {
-                            DupplicateUser(); // it's dupplicated you can't add it
                             NameEntry = 0;
                             if (!CamefromDupplicate)
                                 InputString = "";
+                            DupplicateUser(); // it's dupplicated you can't add it
                         }
                         if (!DupplicateName) // NO? -> add it
                         {
@@ -1976,7 +2017,7 @@ void UpdateSwitchUser()
                         SelectUserHL.setPosition({X, Y});
                     }
                 }
-                if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName)
+                if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName and SelectedUser >= 0 and SelectedUser < NumberOfUsers)
                 {
                     CurUser = users[SelectedUser].first;
                     isUserSelected = 1;
@@ -2106,22 +2147,21 @@ void EnterYourName()
 }
 void RefreshUsersList()
 {
-    for (int i = 0; i < NumberOfUsers; i++)
+    for (int i = 0; i < 8; i++)
     {
         delete UserTexts[i];
         UserTexts[i] = nullptr;
-        if (i < NumberOfUsers)
-        {
-            UserTexts[i] = new Text(btnFont, users[i].first, 25);
-            UserTexts[i]->setFillColor(Color::White);
-            float X = WindowWidth * 0.5f;
-            float Y = WindowHeight * 0.23f + (i * 40.f);
-            UserTexts[i]->setPosition({X, Y});
-            FloatRect bounds = UserTexts[i]->getLocalBounds();
-            UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
-        }
-        else
-            UserTexts[i] = nullptr;
+    }
+
+    for (int i = 0; i < NumberOfUsers; i++)
+    {
+        UserTexts[i] = new Text(btnFont, users[i].first, 25);
+        UserTexts[i]->setFillColor(Color::White);
+        float X = WindowWidth * 0.5f;
+        float Y = WindowHeight * 0.23f + (i * 40.f);
+        FloatRect bounds = UserTexts[i]->getLocalBounds();
+        UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
+        UserTexts[i]->setPosition({X, Y});
     }
 }
 void DeleteUser()
@@ -2148,7 +2188,7 @@ void FullList()
     CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.5, 0.5);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
     CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
-    SetupButtonText(OKText, "OK", FullOKButton);
+    SetupButtonText(FullListOKBtnText, "OK", FullOKButton);
     InputString = "";
 }
 void DupplicateUser()
@@ -2156,14 +2196,13 @@ void DupplicateUser()
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
     CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
-    SetupButtonText(OKText, "OK", DupplicateOKButton);
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
+    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    SetupButtonText(DupplicateOKBtnText, "OK", DupplicateOKButton);
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
-    DupplicatedUserText.setCharacterSize(25);
-    X = WindowWidth * 0.49f, Y = WindowHeight * 0.53f;
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.56f;
     DupplicatedUserText.setPosition({(float)X, (float)Y});
-    DupplicatedUserText.setCharacterSize(60);
+    DupplicatedUserText.setCharacterSize(40);
 }
 void DisplaySwitchUser()
 {
@@ -2184,7 +2223,8 @@ void DisplaySwitchUser()
         window.draw(SelectUserHL);
     if (isUserSelected)
     {
-        MainMenu();
+        isUserSelected = 0;
+        return;
         // Get Back to the Main Menu
     }
     if (NameEntry and !isConfirmUserDelete and !isListFull and !DupplicateName)
@@ -2214,14 +2254,14 @@ void DisplaySwitchUser()
         DrawMainMenuBackground();
         window.draw(ListisFull);
         window.draw(FullOKButton);
-        window.draw(OKText);
+        window.draw(DupplicateOKBtnText);
     }
     if (DupplicateName and !isListFull and !isConfirmUserDelete and !NameEntry and !isUserSelected)
     {
         DrawMainMenuBackground();
         window.draw(DupplicateBg);
         window.draw(DupplicateOKButton);
-        window.draw(OKText);
+        window.draw(DupplicateOKBtnText);
         window.draw(DupplicatedUserText);
     }
     window.display();
@@ -2448,7 +2488,7 @@ void StartOptions()
 // =====================================================================
 void UpdateOptions()
 {
-    PlayingSound();
+    PlayingSound(false);
     auto MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool currentMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
 
@@ -2825,7 +2865,7 @@ void StartQuit()
 }
 void UpdateQuit()
 {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
     Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
@@ -3212,7 +3252,7 @@ void StartHighscore()
 // ================= UPDATE =================
 void UpdateHighscore()
 {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool mouseClicked = false;
 
