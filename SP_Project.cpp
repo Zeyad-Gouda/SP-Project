@@ -1818,14 +1818,13 @@ void SwitchUser()
         float dt = frameClock.restart().asSeconds();
         totaltime += dt;
 
-        ChangingButtonShape(); // optional — keeps menu hover states fresh
         BarracudaFishanimation();
         QueenTriggerFish();
         for (auto &obj : smallfishs)
         {
             obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
             obj.update(286, 126);
-            // wall check (fixed version from Bug 1)
+
             float posX = obj.sprite.getPosition().x;
             if (posX <= -150.f || posX >= WindowWidth + 150.f)
             {
@@ -1958,38 +1957,43 @@ void UpdateSwitchUser()
                 {
                     if (NumberOfUsers < MaxNumberOfUsers) // if you Can
                     {
-                        NameEntry = 0;
-                        isCancelAddingUser = 0;
                         if (InputString.empty())
-                            return;
-
-                        for (int i = 0; i < NumberOfUsers; i++)
-                        {
-                            if (users[i].first == InputString)
-                            {
-                                DupplicateName = 1;
-                                break;
-                            }
-                        }
-                        if (DupplicateName) // YES?
                         {
                             NameEntry = 0;
-                            if (!CamefromDupplicate)
-                                InputString = "";
-                            DupplicateUser(); // it's dupplicated you can't add it
+                            isCancelAddingUser = 0;
                         }
-                        if (!DupplicateName) // NO? -> add it
+                        else
                         {
-                            ofstream adduser("Assets/Switch User/Users_List.txt");
-                            users[NumberOfUsers].first = InputString;
-                            users[NumberOfUsers].second = NumberOfUsers + 1;
-                            NumberOfUsers++;
-                            InputString = "";
+                            NameEntry = 0;
+                            isCancelAddingUser = 0;
                             for (int i = 0; i < NumberOfUsers; i++)
-                                adduser << users[i].first << '\t' << users[i].second << '\n';
-                            adduser.close();
-                            RefreshUsersList();                       // Refresh The List after each addition
-                            CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
+                            {
+                                if (users[i].first == InputString)
+                                {
+                                    DupplicateName = 1;
+                                    break;
+                                }
+                            }
+
+                            if (DupplicateName) // YES?
+                            {
+                                if (!CamefromDupplicate)
+                                    InputString = "";
+                                DupplicateUser(); // it's dupplicated you can't add it
+                            }
+                            if (!DupplicateName) // NO? -> add it
+                            {
+                                ofstream adduser("Assets/Switch User/Users_List.txt");
+                                users[NumberOfUsers].first = InputString;
+                                users[NumberOfUsers].second = NumberOfUsers + 1;
+                                NumberOfUsers++;
+                                InputString = "";
+                                for (int i = 0; i < NumberOfUsers; i++)
+                                    adduser << users[i].first << '\t' << users[i].second << '\n';
+                                adduser.close();
+                                RefreshUsersList();                       // Refresh The List after each addition
+                                CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
+                            }
                         }
                     }
                     else if (NumberOfUsers >= MaxNumberOfUsers) // Can't add it?
@@ -2007,6 +2011,8 @@ void UpdateSwitchUser()
                     InputString = "";
                     NameEntry = 0;
                     isCancelAddingUser = 1;
+                    DupplicateName = 0;
+                    CamefromDupplicate = 0;
                 }
                 for (int i = 0; i < NumberOfUsers; i++)
                 {
@@ -2117,6 +2123,13 @@ void EnterYourName()
 {
     if (NameEntry)
         return;
+    if (NumberOfUsers >= MaxNumberOfUsers)
+    {
+        FullList();
+        return;
+    }
+    DupplicateName = 0;
+    CamefromDupplicate = 0;
     isUserSelected = 0;
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
     NameEntry = 1;
@@ -2185,9 +2198,9 @@ void FullList()
 {
     isListFull = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.5, 0.5);
+    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
+    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(FullListOKBtnText, "OK", FullOKButton);
     InputString = "";
 }
@@ -2196,11 +2209,11 @@ void DupplicateUser()
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
     CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.68f;
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.72f;
     CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(DupplicateOKBtnText, "OK", DupplicateOKButton);
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.56f;
+    X = WindowWidth * 0.48f, Y = WindowHeight * 0.56f;
     DupplicatedUserText.setPosition({(float)X, (float)Y});
     DupplicatedUserText.setCharacterSize(40);
 }
@@ -2254,7 +2267,7 @@ void DisplaySwitchUser()
         DrawMainMenuBackground();
         window.draw(ListisFull);
         window.draw(FullOKButton);
-        window.draw(DupplicateOKBtnText);
+        window.draw(FullListOKBtnText);
     }
     if (DupplicateName and !isListFull and !isConfirmUserDelete and !NameEntry and !isUserSelected)
     {
@@ -2275,6 +2288,25 @@ void OptionsMenu()
     Clock clock;
     while (window.isOpen())
     {
+        float dt1 = clock.restart().asSeconds();
+        totaltime += dt1;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
+
         float dt = clock.restart().asSeconds();
         while (const optional event = window.pollEvent())
         {
@@ -2713,10 +2745,29 @@ void UpdateMainMenuFish()
 
 void QuitGame()
 {
+    Clock clock;
     StartQuit();
-
     while (window.isOpen())
     {
+        float dt = clock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
@@ -2996,14 +3047,14 @@ void FadeInFromBlack()
         window.setView(view);
         UpdateMainMenuFish();
         DrawMainMenuBackground();
-        window.draw(startgamebutton);
-        window.draw(timeattackbutton);
-        window.draw(highscorebutton);
-        window.draw(optionsbutton);
-        window.draw(quitbutton);
-        window.draw(switchuserbutton);
-        window.draw(creditsbutton);
-        window.draw(logosp);
+        // window.draw(startgamebutton);
+        // window.draw(timeattackbutton);
+        // window.draw(highscorebutton);
+        // window.draw(optionsbutton);
+        // window.draw(quitbutton);
+        // window.draw(switchuserbutton);
+        // window.draw(creditsbutton);
+        // window.draw(logosp);
 
         window.draw(fadeRect);
         window.display();
@@ -3115,8 +3166,27 @@ void Highscore()
 {
     StartHighscore();
     FadeInFromBlack();
+    Clock frameClock;
     while (window.isOpen())
     {
+        float dt = frameClock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
         UpdateHighscore();
         DrawHighscore();
     }
