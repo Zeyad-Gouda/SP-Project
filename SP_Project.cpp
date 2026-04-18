@@ -512,11 +512,10 @@ bool isFadingOut = false; // هل احنا في مرحلة التلاشي للأ
 bool isFadingIn = false;  // هل احنا في مرحلة الظهور من الأسود؟
 float fadeAlpha = 0.f;    // درجة اللون (من 0 لـ 255)
 
-<<<<<<< HEAD
-
 // highscore
 // --- Global Data Structures ---
-struct HighScoreEntry {
+struct HighScoreEntry
+{
     string name;
     int score;
 };
@@ -562,27 +561,19 @@ Text textHSResetButton(fontHSMain, "Reset All Scores", 16);
 
 // List Texts
 Text textHSListRanks[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 Text textHSListNames[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 Text textHSListScores[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 
 // Underline & State
 RectangleShape HSModeUnderline;
-enum GameMode { STORY, TIME_ATTACK };
+enum GameMode
+{
+    STORY,
+    TIME_ATTACK
+};
 GameMode currentMode = STORY;
 int scrollOffset = 0;
 
@@ -596,9 +587,6 @@ const Color colorDoneText(180, 255, 100);
 const Color colorResetText(255, 255, 150);
 const Color colorHoverHighlight(255, 255, 0);
 
-
-=======
->>>>>>> 1f376012c9be92300cbaaba52689cb1ff4baaa0f
 int main()
 {
     cout << "SFML 3.0 and Standard Library are working!" << endl;
@@ -1097,14 +1085,14 @@ void MainMenu()
                     }
                     if (highscorebutton.getGlobalBounds().contains(mousePos))
                     {
-                    // 1. عمل Fade Out باستخدام الدالة الجديدة
-                    FadeOutToBlack();
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
+                        FadeOutToBlack();
 
-                    // 2. ننتقل للشاشة الجديدة
-                    Highscore();
+                        // 2. ننتقل للشاشة الجديدة
+                        Highscore();
 
-                    // 3. لما نرجع، نعمل Fade In تاني
-                    FadeInFromBlack();
+                        // 3. لما نرجع، نعمل Fade In تاني
+                        FadeInFromBlack();
                     }
                 }
             }
@@ -2984,10 +2972,14 @@ void FadeInFromBlack()
 
 // ================= PROCEDURAL FUNCTIONS =================
 
-void proceduralSort(HighScoreEntry arr[]) {
-    for (int i = 0; i < MAX_SCORES - 1; i++) {
-        for (int j = 0; j < MAX_SCORES - i - 1; j++) {
-            if (arr[j].score < arr[j + 1].score) {
+void proceduralSort(HighScoreEntry arr[])
+{
+    for (int i = 0; i < MAX_SCORES - 1; i++)
+    {
+        for (int j = 0; j < MAX_SCORES - i - 1; j++)
+        {
+            if (arr[j].score < arr[j + 1].score)
+            {
                 HighScoreEntry temp = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
@@ -2996,94 +2988,109 @@ void proceduralSort(HighScoreEntry arr[]) {
     }
 }
 
-string formatScore(int s) {
+string formatScore(int s)
+{
     string formatted = to_string(s);
     int insertPosition = static_cast<int>(formatted.length()) - 3;
-    while (insertPosition > 0) {
+    while (insertPosition > 0)
+    {
         formatted.insert(insertPosition, ",");
         insertPosition -= 3;
     }
     return formatted;
 }
 
-void saveAllScores() {
+void saveAllScores()
+{
     ofstream f1("highscore_story.txt");
     if (f1.is_open())
         for (int i = 0; i < MAX_SCORES; i++)
-            f1 << story_scores[i].name << "\n" << story_scores[i].score << "\n";
+            f1 << story_scores[i].name << "\n"
+               << story_scores[i].score << "\n";
 
     ofstream f2("highscore_timeattack.txt");
     if (f2.is_open())
         for (int i = 0; i < MAX_SCORES; i++)
-            f2 << timeattack_scores[i].name << "\n" << timeattack_scores[i].score << "\n";
+            f2 << timeattack_scores[i].name << "\n"
+               << timeattack_scores[i].score << "\n";
 }
 
-void loadAllScores() {
-    auto loadFile = [](string filename, HighScoreEntry arr[], string defName) {
+void loadAllScores()
+{
+    auto loadFile = [](string filename, HighScoreEntry arr[], string defName)
+    {
         ifstream file(filename);
         int count = 0;
         if (file.is_open())
-            while (count < MAX_SCORES && getline(file, arr[count].name) && file >> arr[count].score) {
+            while (count < MAX_SCORES && getline(file, arr[count].name) && file >> arr[count].score)
+            {
                 file.ignore();
                 count++;
             }
-        for (int i = count; i < MAX_SCORES; i++) {
+        for (int i = count; i < MAX_SCORES; i++)
+        {
             arr[i].name = defName;
             arr[i].score = (MAX_SCORES - i) * 5000;
         }
     };
-    
+
     // 1. تحميل البيانات من الملفات
-    loadFile("highscore_story.txt",      story_scores,      "Mr. Minnow");
+    loadFile("highscore_story.txt", story_scores, "Mr. Minnow");
     loadFile("highscore_timeattack.txt", timeattack_scores, "Speedy");
-    
+
     // [تعديل] 2. ترتيب البيانات تنازلياً فور تحميلها
     proceduralSort(story_scores);
     proceduralSort(timeattack_scores);
 }
 
-void updateHighScoreTexts() {
-    HighScoreEntry* activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+void updateHighScoreTexts()
+{
+    HighScoreEntry *activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         int idx = scrollOffset + i;
         textHSListRanks[i].setString(to_string(idx + 1) + ". ");
         textHSListNames[i].setString(activeArr[idx].name);
         textHSListScores[i].setString(formatScore(activeArr[idx].score));
 
         FloatRect sb = textHSListScores[i].getLocalBounds();
-        textHSListScores[i].setOrigin({ sb.size.x, 0.f });
-        textHSListScores[i].setPosition({ 540.f, LIST_START_Y + (i * LIST_SPACING) });
+        textHSListScores[i].setOrigin({sb.size.x, 0.f});
+        textHSListScores[i].setPosition({540.f, LIST_START_Y + (i * LIST_SPACING)});
     }
 }
 
-void resetScores() {
+void resetScores()
+{
     string dName = (currentMode == STORY) ? "Mr. Minnow" : "Speedy";
-    HighScoreEntry* activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
+    HighScoreEntry *activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
     for (int i = 0; i < MAX_SCORES; i++)
-        activeArr[i] = { dName, (MAX_SCORES - i) * 5000 };
+        activeArr[i] = {dName, (MAX_SCORES - i) * 5000};
     scrollOffset = 0;
     updateHighScoreTexts();
     saveAllScores();
 }
 
-
 // ================= WRAPPER =================
-void Highscore() {
+void Highscore()
+{
     StartHighscore();
     FadeInFromBlack();
-    while (window.isOpen()) {
+    while (window.isOpen())
+    {
         UpdateHighscore();
         DrawHighscore();
     }
 }
 
-void addNewHighScore(string name, int score, bool isStoryMode) {
+void addNewHighScore(string name, int score, bool isStoryMode)
+{
     // 1. نحدد هيشتغل على أي قائمة (Story ولا Time Attack)
-    HighScoreEntry* activeList = isStoryMode ? story_scores : timeattack_scores;
+    HighScoreEntry *activeList = isStoryMode ? story_scores : timeattack_scores;
 
     // 2. [خطوة ذكية] نتأكد إن السكور الجديد يستحق الدخول
     // لو السكور الجديد أقل أو يساوي أقل سكور موجود (اللي في الآخر)، يبقى مش هندخله عشان نحافظ على القائمة القوية
-    if (score < activeList[MAX_SCORES - 1].score) {
+    if (score < activeList[MAX_SCORES - 1].score)
+    {
         return; // السكور ضعيف، مش هيدخل
     }
 
@@ -3103,7 +3110,8 @@ void addNewHighScore(string name, int score, bool isStoryMode) {
 }
 
 // ================= START =================
-void StartHighscore() {
+void StartHighscore()
+{
     window.setFramerateLimit(60);
     window.setView(view);
 
@@ -3127,100 +3135,97 @@ void StartHighscore() {
 
     // Done Button
     sprHSDonePlank.setTexture(texHSDoneNormal);
-    sprHSDonePlank.setOrigin({
-        sprHSDonePlank.getLocalBounds().size.x / 2.f,
-        sprHSDonePlank.getLocalBounds().size.y / 2.f
-    });
-    sprHSDonePlank.setPosition({ 400.f, 470.f });
+    sprHSDonePlank.setOrigin({sprHSDonePlank.getLocalBounds().size.x / 2.f,
+                              sprHSDonePlank.getLocalBounds().size.y / 2.f});
+    sprHSDonePlank.setPosition({400.f, 470.f});
 
     // Reset Button
     sprHSResetPlank.setTexture(texHSResetNormal);
-    sprHSResetPlank.setOrigin({
-        sprHSResetPlank.getLocalBounds().size.x / 2.f,
-        sprHSResetPlank.getLocalBounds().size.y / 2.f
-    });
-    sprHSResetPlank.setPosition({ 400.f, 560.f });
+    sprHSResetPlank.setOrigin({sprHSResetPlank.getLocalBounds().size.x / 2.f,
+                               sprHSResetPlank.getLocalBounds().size.y / 2.f});
+    sprHSResetPlank.setPosition({400.f, 560.f});
 
     // Arrows
     sprHSStoryArrowRight.setTexture(texHSArrowNormal);
-    sprHSStoryArrowRight.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSStoryArrowRight.setPosition({ 480.f, 130.f });
+    sprHSStoryArrowRight.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSStoryArrowRight.setPosition({480.f, 130.f});
 
     sprHSStoryArrowLeft.setTexture(texHSArrowNormal);
-    sprHSStoryArrowLeft.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSStoryArrowLeft.setPosition({ 320.f, 130.f });
-    sprHSStoryArrowLeft.setScale({ -1.f, 1.f });
+    sprHSStoryArrowLeft.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSStoryArrowLeft.setPosition({320.f, 130.f});
+    sprHSStoryArrowLeft.setScale({-1.f, 1.f});
 
     sprHSListArrowUp.setTexture(texHSArrowNormal);
-    sprHSListArrowUp.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSListArrowUp.setPosition({ 570.f, LIST_START_Y + 10.f });
+    sprHSListArrowUp.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSListArrowUp.setPosition({570.f, LIST_START_Y + 10.f});
     sprHSListArrowUp.setRotation(degrees(270.f));
 
     sprHSListArrowDown.setTexture(texHSArrowNormal);
-    sprHSListArrowDown.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSListArrowDown.setPosition({ 570.f, LIST_START_Y + (9 * LIST_SPACING) + 10.f });
+    sprHSListArrowDown.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSListArrowDown.setPosition({570.f, LIST_START_Y + (9 * LIST_SPACING) + 10.f});
     sprHSListArrowDown.setRotation(degrees(90.f));
 
     // Main Title
     textHSMainTitle.setFillColor(colorTitleGreen);
     textHSMainTitle.setOutlineThickness(2.f);
-    textHSMainTitle.setOrigin({ textHSMainTitle.getLocalBounds().size.x / 2.f, 0.f });
-    textHSMainTitle.setPosition({ 400.f, 40.f });
+    textHSMainTitle.setOrigin({textHSMainTitle.getLocalBounds().size.x / 2.f, 0.f});
+    textHSMainTitle.setPosition({400.f, 40.f});
 
     // Story Mode Label
-    textHSStoryMode.setOrigin({ textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f });
-    textHSStoryMode.setPosition({ 400.f, 115.f });
+    textHSStoryMode.setOrigin({textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f});
+    textHSStoryMode.setPosition({400.f, 115.f});
 
     // Underline
     HSModeUnderline.setFillColor(Color::White);
-    HSModeUnderline.setSize({ textHSStoryMode.getLocalBounds().size.x, 2.f });
-    HSModeUnderline.setOrigin({ HSModeUnderline.getSize().x / 2.f, 0.f });
-    HSModeUnderline.setPosition({ 400.f, 142.f });
+    HSModeUnderline.setSize({textHSStoryMode.getLocalBounds().size.x, 2.f});
+    HSModeUnderline.setOrigin({HSModeUnderline.getSize().x / 2.f, 0.f});
+    HSModeUnderline.setPosition({400.f, 142.f});
 
     // List Texts
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         textHSListRanks[i].setFillColor(colorListText);
         textHSListNames[i].setFillColor(colorListText);
         textHSListScores[i].setFillColor(colorListText);
 
-        textHSListRanks[i].setPosition({ 260.f, LIST_START_Y + (i * LIST_SPACING) });
-        textHSListNames[i].setPosition({ 290.f, LIST_START_Y + (i * LIST_SPACING) });
+        textHSListRanks[i].setPosition({260.f, LIST_START_Y + (i * LIST_SPACING)});
+        textHSListNames[i].setPosition({290.f, LIST_START_Y + (i * LIST_SPACING)});
     }
 
     // Done Button Text
     textHSDoneButton.setFillColor(colorDoneText);
-    textHSDoneButton.setOrigin({
-        textHSDoneButton.getLocalBounds().size.x / 2.f,
-        textHSDoneButton.getLocalBounds().size.y / 2.f
-    });
+    textHSDoneButton.setOrigin({textHSDoneButton.getLocalBounds().size.x / 2.f,
+                                textHSDoneButton.getLocalBounds().size.y / 2.f});
     textHSDoneButton.setOutlineThickness(2.f);
-    textHSDoneButton.setPosition({ 400.f, 461.f });
+    textHSDoneButton.setPosition({400.f, 461.f});
 
     // Reset Button Text
     textHSResetButton.setFillColor(colorResetText);
-    textHSResetButton.setOrigin({
-        textHSResetButton.getLocalBounds().size.x / 2.f,
-        textHSResetButton.getLocalBounds().size.y / 2.f
-    });
-    textHSResetButton.setPosition({ 400.f, 557.f });
+    textHSResetButton.setOrigin({textHSResetButton.getLocalBounds().size.x / 2.f,
+                                 textHSResetButton.getLocalBounds().size.y / 2.f});
+    textHSResetButton.setPosition({400.f, 557.f});
 
     loadAllScores();
     updateHighScoreTexts();
 }
 
 // ================= UPDATE =================
-void UpdateHighscore() {
+void UpdateHighscore()
+{
     PlayingSound();
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool mouseClicked = false;
 
-    while (const optional event = window.pollEvent()) {
-        if (event->is<Event::Closed>()) window.close();
-        else if (const auto* resizeEvent = event->getIf<Event::Resized>()) {
-            view.setViewport(FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
+    while (const optional event = window.pollEvent())
+    {
+        if (event->is<Event::Closed>())
+            window.close();
+        else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+        {
+            view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
             window.setView(view);
         }
-        if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
+        if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
             if (mouseBtn->button == Mouse::Button::Left)
                 mouseClicked = true;
     }
@@ -3229,71 +3234,103 @@ void UpdateHighscore() {
     static bool wasMousePressed = false;
     bool isMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
     bool triggerScroll = false;
-    if (isMousePressed) {
-        if (!wasMousePressed) { triggerScroll = true; arrowHoldClock.restart(); }
-        else if (arrowHoldClock.getElapsedTime().asSeconds() > 0.15f) { triggerScroll = true; arrowHoldClock.restart(); }
+    if (isMousePressed)
+    {
+        if (!wasMousePressed)
+        {
+            triggerScroll = true;
+            arrowHoldClock.restart();
+        }
+        else if (arrowHoldClock.getElapsedTime().asSeconds() > 0.15f)
+        {
+            triggerScroll = true;
+            arrowHoldClock.restart();
+        }
     }
     wasMousePressed = isMousePressed;
 
     // Lambda للـ Arrows (بدون pointers)
-    auto processArrow = [&](Sprite& s, bool action) {
-        if (s.getGlobalBounds().contains(mousePos)) {
-            if (isMousePressed) {
+    auto processArrow = [&](Sprite &s, bool action)
+    {
+        if (s.getGlobalBounds().contains(mousePos))
+        {
+            if (isMousePressed)
+            {
                 s.setTexture(texHSArrowDown);
-                s.setOrigin({ texHSArrowDown.getSize().x / 2.f, texHSArrowDown.getSize().y / 2.f });
-            } else {
+                s.setOrigin({texHSArrowDown.getSize().x / 2.f, texHSArrowDown.getSize().y / 2.f});
+            }
+            else
+            {
                 s.setTexture(texHSArrowHover);
-                s.setOrigin({ texHSArrowHover.getSize().x / 2.f, texHSArrowHover.getSize().y / 2.f });
+                s.setOrigin({texHSArrowHover.getSize().x / 2.f, texHSArrowHover.getSize().y / 2.f});
             }
             return action;
-        } else {
+        }
+        else
+        {
             s.setTexture(texHSArrowNormal);
-            s.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
+            s.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
             return false;
         }
     };
 
     if (processArrow(sprHSListArrowUp, triggerScroll) && scrollOffset > 0)
-        { scrollOffset--; updateHighScoreTexts(); }
+    {
+        scrollOffset--;
+        updateHighScoreTexts();
+    }
     if (processArrow(sprHSListArrowDown, triggerScroll) && scrollOffset < MAX_SCORES - VISIBLE_SCORES)
-        { scrollOffset++; updateHighScoreTexts(); }
+    {
+        scrollOffset++;
+        updateHighScoreTexts();
+    }
 
-    if (processArrow(sprHSStoryArrowLeft, mouseClicked) || processArrow(sprHSStoryArrowRight, mouseClicked)) {
+    if (processArrow(sprHSStoryArrowLeft, mouseClicked) || processArrow(sprHSStoryArrowRight, mouseClicked))
+    {
         currentMode = (currentMode == STORY) ? TIME_ATTACK : STORY;
         textHSStoryMode.setString((currentMode == STORY) ? "Story Mode" : "Time Attack");
-        textHSStoryMode.setOrigin({ textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f });
-        HSModeUnderline.setSize({ textHSStoryMode.getLocalBounds().size.x, 2.f });
-        HSModeUnderline.setOrigin({ HSModeUnderline.getSize().x / 2.f, 0.f });
+        textHSStoryMode.setOrigin({textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f});
+        HSModeUnderline.setSize({textHSStoryMode.getLocalBounds().size.x, 2.f});
+        HSModeUnderline.setOrigin({HSModeUnderline.getSize().x / 2.f, 0.f});
         scrollOffset = 0;
         updateHighScoreTexts();
     }
 
     // Done Button
-    if (sprHSDonePlank.getGlobalBounds().contains(mousePos)) {
+    if (sprHSDonePlank.getGlobalBounds().contains(mousePos))
+    {
         sprHSDonePlank.setTexture(texHSDoneHover);
         textHSDoneButton.setFillColor(colorHoverHighlight);
-        if (mouseClicked){
+        if (mouseClicked)
+        {
             window.setView(view); // ضروري عشان الـ Mouse Position يكون صح في كل الشاشات
             MainMenu();
         } // رجوع للـ MainMenu
-    } else {
+    }
+    else
+    {
         sprHSDonePlank.setTexture(texHSDoneNormal);
         textHSDoneButton.setFillColor(colorDoneText);
     }
 
     // Reset Button
-    if (sprHSResetPlank.getGlobalBounds().contains(mousePos)) {
+    if (sprHSResetPlank.getGlobalBounds().contains(mousePos))
+    {
         sprHSResetPlank.setTexture(texHSResetHover);
         textHSResetButton.setFillColor(colorHoverHighlight);
-        if (mouseClicked) resetScores();
-    } else {
+        if (mouseClicked)
+            resetScores();
+    }
+    else
+    {
         sprHSResetPlank.setTexture(texHSResetNormal);
         textHSResetButton.setFillColor(colorResetText);
     }
 }
 
 // ================= DRAW =================
-void DrawHighscore() {
+void DrawHighscore()
+{
     window.setView(view);
     DrawMainMenuBackground();
 
@@ -3305,7 +3342,8 @@ void DrawHighscore() {
     window.draw(sprHSListArrowUp);
     window.draw(sprHSListArrowDown);
 
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         window.draw(textHSListRanks[i]);
         window.draw(textHSListNames[i]);
         window.draw(textHSListScores[i]);
