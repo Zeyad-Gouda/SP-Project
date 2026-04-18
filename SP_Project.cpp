@@ -37,6 +37,7 @@ void BarracudaFishanimation();
 void ChangingButtonShape();
 void QueenTriggerFish();
 void SwitchUser();
+void ResetStats();
 void StartSwitchUser();
 void CreateButton(Sprite &sprite, Texture &texture, const string &filePath, // A Template for creating sprites
                   float xPosition,
@@ -64,7 +65,7 @@ void DrawOptions();
 void UpdateMainMenuFish();
 void DrawMainMenuBackground();
 // sound effects for each button
-void PlayingSound();
+void PlayingSound(bool isMainMenu);
 // function quit
 void QuitGame();
 void StartQuit();
@@ -355,6 +356,8 @@ Texture FullOKButtonTex;
 Sprite FullOKButton(FullOKButtonTex);
 Texture DupplicateOKButtonTex;
 Sprite DupplicateOKButton(DupplicateOKButtonTex);
+Text DupplicateOKBtnText(btnFont, "", 40);
+Text FullListOKBtnText(btnFont, "", 40);
 Texture DupplicateBgTex;
 Sprite DupplicateBg(DupplicateBgTex);
 Text DupplicatedUserText(btnFont, "", 40);
@@ -519,7 +522,8 @@ float fadeAlpha = 0.f;    // درجة اللون (من 0 لـ 255)
 
 // highscore
 // --- Global Data Structures ---
-struct HighScoreEntry {
+struct HighScoreEntry
+{
     string name;
     int score;
 };
@@ -565,27 +569,19 @@ Text textHSResetButton(fontHSMain, "Reset All Scores", 16);
 
 // List Texts
 Text textHSListRanks[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 Text textHSListNames[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 Text textHSListScores[VISIBLE_SCORES] = {
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20},
-    {fontHSMain, "", 20}
-};
+    {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}, {fontHSMain, "", 20}};
 
 // Underline & State
 RectangleShape HSModeUnderline;
-enum GameMode { STORY, TIME_ATTACK };
+enum GameMode
+{
+    STORY,
+    TIME_ATTACK
+};
 GameMode currentMode = STORY;
 int scrollOffset = 0;
 
@@ -1064,16 +1060,26 @@ void MainMenu() {
                         QuitGame();
                         FadeInFromBlack();
                     }
-                    // --- زرار Highscore ---
-                    if (highscorebutton.getGlobalBounds().contains(mousePos)) {
+                    if (highscorebutton.getGlobalBounds().contains(mousePos))
+                    {
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
                         FadeOutToBlack();
+
+                        // 2. ننتقل للشاشة الجديدة
                         Highscore();
+
+                        // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
-                    // --- زرار Credits ---
-                    if (creditsbutton.getGlobalBounds().contains(mousePos)) {
+                    if (creditsbutton.getGlobalBounds().contains(mousePos))
+                    {
+                        // 1. عمل Fade Out باستخدام الدالة الجديدة
                         FadeOutToBlack();
+
+                        // 2. ننتقل للشاشة الجديدة
                         Credits();
+
+                        // 3. لما نرجع، نعمل Fade In تاني
                         FadeInFromBlack();
                     }
                 }
@@ -1217,24 +1223,37 @@ void UpdateMainMenu()
     {
         obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
         obj.update(286, 126);
-        if (obj.sprite.getPosition().x == window.getPosition().x - 450 || obj.sprite.getPosition().x == window.getPosition().x + 450)
+
+        // FIX: use <= / >= with game-space bounds, NOT window.getPosition()
+        float posX = obj.sprite.getPosition().x;
+        float posY = obj.sprite.getPosition().y;
+
+        if (posX <= -150.f || posX >= WindowWidth + 150.f)
         {
             obj.velocityX_AXIS *= -1;
-
             obj.changedir *= -1;
-
-            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
+            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            // nudge fish back inside to prevent repeated triggers
+            if (posX <= -150.f)
+                obj.sprite.setPosition({-149.f, posY});
+            else
+                obj.sprite.setPosition({WindowWidth + 149.f, posY});
         }
-        if (obj.sprite.getPosition().y == window.getPosition().y - 300 || obj.sprite.getPosition().y == window.getPosition().y + 300)
+
+        if (posY <= -100.f || posY >= WindowHeight + 100.f)
         {
             obj.velocityY_AXIS *= -1;
             obj.velocityX_AXIS *= -1;
             obj.changedir *= -1;
-            obj.sprite.setScale({float(0.2 * obj.changedir), 0.2});
+            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            if (posY <= -100.f)
+                obj.sprite.setPosition({posX, -99.f});
+            else
+                obj.sprite.setPosition({posX, WindowHeight + 99.f});
         }
     }
     // GreenfishAnimation();
-    PlayingSound();
+    PlayingSound(true);
     // MinowFishanimation();
     ChangingButtonShape();
     BarracudaFishanimation();
@@ -1381,7 +1400,7 @@ void GreenfishAnimation()
         }
     }
 }
-void PlayingSound()
+void PlayingSound(bool isMainMenu)
 {
     Vector2i mouseLocalPos = Mouse::getPosition(window);
     Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
@@ -1389,51 +1408,20 @@ void PlayingSound()
     bool isHovering = false;
 
     // 1. أزرار الـ Main Menu
-    if (startgamebutton.getGlobalBounds().contains(mouseWorldPos) ||
-        timeattackbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        highscorebutton.getGlobalBounds().contains(mouseWorldPos) ||
-        optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
-        creditsbutton.getGlobalBounds().contains(mouseWorldPos))
+    if (isMainMenu)
     {
-        isHovering = true;
+        isHovering = (startgamebutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      timeattackbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      highscorebutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
+                      creditsbutton.getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)|| sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) || sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
-
-    // 2. أزرار الـ Switch User
-    if (NewButton.getGlobalBounds().contains(mouseWorldPos) ||
-        SelectButton.getGlobalBounds().contains(mouseWorldPos) ||
-        DeleteButton.getGlobalBounds().contains(mouseWorldPos))
+    else
     {
-        isHovering = true;
+        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)||sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
-
-    // 3. أزرار شاشة Quit (هنفحص التيكست لأنه اللي ثابت)
-    if (quit_yes_text.getGlobalBounds().contains(mouseWorldPos) ||
-        quit_no_text.getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
-    // 4. زرار Back in Select Level
-    if (mySprite.getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
-    if (sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos)||textHSDoneButton.getGlobalBounds().contains(mouseWorldPos)||textHSResetButton.getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
-    // 5. زرار Done in Options
-    // بنفحص الـ Checkbox اللي هو زرار Done
-    if (OptionButtons[10].checkbox.has_value() &&
-        OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos))
-    {
-        isHovering = true;
-    }
-
     // لو وقف على أي زرار -> شغل الصوت مرة واحدة
     if (isHovering)
     {
@@ -1602,7 +1590,7 @@ void Select_level()
                     // زرار Back to Menu
                     if (mySprite.getGlobalBounds().contains(mf))
                     {
-                        MainMenu();
+                        // MainMenu();
                         return;
                     }
                     // اختيار level
@@ -1715,7 +1703,7 @@ void StartSelectLevel()
 // ─── 2. UpdateSelectLevel ───
 void UpdateSelectLevel(float dt)
 {
-    PlayingSound();
+    PlayingSound(true);
     Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
     levelTxt.setString("choose level");
     centerText(levelTxt);
@@ -1798,16 +1786,61 @@ void DrawSelectLevel()
 void SwitchUser()
 {
     StartSwitchUser();
+    Clock frameClock;
     while (window.isOpen())
     {
+        float dt = frameClock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
         UpdateSwitchUser();
+        if (isUserSelected)
+        {
+            isUserSelected = 0;
+            return;
+        }
         DisplaySwitchUser();
+    }
+}
+
+void ResetStats()
+{
+    NameEntry = false;
+    InputString = "";
+    SelectedUser = -1;
+    isUserSelected = false;
+    isListFull = false;
+    DupplicateName = false;
+    isConfirmUserDelete = false;
+    CamefromDupplicate = false;
+    JustOpenDeleteConfirm = false;
+    isCancelAddingUser = false;
+    NumberOfUsers = 0;
+    DupplicateName = false;
+    CamefromDupplicate = false;
+    for (int i = 0; i < 8; i++)
+    {
+        delete UserTexts[i];
+        UserTexts[i] = nullptr;
     }
 }
 void StartSwitchUser()
 {
-    for (int i = 0; i < 8; i++)
-        UserTexts[i] = nullptr; // Initializing Users with Null
+    ResetStats();
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
     CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2); // Background of the SwitchUser pop-up window
     X = WindowWidth * 0.25f, Y = WindowHeight * 0.78f;
@@ -1830,6 +1863,8 @@ void StartSwitchUser()
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
     CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
     // ----------- Checking to see if we already Have Users------------------
+    for (auto &user : users)
+        user = {"", 0};
     ifstream loadusers("Assets/Switch User/Users_List.txt");
     string name;
     int id;
@@ -1874,7 +1909,7 @@ void CreateButton(Sprite &sprite, Texture &texture, const string &filePath,
 }
 void UpdateSwitchUser()
 {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     while (auto event = window.pollEvent())
     {
@@ -1896,35 +1931,43 @@ void UpdateSwitchUser()
                 {
                     if (NumberOfUsers < MaxNumberOfUsers) // if you Can
                     {
-                        NameEntry = 0;
-                        isCancelAddingUser = 0;
-                        for (auto &user : users) // is the name already there?
+                        if (InputString.empty())
                         {
-                            if (user.first == InputString)
-                            {
-                                DupplicateName = 1;
-                                break;
-                            }
-                        }
-                        if (DupplicateName) // YES?
-                        {
-                            DupplicateUser(); // it's dupplicated you can't add it
                             NameEntry = 0;
-                            if (!CamefromDupplicate)
-                                InputString = "";
+                            isCancelAddingUser = 0;
                         }
-                        if (!DupplicateName) // NO? -> add it
+                        else
                         {
-                            ofstream adduser("Assets/Switch User/Users_List.txt");
-                            users[NumberOfUsers].first = InputString;
-                            users[NumberOfUsers].second = NumberOfUsers + 1;
-                            NumberOfUsers++;
-                            InputString = "";
+                            NameEntry = 0;
+                            isCancelAddingUser = 0;
                             for (int i = 0; i < NumberOfUsers; i++)
-                                adduser << users[i].first << '\t' << users[i].second << '\n';
-                            adduser.close();
-                            RefreshUsersList();                       // Refresh The List after each addition
-                            CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
+                            {
+                                if (users[i].first == InputString)
+                                {
+                                    DupplicateName = 1;
+                                    break;
+                                }
+                            }
+
+                            if (DupplicateName) // YES?
+                            {
+                                if (!CamefromDupplicate)
+                                    InputString = "";
+                                DupplicateUser(); // it's dupplicated you can't add it
+                            }
+                            if (!DupplicateName) // NO? -> add it
+                            {
+                                ofstream adduser("Assets/Switch User/Users_List.txt");
+                                users[NumberOfUsers].first = InputString;
+                                users[NumberOfUsers].second = NumberOfUsers + 1;
+                                NumberOfUsers++;
+                                InputString = "";
+                                for (int i = 0; i < NumberOfUsers; i++)
+                                    adduser << users[i].first << '\t' << users[i].second << '\n';
+                                adduser.close();
+                                RefreshUsersList();                       // Refresh The List after each addition
+                                CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
+                            }
                         }
                     }
                     else if (NumberOfUsers >= MaxNumberOfUsers) // Can't add it?
@@ -1942,6 +1985,8 @@ void UpdateSwitchUser()
                     InputString = "";
                     NameEntry = 0;
                     isCancelAddingUser = 1;
+                    DupplicateName = 0;
+                    CamefromDupplicate = 0;
                 }
                 for (int i = 0; i < NumberOfUsers; i++)
                 {
@@ -1952,7 +1997,7 @@ void UpdateSwitchUser()
                         SelectUserHL.setPosition({X, Y});
                     }
                 }
-                if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName)
+                if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName and SelectedUser >= 0 and SelectedUser < NumberOfUsers)
                 {
                     CurUser = users[SelectedUser].first;
                     isUserSelected = 1;
@@ -2052,6 +2097,13 @@ void EnterYourName()
 {
     if (NameEntry)
         return;
+    if (NumberOfUsers >= MaxNumberOfUsers)
+    {
+        FullList();
+        return;
+    }
+    DupplicateName = 0;
+    CamefromDupplicate = 0;
     isUserSelected = 0;
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
     NameEntry = 1;
@@ -2082,22 +2134,21 @@ void EnterYourName()
 }
 void RefreshUsersList()
 {
-    for (int i = 0; i < NumberOfUsers; i++)
+    for (int i = 0; i < 8; i++)
     {
         delete UserTexts[i];
         UserTexts[i] = nullptr;
-        if (i < NumberOfUsers)
-        {
-            UserTexts[i] = new Text(btnFont, users[i].first, 25);
-            UserTexts[i]->setFillColor(Color::White);
-            float X = WindowWidth * 0.5f;
-            float Y = WindowHeight * 0.23f + (i * 40.f);
-            UserTexts[i]->setPosition({X, Y});
-            FloatRect bounds = UserTexts[i]->getLocalBounds();
-            UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
-        }
-        else
-            UserTexts[i] = nullptr;
+    }
+
+    for (int i = 0; i < NumberOfUsers; i++)
+    {
+        UserTexts[i] = new Text(btnFont, users[i].first, 25);
+        UserTexts[i]->setFillColor(Color::White);
+        float X = WindowWidth * 0.5f;
+        float Y = WindowHeight * 0.23f + (i * 40.f);
+        FloatRect bounds = UserTexts[i]->getLocalBounds();
+        UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
+        UserTexts[i]->setPosition({X, Y});
     }
 }
 void DeleteUser()
@@ -2121,10 +2172,10 @@ void FullList()
 {
     isListFull = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.5, 0.5);
+    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1, 1);
-    SetupButtonText(OKText, "OK", FullOKButton);
+    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    SetupButtonText(FullListOKBtnText, "OK", FullOKButton);
     InputString = "";
 }
 void DupplicateUser()
@@ -2132,14 +2183,13 @@ void DupplicateUser()
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
     CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
-    SetupButtonText(OKText, "OK", DupplicateOKButton);
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.72f;
+    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    SetupButtonText(DupplicateOKBtnText, "OK", DupplicateOKButton);
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
-    DupplicatedUserText.setCharacterSize(25);
-    X = WindowWidth * 0.49f, Y = WindowHeight * 0.53f;
+    X = WindowWidth * 0.48f, Y = WindowHeight * 0.56f;
     DupplicatedUserText.setPosition({(float)X, (float)Y});
-    DupplicatedUserText.setCharacterSize(60);
+    DupplicatedUserText.setCharacterSize(40);
 }
 void DisplaySwitchUser()
 {
@@ -2160,7 +2210,8 @@ void DisplaySwitchUser()
         window.draw(SelectUserHL);
     if (isUserSelected)
     {
-        MainMenu();
+        isUserSelected = 0;
+        return;
         // Get Back to the Main Menu
     }
     if (NameEntry and !isConfirmUserDelete and !isListFull and !DupplicateName)
@@ -2190,14 +2241,14 @@ void DisplaySwitchUser()
         DrawMainMenuBackground();
         window.draw(ListisFull);
         window.draw(FullOKButton);
-        window.draw(OKText);
+        window.draw(FullListOKBtnText);
     }
     if (DupplicateName and !isListFull and !isConfirmUserDelete and !NameEntry and !isUserSelected)
     {
         DrawMainMenuBackground();
         window.draw(DupplicateBg);
         window.draw(DupplicateOKButton);
-        window.draw(OKText);
+        window.draw(DupplicateOKBtnText);
         window.draw(DupplicatedUserText);
     }
     window.display();
@@ -2211,6 +2262,25 @@ void OptionsMenu()
     Clock clock;
     while (window.isOpen())
     {
+        float dt1 = clock.restart().asSeconds();
+        totaltime += dt1;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
+
         float dt = clock.restart().asSeconds();
         while (const optional event = window.pollEvent())
         {
@@ -2424,7 +2494,7 @@ void StartOptions()
 // =====================================================================
 void UpdateOptions()
 {
-    PlayingSound();
+    PlayingSound(false);
     auto MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool currentMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
 
@@ -2649,10 +2719,29 @@ void UpdateMainMenuFish()
 
 void QuitGame()
 {
+    Clock clock;
     StartQuit();
-
     while (window.isOpen())
     {
+        float dt = clock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                obj.changedir *= -1;
+                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
@@ -2801,7 +2890,7 @@ void StartQuit()
 }
 void UpdateQuit()
 {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
     Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
@@ -2939,10 +3028,14 @@ void FadeInFromBlack()
 
 // ================= PROCEDURAL FUNCTIONS =================
 
-void proceduralSort(HighScoreEntry arr[]) {
-    for (int i = 0; i < MAX_SCORES - 1; i++) {
-        for (int j = 0; j < MAX_SCORES - i - 1; j++) {
-            if (arr[j].score < arr[j + 1].score) {
+void proceduralSort(HighScoreEntry arr[])
+{
+    for (int i = 0; i < MAX_SCORES - 1; i++)
+    {
+        for (int j = 0; j < MAX_SCORES - i - 1; j++)
+        {
+            if (arr[j].score < arr[j + 1].score)
+            {
                 HighScoreEntry temp = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
@@ -2951,79 +3044,91 @@ void proceduralSort(HighScoreEntry arr[]) {
     }
 }
 
-string formatScore(int s) {
+string formatScore(int s)
+{
     string formatted = to_string(s);
     int insertPosition = static_cast<int>(formatted.length()) - 3;
-    while (insertPosition > 0) {
+    while (insertPosition > 0)
+    {
         formatted.insert(insertPosition, ",");
         insertPosition -= 3;
     }
     return formatted;
 }
 
-void saveAllScores() {
+void saveAllScores()
+{
     ofstream f1("highscore_story.txt");
     if (f1.is_open())
         for (int i = 0; i < MAX_SCORES; i++)
-            f1 << story_scores[i].name << "\n" << story_scores[i].score << "\n";
+            f1 << story_scores[i].name << "\n"
+               << story_scores[i].score << "\n";
 
     ofstream f2("highscore_timeattack.txt");
     if (f2.is_open())
         for (int i = 0; i < MAX_SCORES; i++)
-            f2 << timeattack_scores[i].name << "\n" << timeattack_scores[i].score << "\n";
+            f2 << timeattack_scores[i].name << "\n"
+               << timeattack_scores[i].score << "\n";
 }
 
-void loadAllScores() {
-    auto loadFile = [](string filename, HighScoreEntry arr[], string defName) {
+void loadAllScores()
+{
+    auto loadFile = [](string filename, HighScoreEntry arr[], string defName)
+    {
         ifstream file(filename);
         int count = 0;
         if (file.is_open())
-            while (count < MAX_SCORES && getline(file, arr[count].name) && file >> arr[count].score) {
+            while (count < MAX_SCORES && getline(file, arr[count].name) && file >> arr[count].score)
+            {
                 file.ignore();
                 count++;
             }
-        for (int i = count; i < MAX_SCORES; i++) {
+        for (int i = count; i < MAX_SCORES; i++)
+        {
             arr[i].name = defName;
             arr[i].score = (MAX_SCORES - i) * 5000;
         }
     };
-    
+
     // 1. تحميل البيانات من الملفات
-    loadFile("highscore_story.txt",      story_scores,      "Mr. Minnow");
+    loadFile("highscore_story.txt", story_scores, "Mr. Minnow");
     loadFile("highscore_timeattack.txt", timeattack_scores, "Speedy");
-    
+
     // [تعديل] 2. ترتيب البيانات تنازلياً فور تحميلها
     proceduralSort(story_scores);
     proceduralSort(timeattack_scores);
 }
 
-void updateHighScoreTexts() {
-    HighScoreEntry* activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+void updateHighScoreTexts()
+{
+    HighScoreEntry *activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         int idx = scrollOffset + i;
         textHSListRanks[i].setString(to_string(idx + 1) + ". ");
         textHSListNames[i].setString(activeArr[idx].name);
         textHSListScores[i].setString(formatScore(activeArr[idx].score));
 
         FloatRect sb = textHSListScores[i].getLocalBounds();
-        textHSListScores[i].setOrigin({ sb.size.x, 0.f });
-        textHSListScores[i].setPosition({ 540.f, LIST_START_Y + (i * LIST_SPACING) });
+        textHSListScores[i].setOrigin({sb.size.x, 0.f});
+        textHSListScores[i].setPosition({540.f, LIST_START_Y + (i * LIST_SPACING)});
     }
 }
 
-void resetScores() {
+void resetScores()
+{
     string dName = (currentMode == STORY) ? "Mr. Minnow" : "Speedy";
-    HighScoreEntry* activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
+    HighScoreEntry *activeArr = (currentMode == STORY) ? story_scores : timeattack_scores;
     for (int i = 0; i < MAX_SCORES; i++)
-        activeArr[i] = { dName, (MAX_SCORES - i) * 5000 };
+        activeArr[i] = {dName, (MAX_SCORES - i) * 5000};
     scrollOffset = 0;
     updateHighScoreTexts();
     saveAllScores();
 }
 
-
 // ================= WRAPPER =================
-void Highscore() {
+void Highscore()
+{
     StartHighscore();
 
     // --- Fade In (ظهور من الأسود) ---
@@ -3072,13 +3177,15 @@ void Highscore() {
     // مفيش Fade Out هنا، عشان MainMenu بتعمله
 }
 
-void addNewHighScore(string name, int score, bool isStoryMode) {
+void addNewHighScore(string name, int score, bool isStoryMode)
+{
     // 1. نحدد هيشتغل على أي قائمة (Story ولا Time Attack)
-    HighScoreEntry* activeList = isStoryMode ? story_scores : timeattack_scores;
+    HighScoreEntry *activeList = isStoryMode ? story_scores : timeattack_scores;
 
     // 2. [خطوة ذكية] نتأكد إن السكور الجديد يستحق الدخول
     // لو السكور الجديد أقل أو يساوي أقل سكور موجود (اللي في الآخر)، يبقى مش هندخله عشان نحافظ على القائمة القوية
-    if (score < activeList[MAX_SCORES - 1].score) {
+    if (score < activeList[MAX_SCORES - 1].score)
+    {
         return; // السكور ضعيف، مش هيدخل
     }
 
@@ -3098,7 +3205,8 @@ void addNewHighScore(string name, int score, bool isStoryMode) {
 }
 
 // ================= START =================
-void StartHighscore() {
+void StartHighscore()
+{
     window.setFramerateLimit(60);
     window.setView(view);
 
@@ -3122,100 +3230,97 @@ void StartHighscore() {
 
     // Done Button
     sprHSDonePlank.setTexture(texHSDoneNormal);
-    sprHSDonePlank.setOrigin({
-        sprHSDonePlank.getLocalBounds().size.x / 2.f,
-        sprHSDonePlank.getLocalBounds().size.y / 2.f
-    });
-    sprHSDonePlank.setPosition({ 400.f, 470.f });
+    sprHSDonePlank.setOrigin({sprHSDonePlank.getLocalBounds().size.x / 2.f,
+                              sprHSDonePlank.getLocalBounds().size.y / 2.f});
+    sprHSDonePlank.setPosition({400.f, 470.f});
 
     // Reset Button
     sprHSResetPlank.setTexture(texHSResetNormal);
-    sprHSResetPlank.setOrigin({
-        sprHSResetPlank.getLocalBounds().size.x / 2.f,
-        sprHSResetPlank.getLocalBounds().size.y / 2.f
-    });
-    sprHSResetPlank.setPosition({ 400.f, 560.f });
+    sprHSResetPlank.setOrigin({sprHSResetPlank.getLocalBounds().size.x / 2.f,
+                               sprHSResetPlank.getLocalBounds().size.y / 2.f});
+    sprHSResetPlank.setPosition({400.f, 560.f});
 
     // Arrows
     sprHSStoryArrowRight.setTexture(texHSArrowNormal);
-    sprHSStoryArrowRight.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSStoryArrowRight.setPosition({ 480.f, 130.f });
+    sprHSStoryArrowRight.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSStoryArrowRight.setPosition({480.f, 130.f});
 
     sprHSStoryArrowLeft.setTexture(texHSArrowNormal);
-    sprHSStoryArrowLeft.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSStoryArrowLeft.setPosition({ 320.f, 130.f });
-    sprHSStoryArrowLeft.setScale({ -1.f, 1.f });
+    sprHSStoryArrowLeft.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSStoryArrowLeft.setPosition({320.f, 130.f});
+    sprHSStoryArrowLeft.setScale({-1.f, 1.f});
 
     sprHSListArrowUp.setTexture(texHSArrowNormal);
-    sprHSListArrowUp.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSListArrowUp.setPosition({ 570.f, LIST_START_Y + 10.f });
+    sprHSListArrowUp.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSListArrowUp.setPosition({570.f, LIST_START_Y + 10.f});
     sprHSListArrowUp.setRotation(degrees(270.f));
 
     sprHSListArrowDown.setTexture(texHSArrowNormal);
-    sprHSListArrowDown.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
-    sprHSListArrowDown.setPosition({ 570.f, LIST_START_Y + (9 * LIST_SPACING) + 10.f });
+    sprHSListArrowDown.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
+    sprHSListArrowDown.setPosition({570.f, LIST_START_Y + (9 * LIST_SPACING) + 10.f});
     sprHSListArrowDown.setRotation(degrees(90.f));
 
     // Main Title
     textHSMainTitle.setFillColor(colorTitleGreen);
     textHSMainTitle.setOutlineThickness(2.f);
-    textHSMainTitle.setOrigin({ textHSMainTitle.getLocalBounds().size.x / 2.f, 0.f });
-    textHSMainTitle.setPosition({ 400.f, 40.f });
+    textHSMainTitle.setOrigin({textHSMainTitle.getLocalBounds().size.x / 2.f, 0.f});
+    textHSMainTitle.setPosition({400.f, 40.f});
 
     // Story Mode Label
-    textHSStoryMode.setOrigin({ textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f });
-    textHSStoryMode.setPosition({ 400.f, 115.f });
+    textHSStoryMode.setOrigin({textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f});
+    textHSStoryMode.setPosition({400.f, 115.f});
 
     // Underline
     HSModeUnderline.setFillColor(Color::White);
-    HSModeUnderline.setSize({ textHSStoryMode.getLocalBounds().size.x, 2.f });
-    HSModeUnderline.setOrigin({ HSModeUnderline.getSize().x / 2.f, 0.f });
-    HSModeUnderline.setPosition({ 400.f, 142.f });
+    HSModeUnderline.setSize({textHSStoryMode.getLocalBounds().size.x, 2.f});
+    HSModeUnderline.setOrigin({HSModeUnderline.getSize().x / 2.f, 0.f});
+    HSModeUnderline.setPosition({400.f, 142.f});
 
     // List Texts
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         textHSListRanks[i].setFillColor(colorListText);
         textHSListNames[i].setFillColor(colorListText);
         textHSListScores[i].setFillColor(colorListText);
 
-        textHSListRanks[i].setPosition({ 260.f, LIST_START_Y + (i * LIST_SPACING) });
-        textHSListNames[i].setPosition({ 290.f, LIST_START_Y + (i * LIST_SPACING) });
+        textHSListRanks[i].setPosition({260.f, LIST_START_Y + (i * LIST_SPACING)});
+        textHSListNames[i].setPosition({290.f, LIST_START_Y + (i * LIST_SPACING)});
     }
 
     // Done Button Text
     textHSDoneButton.setFillColor(colorDoneText);
-    textHSDoneButton.setOrigin({
-        textHSDoneButton.getLocalBounds().size.x / 2.f,
-        textHSDoneButton.getLocalBounds().size.y / 2.f
-    });
+    textHSDoneButton.setOrigin({textHSDoneButton.getLocalBounds().size.x / 2.f,
+                                textHSDoneButton.getLocalBounds().size.y / 2.f});
     textHSDoneButton.setOutlineThickness(2.f);
-    textHSDoneButton.setPosition({ 400.f, 461.f });
+    textHSDoneButton.setPosition({400.f, 461.f});
 
     // Reset Button Text
     textHSResetButton.setFillColor(colorResetText);
-    textHSResetButton.setOrigin({
-        textHSResetButton.getLocalBounds().size.x / 2.f,
-        textHSResetButton.getLocalBounds().size.y / 2.f
-    });
-    textHSResetButton.setPosition({ 400.f, 557.f });
+    textHSResetButton.setOrigin({textHSResetButton.getLocalBounds().size.x / 2.f,
+                                 textHSResetButton.getLocalBounds().size.y / 2.f});
+    textHSResetButton.setPosition({400.f, 557.f});
 
     loadAllScores();
     updateHighScoreTexts();
 }
 
 // ================= UPDATE =================
-void UpdateHighscore() {
-    PlayingSound();
+void UpdateHighscore()
+{
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool mouseClicked = false;
 
-    while (const optional event = window.pollEvent()) {
-        if (event->is<Event::Closed>()) window.close();
-        else if (const auto* resizeEvent = event->getIf<Event::Resized>()) {
-            view.setViewport(FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
+    while (const optional event = window.pollEvent())
+    {
+        if (event->is<Event::Closed>())
+            window.close();
+        else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+        {
+            view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
             window.setView(view);
         }
-        if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
+        if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
             if (mouseBtn->button == Mouse::Button::Left)
                 mouseClicked = true;
     }
@@ -3224,71 +3329,103 @@ void UpdateHighscore() {
     static bool wasMousePressed = false;
     bool isMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
     bool triggerScroll = false;
-    if (isMousePressed) {
-        if (!wasMousePressed) { triggerScroll = true; arrowHoldClock.restart(); }
-        else if (arrowHoldClock.getElapsedTime().asSeconds() > 0.15f) { triggerScroll = true; arrowHoldClock.restart(); }
+    if (isMousePressed)
+    {
+        if (!wasMousePressed)
+        {
+            triggerScroll = true;
+            arrowHoldClock.restart();
+        }
+        else if (arrowHoldClock.getElapsedTime().asSeconds() > 0.15f)
+        {
+            triggerScroll = true;
+            arrowHoldClock.restart();
+        }
     }
     wasMousePressed = isMousePressed;
 
     // Lambda للـ Arrows (بدون pointers)
-    auto processArrow = [&](Sprite& s, bool action) {
-        if (s.getGlobalBounds().contains(mousePos)) {
-            if (isMousePressed) {
+    auto processArrow = [&](Sprite &s, bool action)
+    {
+        if (s.getGlobalBounds().contains(mousePos))
+        {
+            if (isMousePressed)
+            {
                 s.setTexture(texHSArrowDown);
-                s.setOrigin({ texHSArrowDown.getSize().x / 2.f, texHSArrowDown.getSize().y / 2.f });
-            } else {
+                s.setOrigin({texHSArrowDown.getSize().x / 2.f, texHSArrowDown.getSize().y / 2.f});
+            }
+            else
+            {
                 s.setTexture(texHSArrowHover);
-                s.setOrigin({ texHSArrowHover.getSize().x / 2.f, texHSArrowHover.getSize().y / 2.f });
+                s.setOrigin({texHSArrowHover.getSize().x / 2.f, texHSArrowHover.getSize().y / 2.f});
             }
             return action;
-        } else {
+        }
+        else
+        {
             s.setTexture(texHSArrowNormal);
-            s.setOrigin({ texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f });
+            s.setOrigin({texHSArrowNormal.getSize().x / 2.f, texHSArrowNormal.getSize().y / 2.f});
             return false;
         }
     };
 
     if (processArrow(sprHSListArrowUp, triggerScroll) && scrollOffset > 0)
-        { scrollOffset--; updateHighScoreTexts(); }
+    {
+        scrollOffset--;
+        updateHighScoreTexts();
+    }
     if (processArrow(sprHSListArrowDown, triggerScroll) && scrollOffset < MAX_SCORES - VISIBLE_SCORES)
-        { scrollOffset++; updateHighScoreTexts(); }
+    {
+        scrollOffset++;
+        updateHighScoreTexts();
+    }
 
-    if (processArrow(sprHSStoryArrowLeft, mouseClicked) || processArrow(sprHSStoryArrowRight, mouseClicked)) {
+    if (processArrow(sprHSStoryArrowLeft, mouseClicked) || processArrow(sprHSStoryArrowRight, mouseClicked))
+    {
         currentMode = (currentMode == STORY) ? TIME_ATTACK : STORY;
         textHSStoryMode.setString((currentMode == STORY) ? "Story Mode" : "Time Attack");
-        textHSStoryMode.setOrigin({ textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f });
-        HSModeUnderline.setSize({ textHSStoryMode.getLocalBounds().size.x, 2.f });
-        HSModeUnderline.setOrigin({ HSModeUnderline.getSize().x / 2.f, 0.f });
+        textHSStoryMode.setOrigin({textHSStoryMode.getLocalBounds().size.x / 2.f, 0.f});
+        HSModeUnderline.setSize({textHSStoryMode.getLocalBounds().size.x, 2.f});
+        HSModeUnderline.setOrigin({HSModeUnderline.getSize().x / 2.f, 0.f});
         scrollOffset = 0;
         updateHighScoreTexts();
     }
 
     // Done Button
-    if (sprHSDonePlank.getGlobalBounds().contains(mousePos)) {
+    if (sprHSDonePlank.getGlobalBounds().contains(mousePos))
+    {
         sprHSDonePlank.setTexture(texHSDoneHover);
         textHSDoneButton.setFillColor(colorHoverHighlight);
-        if (mouseClicked){
+        if (mouseClicked)
+        {
             window.setView(view); // ضروري عشان الـ Mouse Position يكون صح في كل الشاشات
             MainMenu();
         } // رجوع للـ MainMenu
-    } else {
+    }
+    else
+    {
         sprHSDonePlank.setTexture(texHSDoneNormal);
         textHSDoneButton.setFillColor(colorDoneText);
     }
 
     // Reset Button
-    if (sprHSResetPlank.getGlobalBounds().contains(mousePos)) {
+    if (sprHSResetPlank.getGlobalBounds().contains(mousePos))
+    {
         sprHSResetPlank.setTexture(texHSResetHover);
         textHSResetButton.setFillColor(colorHoverHighlight);
-        if (mouseClicked) resetScores();
-    } else {
+        if (mouseClicked)
+            resetScores();
+    }
+    else
+    {
         sprHSResetPlank.setTexture(texHSResetNormal);
         textHSResetButton.setFillColor(colorResetText);
     }
 }
 
 // ================= DRAW =================
-void DrawHighscore() {
+void DrawHighscore()
+{
     window.setView(view);
     DrawMainMenuBackground();
 
@@ -3300,7 +3437,8 @@ void DrawHighscore() {
     window.draw(sprHSListArrowUp);
     window.draw(sprHSListArrowDown);
 
-    for (int i = 0; i < VISIBLE_SCORES; i++) {
+    for (int i = 0; i < VISIBLE_SCORES; i++)
+    {
         window.draw(textHSListRanks[i]);
         window.draw(textHSListNames[i]);
         window.draw(textHSListScores[i]);
@@ -3409,7 +3547,7 @@ void StartCredits() {
 // وبترجع true لو المستخدم عايز يخرج من الشاشة
 // ==========================================
 bool UpdateCredits() {
-    PlayingSound();
+    PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
     // 1. معالجة الأحداث (Events)
