@@ -235,7 +235,7 @@ bool MFvisable = 1;
 RectangleShape MFcollieder(Vector2f{57, 25});
 // Generating A Random NUM________________________________________________
 float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
-CircleShape b({20});
+CircleShape b(20);
 // SMALL FISH CLASS
 struct AnimatedObject
 {
@@ -275,7 +275,7 @@ int cu = 0;
 float totaltime = 0.0f;
 Vector2i mouseLocalPos;
 Vector2f mouseWorldPos;
-CircleShape c({10});
+CircleShape c(10);
 //________________________________________________________________________________________________________
 // Yellow Fish
 Texture QueenTrigerTEX("Assets/Fish/QueenTrigger/QueenTrigger.png");
