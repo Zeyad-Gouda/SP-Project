@@ -256,7 +256,9 @@ public:
     void update(int frameWidth, int frameHeight)
     {
         // Move
-        sprite.move({velocityX_AXIS, 0});
+        sprite.move({velocityX_AXIS, velocityY_AXIS});
+        changedir = (velocityX_AXIS > 0) ? -1.f : 1.f;
+        sprite.setScale({0.2f * changedir, 0.2f});
         // Animate
         timer = 0.0f;
         sprite.setTextureRect(IntRect({currentFrame * frameWidth, 0}, {frameWidth, frameHeight}));
@@ -325,11 +327,25 @@ Texture DoneAddingUserTex;
 Sprite DoneAddingUser(DoneAddingUserTex);
 Texture DoneAddingUserHLTex;
 Sprite DoneAddingUserHL(DoneAddingUserHLTex);
-pair<string, int> users[7];
+// pair<string, int> users[7];
+struct Player
+{
+    string name = "";
+    int id = 0;
+    // long long highscore = 0;
+};
+Player players[7];
 int NumberOfUsers = 0;
+void SaveUsers()
+{
+    ofstream file("Assets/Switch User/Users_List.txt");
+    for (int id = 0; id < NumberOfUsers; id++)
+        file << players[id].name << '\t' << players[id].id << '\n';
+    file.close();
+}
 const int MaxNumberOfUsers = 7;
 int SelectedUser = -1;
-Text *UserTexts[8];
+Text *PlayersTexts[8];
 RectangleShape SelectUserHL;
 string CurUser = "";
 bool isUserSelected = 0;
@@ -519,7 +535,6 @@ bool isFadingOut = false; // هل احنا في مرحلة التلاشي للأ
 bool isFadingIn = false;  // هل احنا في مرحلة الظهور من الأسود؟
 float fadeAlpha = 0.f;    // درجة اللون (من 0 لـ 255)
 
-
 // highscore
 // --- Global Data Structures ---
 struct HighScoreEntry
@@ -595,14 +610,13 @@ const Color colorDoneText(180, 255, 100);
 const Color colorResetText(255, 255, 150);
 const Color colorHoverHighlight(255, 255, 0);
 
-//credits
-Font fontcredits("Assets/Fonts/trebuc.ttf");             // الخط (فاضي في الأول)
-optional<Text>creditsText;
+// credits
+Font fontcredits("Assets/Fonts/trebuc.ttf"); // الخط (فاضي في الأول)
+optional<Text> creditsText;
 Text textHSDoneButtoncredits(fontHSDone, "Done", 30);
 Texture texHSDoneNormalcredits("Assets/Credits/done_normal.png");
 Texture texHSDoneHovercredits("Assets/Credits/done_hover.png");
 Sprite sprHSDonePlankcredits(texHSDoneNormalcredits);
-
 
 int main()
 {
@@ -1012,7 +1026,8 @@ bool DrawLoadingScreen(float totalTime)
     window.display();
     return false;
 }
-void MainMenu() {
+void MainMenu()
+{
     view.setSize({WindowWidth, WindowHeight});
     view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
     view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
@@ -1025,37 +1040,46 @@ void MainMenu() {
 
     Clock frameClock;
 
-    while (window.isOpen()) {
+    while (window.isOpen())
+    {
         deltaTime = frameClock.restart().asSeconds();
         totaltime += deltaTime;
 
-        while (const optional event = window.pollEvent()) {
-            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape)) window.close();
+        while (const optional event = window.pollEvent())
+        {
+            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape))
+                window.close();
 
-            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>()) {
-                if (mouseEvent->button == Mouse::Button::Left) {
+            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
+            {
+                if (mouseEvent->button == Mouse::Button::Left)
+                {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
                     // --- زرار Start Game / Time Attack ---
-                    if (startgamebutton.getGlobalBounds().contains(mousePos) || timeattackbutton.getGlobalBounds().contains(mousePos)) {
+                    if (startgamebutton.getGlobalBounds().contains(mousePos) || timeattackbutton.getGlobalBounds().contains(mousePos))
+                    {
                         FadeOutToBlack(); // نختفي والمينيو مرسوم
                         Select_level();
                         FadeInFromBlack(); // نظهر والمينيو مرسوم
                     }
                     // --- زرار Switch User ---
-                    if (switchuserbutton.getGlobalBounds().contains(mousePos)) {
+                    if (switchuserbutton.getGlobalBounds().contains(mousePos))
+                    {
                         FadeOutToBlack();
                         SwitchUser();
                         FadeInFromBlack();
                     }
                     // --- زرار Options ---
-                    if (optionsbutton.getGlobalBounds().contains(mousePos)) {
+                    if (optionsbutton.getGlobalBounds().contains(mousePos))
+                    {
                         FadeOutToBlack();
                         OptionsMenu();
                         FadeInFromBlack();
                     }
                     // --- زرار Quit ---
-                    if (quitbutton.getGlobalBounds().contains(mousePos)) {
+                    if (quitbutton.getGlobalBounds().contains(mousePos))
+                    {
                         FadeOutToBlack();
                         QuitGame();
                         FadeInFromBlack();
@@ -1084,7 +1108,8 @@ void MainMenu() {
                     }
                 }
             }
-            else if (const auto *resizeEvent = event->getIf<Event::Resized>()) {
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+            {
                 view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
             }
         }
@@ -1114,20 +1139,26 @@ void StartMainMenu()
     {
         AnimatedObject obj{minowfishtex, 286, 126};
 
+        float speedX = getRandom(1.5f, 3.f);
+        float speedY = getRandom(0.5f, 2.f);
+
+        obj.velocityX_AXIS = (rand() % 2 == 0) ? speedX : -speedX;
+        obj.velocityY_AXIS = (rand() % 2 == 0) ? speedY : -speedY;
+
         if (i == 2 || i == 4 || i == 6)
         {
             obj.velocityY_AXIS = -obj.velocityY_AXIS;
         }
 
-        obj.changedir = 1;
+        // obj.changedir = 1;
         obj.shape.setFillColor(Color::Green);
         obj.shape.setSize(Vector2f{57, 25});
         obj.shape.setOrigin(obj.shape.getLocalBounds().size / 2.f);
         obj.sprite.setTexture(minowfishtex);
         obj.sprite.setOrigin({285 / 2, 126 / 2});
         obj.sprite.setPosition(Vector2f({WindowWidth / 2.0f + (i * 100), WindowHeight / 2.0f + (i * rand() % 100)}));
-
-        obj.sprite.setScale({float(obj.changedir * 0.2), 0.2});
+        obj.changedir = (obj.velocityX_AXIS > 0) ? -1.f : 1.f;
+        obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
         smallfishs.push_back(obj);
     }
 
@@ -1231,8 +1262,8 @@ void UpdateMainMenu()
         if (posX <= -150.f || posX >= WindowWidth + 150.f)
         {
             obj.velocityX_AXIS *= -1;
-            obj.changedir *= -1;
-            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            // obj.changedir *= -1;
+            // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
             // nudge fish back inside to prevent repeated triggers
             if (posX <= -150.f)
                 obj.sprite.setPosition({-149.f, posY});
@@ -1243,9 +1274,9 @@ void UpdateMainMenu()
         if (posY <= -100.f || posY >= WindowHeight + 100.f)
         {
             obj.velocityY_AXIS *= -1;
-            obj.velocityX_AXIS *= -1;
-            obj.changedir *= -1;
-            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            // obj.velocityX_AXIS *= -1;
+            // obj.changedir *= -1;
+            // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
             if (posY <= -100.f)
                 obj.sprite.setPosition({posX, -99.f});
             else
@@ -1416,11 +1447,11 @@ void PlayingSound(bool isMainMenu)
                       optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
-                      creditsbutton.getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)|| sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) || sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
+                      creditsbutton.getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos) || sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) || sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
     else
     {
-        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos)||sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
+        isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) || SelectButton.getGlobalBounds().contains(mouseWorldPos) || DeleteButton.getGlobalBounds().contains(mouseWorldPos) || quit_yes_text.getGlobalBounds().contains(mouseWorldPos) || quit_no_text.getGlobalBounds().contains(mouseWorldPos) || mySprite.getGlobalBounds().contains(mouseWorldPos) || (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos) || YesButton.getGlobalBounds().contains(mouseWorldPos) || NoButton.getGlobalBounds().contains(mouseWorldPos) || sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) || sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
     }
     // لو وقف على أي زرار -> شغل الصوت مرة واحدة
     if (isHovering)
@@ -1803,8 +1834,8 @@ void SwitchUser()
             if (posX <= -150.f || posX >= WindowWidth + 150.f)
             {
                 obj.velocityX_AXIS *= -1;
-                obj.changedir *= -1;
-                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+                // obj.changedir *= -1;
+                // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
             }
         }
         UpdateSwitchUser();
@@ -1834,8 +1865,8 @@ void ResetStats()
     CamefromDupplicate = false;
     for (int i = 0; i < 8; i++)
     {
-        delete UserTexts[i];
-        UserTexts[i] = nullptr;
+        delete PlayersTexts[i];
+        PlayersTexts[i] = nullptr;
     }
 }
 void StartSwitchUser()
@@ -1863,15 +1894,15 @@ void StartSwitchUser()
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
     CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
     // ----------- Checking to see if we already Have Users------------------
-    for (auto &user : users)
-        user = {"", 0};
+    for (auto &player : players)
+        player = {"", 0};
     ifstream loadusers("Assets/Switch User/Users_List.txt");
     string name;
     int id;
     while (loadusers >> name >> id and NumberOfUsers < MaxNumberOfUsers)
     {
-        users[NumberOfUsers].first = name;
-        users[NumberOfUsers].second = id;
+        players[NumberOfUsers].name = name;
+        players[NumberOfUsers].id = id;
         NumberOfUsers++;
     }
     loadusers.close();
@@ -1940,9 +1971,9 @@ void UpdateSwitchUser()
                         {
                             NameEntry = 0;
                             isCancelAddingUser = 0;
-                            for (int i = 0; i < NumberOfUsers; i++)
+                            for (int id = 0; id < NumberOfUsers; id++)
                             {
-                                if (users[i].first == InputString)
+                                if (players[id].name == InputString)
                                 {
                                     DupplicateName = 1;
                                     break;
@@ -1957,16 +1988,17 @@ void UpdateSwitchUser()
                             }
                             if (!DupplicateName) // NO? -> add it
                             {
-                                ofstream adduser("Assets/Switch User/Users_List.txt");
-                                users[NumberOfUsers].first = InputString;
-                                users[NumberOfUsers].second = NumberOfUsers + 1;
+                                // ofstream adduser("Assets/Switch User/Users_List.txt");
+                                players[NumberOfUsers].name = InputString;
+                                players[NumberOfUsers].id = NumberOfUsers + 1;
                                 NumberOfUsers++;
+                                SaveUsers();
                                 InputString = "";
-                                for (int i = 0; i < NumberOfUsers; i++)
-                                    adduser << users[i].first << '\t' << users[i].second << '\n';
-                                adduser.close();
-                                RefreshUsersList();                       // Refresh The List after each addition
-                                CurUser = users[NumberOfUsers - 1].first; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
+                                // for (int id = 0; id < NumberOfUsers; id++)
+                                //   adduser << players[id].name << '\t' << players[id].id << '\n;
+                                // adduser.close();
+                                RefreshUsersList();                        // Refresh The List after each addition
+                                CurUser = players[NumberOfUsers - 1].name; //[NumberOfUsers - 1] becuase we already did NumberOfUsers++
                             }
                         }
                     }
@@ -1990,16 +2022,16 @@ void UpdateSwitchUser()
                 }
                 for (int i = 0; i < NumberOfUsers; i++)
                 {
-                    if (UserTexts[i] != nullptr and UserTexts[i]->getGlobalBounds().contains(mousePos))
+                    if (PlayersTexts[i] != nullptr and PlayersTexts[i]->getGlobalBounds().contains(mousePos))
                     {
                         SelectedUser = i;
-                        float X = WindowWidth * 0.5f - 5, Y = UserTexts[i]->getPosition().y - 5.f;
+                        float X = WindowWidth * 0.5f - 5, Y = PlayersTexts[i]->getPosition().y - 5.f;
                         SelectUserHL.setPosition({X, Y});
                     }
                 }
                 if (SelectButton.getGlobalBounds().contains(mousePos) and !NameEntry and !isCancelAddingUser and !isListFull and !DupplicateName and SelectedUser >= 0 and SelectedUser < NumberOfUsers)
                 {
-                    CurUser = users[SelectedUser].first;
+                    CurUser = players[SelectedUser].name;
                     isUserSelected = 1;
                 }
                 if (SelectedUser != -1 and !NameEntry and !isConfirmUserDelete and DeleteButton.getGlobalBounds().contains(mousePos))
@@ -2010,18 +2042,19 @@ void UpdateSwitchUser()
                         isConfirmUserDelete = 0;
                     if (YesButton.getGlobalBounds().contains(mousePos))
                     {
-                        for (int i = SelectedUser; i < NumberOfUsers - 1; i++)
+                        for (int id = SelectedUser; id < NumberOfUsers - 1; id++)
                         {
-                            users[i].first = users[i + 1].first;
-                            users[i].second = i + 1;
+                            players[id].name = players[id + 1].name;
+                            players[id].id = id + 1;
                         }
-                        users[NumberOfUsers - 1].first = "";
-                        users[NumberOfUsers - 1].second = 0;
+                        players[NumberOfUsers - 1].name = "";
+                        players[NumberOfUsers - 1].id = 0;
                         NumberOfUsers--;
-                        ofstream rewrite("Assets/Switch User/Users_List.txt");
-                        for (int i = 0; i < NumberOfUsers; i++)
-                            rewrite << users[i].first << '\t' << users[i].second << '\n';
-                        rewrite.close();
+                        // ofstream rewrite("Assets/Switch User/Users_List.txt");
+                        // for (int id = 0; id < NumberOfUsers; id++)
+                        //     rewrite << players[id].name << '\t' << players[id].id << '\t' << players[id].highscore << '\n';
+                        // rewrite.close();
+                        SaveUsers();
                         isConfirmUserDelete = 0;
                         SelectedUser = -1;
                         RefreshUsersList();
@@ -2134,21 +2167,21 @@ void EnterYourName()
 }
 void RefreshUsersList()
 {
-    for (int i = 0; i < 8; i++)
+    for (int id = 0; id < 8; id++)
     {
-        delete UserTexts[i];
-        UserTexts[i] = nullptr;
+        delete PlayersTexts[id];
+        PlayersTexts[id] = nullptr;
     }
 
-    for (int i = 0; i < NumberOfUsers; i++)
+    for (int id = 0; id < NumberOfUsers; id++)
     {
-        UserTexts[i] = new Text(btnFont, users[i].first, 25);
-        UserTexts[i]->setFillColor(Color::White);
+        PlayersTexts[id] = new Text(btnFont, players[id].name, 25);
+        PlayersTexts[id]->setFillColor(Color::White);
         float X = WindowWidth * 0.5f;
-        float Y = WindowHeight * 0.23f + (i * 40.f);
-        FloatRect bounds = UserTexts[i]->getLocalBounds();
-        UserTexts[i]->setOrigin({bounds.size.x / 2.f, 0.f});
-        UserTexts[i]->setPosition({X, Y});
+        float Y = WindowHeight * 0.23f + (id * 40.f);
+        FloatRect bounds = PlayersTexts[id]->getLocalBounds();
+        PlayersTexts[id]->setOrigin({bounds.size.x / 2.f, 0.f});
+        PlayersTexts[id]->setPosition({X, Y});
     }
 }
 void DeleteUser()
@@ -2163,7 +2196,7 @@ void DeleteUser()
     X = WindowWidth * 0.6f, Y = WindowHeight * 0.7f;
     CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(NoButtonText, "No!", NoButton);
-    SetupButtonText(DeletethisUser, users[SelectedUser].first, DeleteUserBg);
+    SetupButtonText(DeletethisUser, players[SelectedUser].name, DeleteUserBg);
     X = WindowWidth * 0.47f, Y = WindowHeight * 0.52f;
     DeletethisUser.setPosition({(float)X, (float)Y});
     DeletethisUser.setCharacterSize(45);
@@ -2204,8 +2237,8 @@ void DisplaySwitchUser()
     window.draw(SelectText);
     window.draw(DeleteText);
     for (int user = 0; user < NumberOfUsers; user++)
-        if (UserTexts[user] != nullptr)
-            window.draw(*UserTexts[user]);
+        if (PlayersTexts[user] != nullptr)
+            window.draw(*PlayersTexts[user]);
     if (SelectedUser >= 0)
         window.draw(SelectUserHL);
     if (isUserSelected)
@@ -2276,8 +2309,8 @@ void OptionsMenu()
             if (posX <= -150.f || posX >= WindowWidth + 150.f)
             {
                 obj.velocityX_AXIS *= -1;
-                obj.changedir *= -1;
-                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+                // obj.changedir *= -1;
+                // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
             }
         }
 
@@ -2711,8 +2744,8 @@ void UpdateMainMenuFish()
         if (obj.sprite.getPosition().x <= 0 || obj.sprite.getPosition().x >= WindowWidth)
         {
             obj.velocityX_AXIS *= -1;
-            obj.changedir *= -1;
-            obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            // obj.changedir *= -1;
+            // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
         }
     }
 }
@@ -2737,8 +2770,8 @@ void QuitGame()
             if (posX <= -150.f || posX >= WindowWidth + 150.f)
             {
                 obj.velocityX_AXIS *= -1;
-                obj.changedir *= -1;
-                obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+                // obj.changedir *= -1;
+                // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
             }
         }
 
@@ -2976,7 +3009,8 @@ void FadeOutToBlack()
     fadeAlpha = 0.f;
     fadeClock.restart();
 
-    while (fadeAlpha < 255.f) {
+    while (fadeAlpha < 255.f)
+    {
         fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
@@ -3004,7 +3038,8 @@ void FadeInFromBlack()
     fadeAlpha = 255.f;
     fadeClock.restart();
 
-    while (fadeAlpha > 0.f) {
+    while (fadeAlpha > 0.f)
+    {
         fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
@@ -3134,7 +3169,8 @@ void Highscore()
     // --- Fade In (ظهور من الأسود) ---
     fadeAlpha = 255.f;
     fadeClock.restart();
-    while (fadeAlpha > 0.f) {
+    while (fadeAlpha > 0.f)
+    {
         fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
@@ -3152,7 +3188,8 @@ void Highscore()
         window.draw(sprHSListArrowUp);
         window.draw(sprHSListArrowDown);
 
-        for (int i = 0; i < VISIBLE_SCORES; i++) {
+        for (int i = 0; i < VISIBLE_SCORES; i++)
+        {
             window.draw(textHSListRanks[i]);
             window.draw(textHSListNames[i]);
             window.draw(textHSListScores[i]);
@@ -3169,11 +3206,32 @@ void Highscore()
     }
 
     // --- اللوب الأساسي ---
-    while (window.isOpen()) {
+    Clock frameClock;
+    while (window.isOpen())
+    {
+        float dt = frameClock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                // obj.changedir *= -1;
+                // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
+
         UpdateHighscore();
         DrawHighscore(); // هنا بترجع تعمل Display براحتها
     }
-    
+
     // مفيش Fade Out هنا، عشان MainMenu بتعمله
 }
 
@@ -3452,32 +3510,53 @@ void DrawHighscore()
     window.display();
 }
 
-
 // ==========================================
 // 1. الدالة الرئيسية (Wrapper)
 // بتنظم عملية الـ Fade In/Out واللوب الأساسي
 // ==========================================
 
-void Credits() {
+void Credits()
+{
     StartCredits();
 
     // --- 1. Fade In (ظهور من الأسود) ---
     fadeAlpha = 255.f;
     fadeClock.restart();
-    while (fadeAlpha > 0.f) {
+    while (fadeAlpha > 0.f)
+    {
         fadeAlpha = std::max(0.f, 255.f - fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
         window.setView(view);
-        DrawCredits(); // رسم العناصر
+        DrawCredits();         // رسم العناصر
         window.draw(fadeRect); // رسم الشاشة السودا
         window.display();
     }
-
+    Clock frameClock;
     // --- 2. اللوب الأساسي ---
-    while (window.isOpen()) {
+    while (window.isOpen())
+    {
+        float dt = frameClock.restart().asSeconds();
+        totaltime += dt;
+
+        BarracudaFishanimation();
+        QueenTriggerFish();
+        for (auto &obj : smallfishs)
+        {
+            obj.shape.setPosition({obj.sprite.getPosition().x, obj.sprite.getPosition().y});
+            obj.update(286, 126);
+
+            float posX = obj.sprite.getPosition().x;
+            if (posX <= -150.f || posX >= WindowWidth + 150.f)
+            {
+                obj.velocityX_AXIS *= -1;
+                // obj.changedir *= -1;
+                // obj.sprite.setScale({0.2f * obj.changedir, 0.2f});
+            }
+        }
         // لو Update رجعت true، يبقى المستخدم عايز يخرج
-        if (UpdateCredits()) break;
+        if (UpdateCredits())
+            break;
 
         window.setView(view);
         DrawCredits(); // رسم العناصر
@@ -3487,12 +3566,13 @@ void Credits() {
     // --- 3. Fade Out (تلاشي للأسود) ---
     fadeAlpha = 0.f;
     fadeClock.restart();
-    while (fadeAlpha < 255.f) {
+    while (fadeAlpha < 255.f)
+    {
         fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
         fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
 
         window.setView(view);
-        DrawCredits(); // رسم العناصر
+        DrawCredits();         // رسم العناصر
         window.draw(fadeRect); // رسم الشاشة السودا
         window.display();
     }
@@ -3502,7 +3582,8 @@ void Credits() {
 // 2. دالة التهيئة (Start)
 // بتحمل الخطوط وتظبط مكان الأزرار والنصوص
 // ==========================================
-void StartCredits() {
+void StartCredits()
+{
     window.setFramerateLimit(60);
     window.setView(view);
 
@@ -3516,29 +3597,28 @@ void StartCredits() {
     creditsText->setOutlineColor(Color(0, 0, 0));
     creditsText->setFillColor(Color(255, 255, 255));
     creditsText->setString(
-        "Team Members:\n"
-        "1- Loay Mohamed\n\n"
-        "2- Zeyad Khalid\n"
-        "3- Mohamed Saraya\n\n"
+        "Team Members:\n\n\n\n"
+        "1- Loay Mohamed\n"
+        "2- Zeyad Khaled\n"
+        "3- Mohamed Saraya\n"
         "4- Mohamed El Sayed\n"
-        "5- Zeyad Gouda\n\n"
+        "5- Zeyad Gouda\n"
         "6- Mohamed Yasser\n"
-        "7- Mohamed Medhat\n\n"
-        "THANK YOU FOR YOUR PLAYING!"
-    );
+        "7- Mohamed Medhat\n\n\n"
+        "THANKS FOR PLAYING!");
     FloatRect bounds = creditsText->getLocalBounds();
-    creditsText->setOrigin({ bounds.position.x + bounds.size.x / 2.f, 0.f });
-    creditsText->setPosition({ WindowWidth / 2.f, WindowHeight / 2.f - 260.f });
+    creditsText->setOrigin({bounds.position.x + bounds.size.x / 2.f, 0.f});
+    creditsText->setPosition({WindowWidth / 2.f, WindowHeight / 2.f - 260.f});
 
     // تجهيز زرار Done
-    sprHSDonePlankcredits.setPosition({ 400.f, 545.f });
-    sprHSDonePlankcredits.setOrigin({ texHSDoneNormalcredits.getSize().x / 2.f, texHSDoneNormalcredits.getSize().y / 2.f });
+    sprHSDonePlankcredits.setPosition({400.f, 545.f});
+    sprHSDonePlankcredits.setOrigin({texHSDoneNormalcredits.getSize().x / 2.f, texHSDoneNormalcredits.getSize().y / 2.f});
 
     // تجهيز النص بتاع الزرار
-    textHSDoneButtoncredits.setPosition({ 400.f, 536.f });
+    textHSDoneButtoncredits.setPosition({400.f, 536.f});
     textHSDoneButtoncredits.setOutlineThickness(2.f);
     FloatRect doneBounds = textHSDoneButtoncredits.getLocalBounds();
-    textHSDoneButtoncredits.setOrigin({ doneBounds.size.x / 2.f, doneBounds.size.y / 2.f });
+    textHSDoneButtoncredits.setOrigin({doneBounds.size.x / 2.f, doneBounds.size.y / 2.f});
 }
 
 // ==========================================
@@ -3546,26 +3626,34 @@ void StartCredits() {
 // بتعالج الأحداث (Events) وتحسب الـ Hover
 // وبترجع true لو المستخدم عايز يخرج من الشاشة
 // ==========================================
-bool UpdateCredits() {
+bool UpdateCredits()
+{
     PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
     // 1. معالجة الأحداث (Events)
-    while (const optional event = window.pollEvent()) {
-        if (event->is<Event::Closed>()) {
+    while (const optional event = window.pollEvent())
+    {
+        if (event->is<Event::Closed>())
+        {
             window.close();
             return true; // خروج
         }
 
-        if (const auto* keyPressed = event->getIf<Event::KeyPressed>()) {
-            if (keyPressed->code == Keyboard::Key::Escape) {
+        if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+        {
+            if (keyPressed->code == Keyboard::Key::Escape)
+            {
                 return true; // خروج
             }
         }
 
-        if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>()) {
-            if (mouseBtn->button == Mouse::Button::Left) {
-                if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos)) {
+        if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
+        {
+            if (mouseBtn->button == Mouse::Button::Left)
+            {
+                if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos))
+                {
                     return true; // خروج
                 }
             }
@@ -3573,10 +3661,13 @@ bool UpdateCredits() {
     }
 
     // 2. تحديث الـ Hover (تغيير اللون والصورة)
-    if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos)) {
+    if (sprHSDonePlankcredits.getGlobalBounds().contains(mousePos))
+    {
         sprHSDonePlankcredits.setTexture(texHSDoneHovercredits);
         textHSDoneButtoncredits.setFillColor(Color(255, 255, 0)); // لون أخضر فاتح
-    } else {
+    }
+    else
+    {
         sprHSDonePlankcredits.setTexture(texHSDoneNormalcredits);
         textHSDoneButtoncredits.setFillColor(Color(180, 255, 100)); // لون اصفر
     }
@@ -3589,9 +3680,11 @@ bool UpdateCredits() {
 // برسم العناصر بس من غير ما تعمل Display
 // عشان نقدر نرسم الـ Fade فوقها
 // ==========================================
-void DrawCredits() {
+void DrawCredits()
+{
     DrawMainMenuBackground();
-    if(creditsText.has_value()) window.draw(*creditsText);
+    if (creditsText.has_value())
+        window.draw(*creditsText);
     window.draw(sprHSDonePlankcredits);
     window.draw(textHSDoneButtoncredits);
 }
