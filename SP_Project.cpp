@@ -138,22 +138,22 @@ float timerRight = 0.0f;
 // ==========================================
 
 // bg / sign / banner
-Texture bgTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_bg.jpeg");
+Texture bgTexture("Assets/Select_level/gamemap_bg.jpeg");
 Sprite bgSprite(bgTexture);
-Texture signTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_tittleboard.jpeg");
+Texture signTexture("Assets/Select_level/gamemap_tittleboard.jpeg");
 Sprite signSprite(signTexture);
-Texture bannerTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/bord.jpeg");
+Texture bannerTexture("Assets/Select_level/bord.jpeg");
 Sprite bannerSprite(bannerTexture);
 
 // back button (normal / hover)
-Texture myTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/shell_tinybtn124_normal.jpeg");
-Texture myHoverTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/shell_tinybtn124_high.jpeg");
+Texture myTexture("Assets/Select_level/shell_tinybtn124_normal.jpeg");
+Texture myHoverTexture("Assets/Select_level/shell_tinybtn124_high.jpeg");
 Sprite mySprite(myTexture);
 
 // pearl textures (locked / unlocked) + load bar
-Texture pearlTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/white.jpeg");
-Texture pearlUnlockedTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gold.jpeg");
-Texture loadBarTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_loadbar.jpeg");
+Texture pearlTexture("Assets/Select_level/white.jpeg");
+Texture pearlUnlockedTexture("Assets/Select_level/gold.jpeg");
+Texture loadBarTexture("Assets/Select_level/gamemap_loadbar.jpeg");
 
 // pearl sprites - normal & time attack
 Sprite pearlSprite1(pearlTexture), pearlSprite2(pearlTexture), pearlSprite3(pearlTexture);
@@ -169,7 +169,7 @@ sf::Vector2f unlockedPos2 = { 261.f, 152.f }; sf::Vector2f unlockedScale2 = { 0.
 sf::Vector2f unlockedPos3 = { 255.f, 186.f }; sf::Vector2f unlockedScale3 = { 0.028f, 0.028f };
 
 // UI texts
-static sf::Font font("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/ARIALNBI.ttf");
+static sf::Font font("Assets/Fonts/ARIALNBI.ttf");
 static sf::Text staticTxt(font, ""), nowLoadingTxt(font, ""), menuTxt(font, ""), levelTxt(font, ""), loadingtxt(font, "");
 
 // level unlock state
@@ -208,13 +208,13 @@ bool gameScreenActive = false;
 int selectedLevel = -1;
 
 // button positions & scales (options / quit / continue)
-Texture gsBtn1NormalTex, gsBtn1HoverTex; optional<Sprite> gsBtn1Sprite;
+Texture normal_options_bott, hover_options_bott; optional<Sprite> gsBtn1Sprite;
 const float GS_BTN1_X = 180.f, GS_BTN1_Y = 560.f, GS_BTN1_SCALE = 1 / 10.0f;
 
-Texture gsBtn2NormalTex, gsBtn2HoverTex; optional<Sprite> gsBtn2Sprite;
+Texture normal_quit_bott,  hover_quit_bott; optional<Sprite> gsBtn2Sprite;
 const float GS_BTN2_X = 630.f, GS_BTN2_Y = 560.f, GS_BTN2_SCALE = 2 / 10.0f;
 
-Texture gsBtn3NormalTex, gsBtn3HoverTex; optional<Sprite> gsBtn3Sprite;
+Texture normal_continue_bott,  hover_continue_bott; optional<Sprite> gsBtn3Sprite;
 const float GS_BTN3_X = 400.f, GS_BTN3_Y = 540.f;
 const float GS_BTN3_SCALE = 1.5f / 10.f, GS_BTN3_HOVER_SCALE = 3.5f / 10.f;
 const float GS_BTN3_HOVER_HALF_W = 80.f, GS_BTN3_HOVER_HALF_H = 30.f;
@@ -255,21 +255,21 @@ const float QUIT_BTN_SCALE = 0.7f;
 
 
 // --- تحميل الصور والأجسام ---
-Texture Background_Loading("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/loadbg.png");
+Texture Background_Loading("Assets/Main menu & Loading/Loading Screen/Images/loadbg.png");
 Sprite Background_Loading_sprite(Background_Loading);
-Texture Game_Icon("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/LOGO.png");
+Texture Game_Icon("Assets/Main menu & Loading/Loading Screen/Images/LOGO.png");
 Sprite Game_Icon_sprite(Game_Icon);
-Texture POPCAP_Logo("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png");
+Texture POPCAP_Logo("Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png");
 Sprite POPCAP_Logo_sprite(POPCAP_Logo);
-Texture LogoWood("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png");
+Texture LogoWood("Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png");
 Sprite LogoWood_sprite(LogoWood);
-Texture loadBar("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/loadBar.png");
+Texture loadBar("Assets/Main menu & Loading/Loading Screen/Images/loadBar.png");
 Sprite loadBar_sprite(loadBar);
-Texture loadBar_empty("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/loadBarCap.png");
+Texture loadBar_empty("Assets/Main menu & Loading/Loading Screen/Images/loadBarCap.png");
 Sprite loadBar_empty_sprite(loadBar_empty);
-Texture bubbleTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/bubbles_letters.png");
+Texture bubbleTexture("Assets/Main menu & Loading/Loading Screen/Images/bubbles_letters.png");
 Sprite bubbleSprite(bubbleTexture);
-Texture fontTexture("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/LOADING.png");
+Texture fontTexture("Assets/Fonts/LOADING.png");
 Sprite s_L(fontTexture);
 Sprite s_O(fontTexture);
 Sprite s_A(fontTexture);
@@ -277,21 +277,21 @@ Sprite s_D(fontTexture);
 Sprite s_I(fontTexture);
 Sprite s_N(fontTexture);
 Sprite s_G(fontTexture);
-Texture bubbleSmallTex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/fx_bubble_d0.png");
+Texture bubbleSmallTex("Assets/Main menu & Loading/Loading Screen/Images/fx_bubble_d0.png");
 Sprite bubbleSmallSprite(bubbleSmallTex);
-Texture spark("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/sparkleb0.png");
+Texture spark("Assets/Main menu & Loading/Loading Screen/Images/sparkleb0.png");
 Sprite sparkSprite(spark);
 
 // ===============================================================================
 // =================================== Main Menu =================================
 // ===============================================================================
-Texture mainbackground("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_mainmenubg.jpg");
+Texture mainbackground("Assets/Main menu & Loading/Main Menu/mm_mainmenubg.jpg");
 Sprite background(mainbackground);
-Texture logo("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/logo-removebg-preview.png");
+Texture logo("Assets/Main menu & Loading/Main Menu/logo-removebg-preview.png");
 Sprite logosp(logo);
-Texture Greenfishswim("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/greenfish/greenfishs.png");
-Texture Greenfisheat("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/greenfish/dd.png");
-Texture Greenfishturn("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/greenfish/fishturning.png");
+Texture Greenfishswim("Assets/Fish/greenfish/greenfishs.png");
+Texture Greenfisheat("Assets/Fish/greenfish/dd.png");
+Texture Greenfishturn("Assets/Fish/greenfish/fishturning.png");
 Sprite Greenfish(Greenfishswim);
 float GFvelocityX_AXIS = -2;
 float GFvelocityY_AXIS = -2;
@@ -301,7 +301,7 @@ int GFturn = 0;
 float GFchangedir = -1;
 int counter = 0;
 
-Texture Barracudatex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/Barracuda/Barracuda.png");
+Texture Barracudatex("Assets/Fish/Barracuda/Barracuda.png");
 Sprite Barracuda(Barracudatex);
 int BFcol = 0;
 int BFrow = 0;
@@ -309,41 +309,41 @@ float BFvelocityX_AXIS = -2;
 float BFvelocityY_AXIS = -2;
 float BFchangedir = -1;
 
-Texture startgametex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_startgame_normal-removebg-preview.png");
-Texture startgamepressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_startgame_high-removebg-preview.png");
+Texture startgametex("Assets/Main menu & Loading/Main Menu/mm_startgame_normal-removebg-preview.png");
+Texture startgamepressed("Assets/Main menu & Loading/Main Menu/mm_startgame_high-removebg-preview.png");
 Sprite startgamebutton(startgametex);
 
-SoundBuffer buttonpressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/mouseover.ogg");
+SoundBuffer buttonpressed("Assets/Music and Sounds/mouseover.ogg");
 Sound buttonpressedsound(buttonpressed);
 
-Music mainmenumusic("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/menuMusic.mp3");
+Music mainmenumusic("Assets/Music and Sounds/menuMusic.mp3");
 bool isMusicEnabled = true;
 
-Texture timeattacktex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_timeattack_normal-removebg-preview.png");
-Texture timeattackpressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_timeattack_high-removebg-preview.png");
+Texture timeattacktex("Assets/Main menu & Loading/Main Menu/mm_timeattack_normal-removebg-preview.png");
+Texture timeattackpressed("Assets/Main menu & Loading/Main Menu/mm_timeattack_high-removebg-preview.png");
 Sprite timeattackbutton(timeattacktex);
 
-Texture highscoretex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_highscores_normal-removebg-preview.png");
-Texture highscorepressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_highscores_high-removebg-preview.png");
+Texture highscoretex("Assets/Main menu & Loading/Main Menu/mm_highscores_normal-removebg-preview.png");
+Texture highscorepressed("Assets/Main menu & Loading/Main Menu/mm_highscores_high-removebg-preview.png");
 Sprite highscorebutton(highscoretex);
 
-Texture quittex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_quit_normal-removebg-preview.png");
-Texture quitpressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_quit_high-removebg-preview.png");
+Texture quittex("Assets/Main menu & Loading/Main Menu/mm_quit_normal-removebg-preview.png");
+Texture quitpressed("Assets/Main menu & Loading/Main Menu/mm_quit_high-removebg-preview.png");
 Sprite quitbutton(quittex);
 
-Texture optionstex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_options_normal-removebg-preview.png");
-Texture optionspressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_options_high-removebg-preview.png");
+Texture optionstex("Assets/Main menu & Loading/Main Menu/mm_options_normal-removebg-preview.png");
+Texture optionspressed("Assets/Main menu & Loading/Main Menu/mm_options_high-removebg-preview.png");
 Sprite optionsbutton(optionstex);
 
-Texture switchusertex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_switchuser_normal-removebg-preview.png");
-Texture switchuserpressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_switchuser_high-removebg-preview.png");
+Texture switchusertex("Assets/Main menu & Loading/Main Menu/mm_switchuser_normal-removebg-preview.png");
+Texture switchuserpressed("Assets/Main menu & Loading/Main Menu/mm_switchuser_high-removebg-preview.png");
 Sprite switchuserbutton(switchusertex);
 
-Texture creditstex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_credits_normal-removebg-preview.png");
-Texture creditspressed("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Main Menu/mm_credits_high-removebg-preview.png");
+Texture creditstex("Assets/Main menu & Loading/Main Menu/mm_credits_normal-removebg-preview.png");
+Texture creditspressed("Assets/Main menu & Loading/Main Menu/mm_credits_high-removebg-preview.png");
 Sprite creditsbutton(creditstex);
 
-Texture minowfishtex("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/herfish/herFish.png");
+Texture minowfishtex("Assets/Fish/herfish/herFish.png");
 Sprite Minowfish(minowfishtex);
 int MFcol = 0;
 int MFrow = 0;
@@ -396,7 +396,7 @@ Vector2i mouseLocalPos;
 Vector2f mouseWorldPos;
 CircleShape c({ 10 });
 
-Texture QueenTrigerTEX("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fish/QueenTrigger/QueenTrigger.png");
+Texture QueenTrigerTEX("Assets/Fish/QueenTrigger/QueenTrigger.png");
 Sprite QueenTrigger(QueenTrigerTEX);
 int QTcol = 0;
 int QTrow = 0;
@@ -454,7 +454,7 @@ Player players[7];
 int NumberOfUsers = 0;
 void SaveUsers()
 {
-    ofstream file("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Users_List.txt");
+    ofstream file("Assets/Switch User/Users_List.txt");
     for (int id = 0; id < NumberOfUsers; id++)
         file << players[id].name << '\t' << players[id].id << '\n';
     file.close();
@@ -498,13 +498,13 @@ bool CamefromDupplicate = 0;
 
 
 
-Texture quit_bg("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Quit/bg_quit.png");
+Texture quit_bg("Assets/Quit/bg_quit.png");
 Sprite quit_bg_sprite(quit_bg);
-Texture quit_button("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Quit/Button.png");
+Texture quit_button("Assets/Quit/Button.png");
 Sprite quit_button_sprite(quit_button);
-Texture quit_button_hover("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Quit/Button High.png");
+Texture quit_button_hover("Assets/Quit/Button High.png");
 Sprite quit_button_hover_sprite(quit_button_hover);
-Texture quit_icon("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Quit/quitgame_icon.png");
+Texture quit_icon("Assets/Quit/quitgame_icon.png");
 Sprite quit_icon_sprite(quit_icon);
 
 bool quit_yes_pressed = false;
@@ -597,25 +597,25 @@ HighScoreEntry timeattack_scores[MAX_SCORES];
 void proceduralSort(HighScoreEntry arr[]);
 
 // ================================= High Score =================================
-Texture texHSDoneNormal("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/done_normal.png");
-Texture texHSDoneHover("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/done_hover.png");
+Texture texHSDoneNormal("Assets/Highscore/done_normal.png");
+Texture texHSDoneHover("Assets/Highscore/done_hover.png");
 Sprite sprHSDonePlank(texHSDoneNormal);
 
-Texture texHSResetNormal("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/shell_tinybtn124_normal.png");
-Texture texHSResetHover("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/shell_tinybtn124_high.jpg");
+Texture texHSResetNormal("Assets/Highscore/shell_tinybtn124_normal.png");
+Texture texHSResetHover("Assets/Highscore/shell_tinybtn124_high.jpg");
 Sprite sprHSResetPlank(texHSResetNormal);
 
-Texture texHSArrowNormal("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/_sidescrollbtn.png");
-Texture texHSArrowHover("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/_sidescrollbtnhi.png");
-Texture texHSArrowDown("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Highscore/_sidescrollbtndown.png");
+Texture texHSArrowNormal("Assets/Highscore/_sidescrollbtn.png");
+Texture texHSArrowHover("Assets/Highscore/_sidescrollbtnhi.png");
+Texture texHSArrowDown("Assets/Highscore/_sidescrollbtndown.png");
 Sprite sprHSStoryArrowRight(texHSArrowNormal);
 Sprite sprHSStoryArrowLeft(texHSArrowNormal);
 Sprite sprHSListArrowUp(texHSArrowNormal);
 Sprite sprHSListArrowDown(texHSArrowNormal);
 
-Font fontHSTitle("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/BernardMT.ttf");
-Font fontHSMain("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/Barmeno.ttf");
-Font fontHSDone("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/BarmenoBold.otf");
+Font fontHSTitle("Assets/Fonts/BernardMT.ttf");
+Font fontHSMain("Assets/Fonts/Barmeno.ttf");
+Font fontHSDone("Assets/Fonts/BarmenoBold.otf");
 
 Text textHSMainTitle(fontHSTitle, "High Scores", 48);
 Text textHSStoryMode(fontHSMain, "Story Mode", 22);
@@ -651,11 +651,11 @@ const Color colorResetText(255, 255, 150);
 const Color colorHoverHighlight(255, 255, 0);
 
 // credits
-Font fontcredits("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/trebuc.ttf");
+Font fontcredits("Assets/Fonts/trebuc.ttf");
 optional<Text> creditsText;
 Text textHSDoneButtoncredits(fontHSDone, "Done", 30);
-Texture texHSDoneNormalcredits("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Credits/done_normal.png");
-Texture texHSDoneHovercredits("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Credits/done_hover.png");
+Texture texHSDoneNormalcredits("Assets/Credits/done_normal.png");
+Texture texHSDoneHovercredits("Assets/Credits/done_hover.png");
 Sprite sprHSDonePlankcredits(texHSDoneNormalcredits);
 
 int main()
@@ -724,7 +724,7 @@ void loading_screen()
     {
         cout << "Error loading shader!" << endl;
     }
-    if (!Background_Loading.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/loadbg.png"))
+    if (!Background_Loading.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/loadbg.png"))
     {
         cout << "!!! Error: Could not find loadbg.png !!!" << endl;
     }
@@ -735,7 +735,7 @@ void loading_screen()
     float ScaleY = WindowHeight / texture_Size.y;
     Background_Loading_sprite.setScale({ ScaleX, ScaleY });
     Background_Loading.setSmooth(true);
-    if (!Game_Icon.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/LOGO.png"))
+    if (!Game_Icon.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/LOGO.png"))
     {
         cout << "!!! Error: Could not find LOGO.png !!!" << endl;
     }
@@ -748,7 +748,7 @@ void loading_screen()
     ScaleY = height / Game_Icon.getSize().y;
     Game_Icon_sprite.setScale({ ScaleX, ScaleY });
     Game_Icon.setSmooth(true);
-    if (!POPCAP_Logo.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png"))
+    if (!POPCAP_Logo.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/popCapLogo.png"))
     {
         cout << "!!! Error: Could not find popCapLogo.png !!!" << endl;
     }
@@ -761,7 +761,7 @@ void loading_screen()
     ScaleY = height / POPCAP_Logo.getSize().y;
     POPCAP_Logo_sprite.setScale({ ScaleX, ScaleY });
     POPCAP_Logo.setSmooth(true);
-    if (!LogoWood.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png"))
+    if (!LogoWood.loadFromFile("Assets/Main menu & Loading/Loading Screen/Images/sproutLogoWood.png"))
     {
         cout << "!!! Error: Could not find sproutLogoWood.png !!!" << endl;
     }
@@ -774,7 +774,7 @@ void loading_screen()
     ScaleY = height / LogoWood.getSize().y;
     LogoWood_sprite.setScale({ ScaleX, ScaleY });
     LogoWood.setSmooth(true);
-    if (!fontTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/LOADING.png"))
+    if (!fontTexture.loadFromFile("Assets/Fonts/LOADING.png"))
     {
         cout << "!!! Error: Could not find LOADING.png !!!" << endl;
     }
@@ -1610,29 +1610,29 @@ void StartSwitchUser()
 {
     ResetStats();
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
-    CreateButton(Full, FullTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/BG.png", X, Y, 0.2, 0.2);
+    CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.25f, Y = WindowHeight * 0.78f;
-    CreateButton(NewButton, NewButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
-    if (!NewButtonHLTex.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button High.png"))
+    CreateButton(NewButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
+    if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.78f;
-    CreateButton(SelectButton, SelectButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
-    if (!SelectButtonHLTex.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button High.png"))
+    CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
+    if (!SelectButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
     X = WindowWidth * 0.75f, Y = WindowHeight * 0.78f;
-    CreateButton(DeleteButton, DeleteButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
-    if (!DeleteButtonHLTex.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button High.png"))
+    CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
+    if (!DeleteButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
-    if (!btnFont.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/BarmenoBold.otf"))
+    if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
         cout << "Can't load font\n";
     SetupButtonText(NewText, "New", NewButton);
     SetupButtonText(SelectText, "Select", SelectButton);
     SetupButtonText(DeleteText, "Delete", DeleteButton);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
-    CreateButton(Title, TitleTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
+    CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
     for (auto& player : players)
         player = { "", 0 };
-    ifstream loadusers("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Users_List.txt");
+    ifstream loadusers("Assets/Switch User/Users_List.txt");
     string name;
     int id;
     while (loadusers >> name >> id and NumberOfUsers < MaxNumberOfUsers)
@@ -1867,8 +1867,8 @@ void EnterYourName()
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
     NameEntry = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/EnterYourName.png", X, Y, 0.2, 0.2);
-    if (!Inputfont.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/trebuc.ttf"))
+    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/EnterYourName.png", X, Y, 0.2, 0.2);
+    if (!Inputfont.openFromFile("Assets/Fonts/trebuc.ttf"))
         cout << "Cant Open Font!";
     DisplayText.setFont(Inputfont);
     DisplayText.setCharacterSize(30);
@@ -1876,16 +1876,16 @@ void EnterYourName()
     X = WindowWidth * 0.24f, Y = WindowHeight * 0.34f;
     DisplayText.setPosition({ (float)X, (float)Y });
     X = WindowWidth * 0.375f, Y = WindowHeight * 0.448f;
-    CreateButton(Blink, BlinkTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
+    CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.62f;
-    CreateButton(DoneAddingUser, DoneAddingUserTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
+    CreateButton(DoneAddingUser, DoneAddingUserTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(DoneAddingUserText, "Done", DoneAddingUser);
-    if (!DoneAddingUserHLTex.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button High.png"))
+    if (!DoneAddingUserHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
-    if (!CancelAddingUserHLTex.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/shell_tinybtn124_high.jpg"))
+    if (!CancelAddingUserHLTex.loadFromFile("Assets/Switch User/shell_tinybtn124_high.jpg"))
         cout << "Can't load Texture!\n";
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.75f;
-    CreateButton(CancelAddingUser, CancelAddingUserTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Cancel.png", X, Y, 1.5, 1.5);
+    CreateButton(CancelAddingUser, CancelAddingUserTex, "Assets/Switch User/Cancel.png", X, Y, 1.5, 1.5);
     SetupButtonText(CancelAddingUserText, "Cancel", CancelAddingUser);
     CancelAddingUserText.setPosition({ CancelAddingUser.getPosition().x, CancelAddingUser.getPosition().y - 5 });
 }
@@ -1914,12 +1914,12 @@ void DeleteUser()
     JustOpenDeleteConfirm = 1;
     isConfirmUserDelete = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(DeleteUserBg, DelteUserBgTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/DeleteUserBg.png", X, Y, 0.175, 0.175);
+    CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/DeleteUserBg.png", X, Y, 0.175, 0.175);
     X = WindowWidth * 0.4f, Y = WindowHeight * 0.7f;
-    CreateButton(YesButton, NewButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
+    CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(YesButtonText, "Yes", YesButton);
     X = WindowWidth * 0.6f, Y = WindowHeight * 0.7f;
-    CreateButton(NoButton, NewButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
+    CreateButton(NoButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(NoButtonText, "No!", NoButton);
     SetupButtonText(DeletethisUser, players[SelectedUser].name, DeleteUserBg);
     X = WindowWidth * 0.47f, Y = WindowHeight * 0.52f;
@@ -1931,9 +1931,9 @@ void FullList()
 {
     isListFull = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(ListisFull, ListisFullTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/ListIsFull.png", X, Y, 0.2, 0.2);
+    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
-    CreateButton(FullOKButton, FullOKButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(FullListOKBtnText, "OK", FullOKButton);
     InputString = "";
 }
@@ -1942,9 +1942,9 @@ void DupplicateUser()
 {
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(DupplicateBg, DupplicateBgTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
+    CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.72f;
-    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
+    CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(DupplicateOKBtnText, "OK", DupplicateOKButton);
     SetupButtonText(DupplicatedUserText, InputString, DupplicateBg);
     X = WindowWidth * 0.48f, Y = WindowHeight * 0.56f;
@@ -2099,12 +2099,12 @@ void StartOptions()
     window.setFramerateLimit(60);
     window.setView(view);
     srand(static_cast<unsigned int>(time(NULL)));
-    if (!globalFont.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/Barmeno.ttf"))
+    if (!globalFont.openFromFile("Assets/Fonts/Barmeno.ttf"))
         cout << "Failed to load font!" << endl;
     globalFont.setSmooth(false);
     screenDarkener.setSize(Vector2f(WindowWidth, WindowHeight));
     screenDarkener.setFillColor(Color(0, 0, 0, 95));
-    if (texBgPlank.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/plank.png"))
+    if (texBgPlank.loadFromFile("Assets/Options/plank.png"))
     {
         texBgPlank.setSmooth(true);
         sprBgPlank.emplace(texBgPlank);
@@ -2112,7 +2112,7 @@ void StartOptions()
         sprBgPlank->setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
         sprBgPlank->setPosition({ WindowWidth / 2.f, 280.f });
     }
-    if (texCorals.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/corals.png"))
+    if (texCorals.loadFromFile("Assets/Options/corals.png"))
     {
         texCorals.setSmooth(true);
         sprCorals.emplace(texCorals);
@@ -2121,7 +2121,7 @@ void StartOptions()
         sprCorals->setPosition({ (WindowWidth - 2) / 2.f, 315.f });
         sprCorals->setColor(Color(255, 255, 255, 175));
     }
-    if (texTitle.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/options_title.png"))
+    if (texTitle.loadFromFile("Assets/Options/options_title.png"))
     {
         texTitle.setSmooth(true);
         sprTitle.emplace(texTitle);
@@ -2130,22 +2130,22 @@ void StartOptions()
         sprTitle->setPosition({ WindowWidth / 2.f, 100.f });
         sprTitle->setScale({ 1.f, 1.f });
     }
-    if (WaterSound.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/waterloop1.ogg"))
+    if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
     {
         waterloop.emplace(WaterSound);
         waterloop->setLooping(true);
     }
-    (void)sfxBuffers[0].loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/wateramb1.ogg");
-    (void)sfxBuffers[1].loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/wateramb2.ogg");
-    (void)sfxBuffers[2].loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/wave1.ogg");
-    (void)sfxBuffers[3].loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Music and Sounds/wave2.ogg");
+    (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg");
+    (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg");
+    (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");
+    (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");
     nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
-    (void)texUncheckedNormal.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/_shell_checkbtn_normal.png");
-    (void)texUncheckedHover.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/_shell_checkbtn_high.png");
-    (void)texCheckedNormal.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/shell_checkbtnchecked_normal.png");
-    (void)texCheckedHover.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/_shell_checkbtnchecked_high.png");
-    (void)texDoneNormal.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/done_normal.png");
-    (void)texDoneHover.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Options/done_hover.png");
+    (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png");
+    (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png");
+    (void)texCheckedNormal.loadFromFile("Assets/Options/shell_checkbtnchecked_normal.png");
+    (void)texCheckedHover.loadFromFile("Assets/Options/_shell_checkbtnchecked_high.png");
+    (void)texDoneNormal.loadFromFile("Assets/Options/done_normal.png");
+    (void)texDoneHover.loadFromFile("Assets/Options/done_hover.png");
     texUncheckedNormal.setSmooth(true);
     texUncheckedHover.setSmooth(true);
     texCheckedNormal.setSmooth(true);
@@ -2472,11 +2472,11 @@ void QuitGame()
 
 void StartQuit()
 {
-    if (!btnFont.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/BarmenoBold.otf"))
+    if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
     {
         cout << "Error: Could not load font!" << endl;
     }
-    if (!quit_bg.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Quit/bg_quit.png"))
+    if (!quit_bg.loadFromFile("Assets/Quit/bg_quit.png"))
         cout << "Error Loading Quit BG!" << endl;
     quit_bg_sprite.setTexture(quit_bg);
     quit_bg.setSmooth(true);
@@ -3130,42 +3130,42 @@ void StartSelectLevel()
     isLoading = false;
     loadProgress = 0.f;
 
-    if (!bgTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_bg.jpeg"))
+    if (!bgTexture.loadFromFile("Assets/Select_level/gamemap_bg.jpeg"))
         std::cerr << "Error: Could not load gamemap_bg.jpeg" << std::endl;
     bgSprite.setTexture(bgTexture);
     bgTexture.setSmooth(true);
 
-    if (!signTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_tittleboard.jpeg"))
+    if (!signTexture.loadFromFile("Assets/Select_level/gamemap_tittleboard.jpeg"))
         std::cerr << "Error: Could not load gamemap_tittleboard.jpeg" << std::endl;
     signTexture.setSmooth(true);
     signSprite.setTexture(signTexture);
     signSprite.setPosition({ 10.f, 10.f });
 
-    if (!bannerTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/bord.jpeg"))
+    if (!bannerTexture.loadFromFile("Assets/Select_level/bord.jpeg"))
         std::cerr << "Error: Could not load bord.jpeg" << std::endl;
     bannerTexture.setSmooth(true);
     bannerSprite.setTexture(bannerTexture);
     bannerSprite.setPosition({ 1.f, 445.f });
 
-    if (!myTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/shell_tinybtn124_normal.jpeg"))
+    if (!myTexture.loadFromFile("Assets/Select_level/shell_tinybtn124_normal.jpeg"))
         std::cerr << "Error: Could not load shell_tinybtn124_normal.jpeg" << std::endl;
-    if (!myHoverTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/shell_tinybtn124_high.jpeg"))
+    if (!myHoverTexture.loadFromFile("Assets/Select_level/shell_tinybtn124_high.jpeg"))
         std::cerr << "Error: Could not load shell_tinybtn124_high.jpeg" << std::endl;
     myTexture.setSmooth(true); myHoverTexture.setSmooth(true);
     mySprite.setTexture(myTexture);
     mySprite.setPosition({ 350.f, 565.f });
 
-    if (!pearlTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/white.jpeg"))
+    if (!pearlTexture.loadFromFile("Assets/Select_level/white.jpeg"))
         std::cerr << "Error: Could not load white.jpeg" << std::endl;
     pearlTexture.setSmooth(true);
-    if (!pearlUnlockedTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gold.jpeg"))
+    if (!pearlUnlockedTexture.loadFromFile("Assets/Select_level/gold.jpeg"))
         std::cerr << "Error: Could not load gold.jpeg" << std::endl;
     pearlUnlockedTexture.setSmooth(true);
-    if (!loadBarTexture.loadFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Select_level/gamemap_loadbar.jpeg"))
+    if (!loadBarTexture.loadFromFile("Assets/Select_level/gamemap_loadbar.jpeg"))
         std::cerr << "Error: Could not load gamemap_loadbar.jpeg" << std::endl;
     loadBarTexture.setSmooth(true);
 
-    if (!font.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/ARIALNBI.ttf"))
+    if (!font.openFromFile("Assets/Fonts/ARIALNBI.ttf"))
         cout << "Error loading font!\n";
     font.setSmooth(true);
 
@@ -3355,7 +3355,7 @@ void StartGameScreen(int level)
 
     // background
     if (!gameScreenBgTexture.loadFromFile(
-        "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/shell_stageinfo.jpg"))
+        "Assets/GameScreen/shell_stageinfo.jpg"))
         cout << "Error: shell_stageinfo.jpg\n";
     gameScreenBgTexture.setSmooth(true);
     gameScreenBgSprite = sf::Sprite(gameScreenBgTexture);
@@ -3366,14 +3366,14 @@ void StartGameScreen(int level)
     // options / quit / continue buttons
     struct BtnInfo { const char* n; const char* h; float x, y, sc, hsc, hw, hh; };
     BtnInfo btnInfos[3] = {
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/option1.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/option2.png",
+        {"Assets/GameScreen/option1.png",
+         "Assets/GameScreen/option2.png",
          180.f, 560.f, 1 / 10.f, 1 / 10.f, 0.f, 0.f},
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/quit1.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/quit2.png",
+        {"Assets/GameScreen/quit1.png",
+         "Assets/GameScreen/quit2.png",
          630.f, 560.f, 2 / 10.f, 2 / 10.f, 0.f, 0.f},
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/continue1.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/continue_large-removebg-preview.png",
+        {"Assets/GameScreen/continue1.png",
+         "Assets/GameScreen/continue_large-removebg-preview.png",
          400.f, 540.f, 1.5f / 10.f, 3.5f / 10.f, 80.f, 30.f},
     };
     for (int i = 0; i < 3; i++)
@@ -3394,7 +3394,7 @@ void StartGameScreen(int level)
     // quit popup - bg, title, texts
     showQuitPopup = false;
     if (!quitPopup.bgTex.loadFromFile(
-        "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/shell_shared_popupbg_medium-removebg-preview (2).png"))
+        "Assets/GameScreen/shell_shared_popupbg_medium-removebg-preview (2).png"))
         ;
     quitPopup.bgTex.setSmooth(true);
     quitPopup.bgSprite = sf::Sprite(quitPopup.bgTex);
@@ -3402,7 +3402,7 @@ void StartGameScreen(int level)
     quitPopup.bgSprite->setPosition({ QUIT_POPUP_X, QUIT_POPUP_Y });
 
     if (!quitPopup.titleTex.loadFromFile(
-        "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/New Project (1).png"))
+        "Assets/GameScreen/New Project (1).png"))
         ;
     quitPopup.titleTex.setSmooth(true);
     quitPopup.titleSprite = sf::Sprite(quitPopup.titleTex);
@@ -3421,12 +3421,12 @@ void StartGameScreen(int level)
     // quit popup buttons
     struct PopupBtnInfo { const char* n; const char* h; float y; };
     PopupBtnInfo pbInfos[3] = {
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_222549-removebg-preview.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_164334-removebg-preview.png", QUIT_BTN1_Y},
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_223151-removebg-preview.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_230020-removebg-preview.png", QUIT_BTN2_Y},
-        {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_223327-removebg-preview.png",
-         "C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_230106-removebg-preview.png", QUIT_BTN3_Y},
+        {"Assets/GameScreen/Screenshot_2026-04-25_222549-removebg-preview.png",
+         "Assets/GameScreen/Screenshot_2026-04-25_164334-removebg-preview.png", QUIT_BTN1_Y},
+        {"Assets/GameScreen/Screenshot_2026-04-25_223151-removebg-preview.png",
+         "Assets/GameScreen/Screenshot_2026-04-25_230020-removebg-preview.png", QUIT_BTN2_Y},
+        {"Assets/GameScreen/Screenshot_2026-04-25_223327-removebg-preview.png",
+         "Assets/GameScreen/Screenshot_2026-04-25_230106-removebg-preview.png", QUIT_BTN3_Y},
     };
     for (int i = 0; i < 3; i++)
     {
@@ -3442,7 +3442,7 @@ void StartGameScreen(int level)
     // level-specific images & texts
     int idx = level - 1;
     LevelData& ld = levels[idx];
-    if (!ld.font.openFromFile("C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/Fonts/trebuc.ttf"));
+    if (!ld.font.openFromFile("Assets/Fonts/trebuc.ttf"));
     ld.font.setSmooth(true);
 
     if (level == 1)
@@ -3450,10 +3450,10 @@ void StartGameScreen(int level)
         ld.imageCount = 4;
         struct ImgInfo { const char* path; float x, y, sc; };
         ImgInfo imgs[4] = {
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-25_021234-artguru-removebg-preview.png", 580.f, 230.f, 0.4f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-24_222635-removebg-preview.png",         300.f, 403.f, 0.9f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-24_222758-removebg-preview.png",         410.f, 405.f, 0.2f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/hudimage-removebg.png",                                     480.f, 415.f, 0.6f},
+            {"Assets/GameScreen/Screenshot_2026-04-25_021234-artguru-removebg-preview.png", 580.f, 230.f, 0.4f},
+            {"Assets/GameScreen/Screenshot_2026-04-24_222635-removebg-preview.png",         300.f, 403.f, 0.9f},
+            {"Assets/GameScreen/Screenshot_2026-04-24_222758-removebg-preview.png",         410.f, 405.f, 0.2f},
+            {"Assets/GameScreen/hudimage-removebg.png",                                     480.f, 415.f, 0.6f},
         };
         for (int i = 0; i < 4; i++)
         {
@@ -3495,10 +3495,10 @@ void StartGameScreen(int level)
         ld.imageCount = 4;
         struct ImgInfo { const char* path; float x, y, sc; };
         ImgInfo imgs[4] = {
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/starbubble1.png",                                    580.f, 200.f, 0.9f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/sparkletrail.png",                                  580.f, 240.f, 0.9f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/scr_mouseleftclickarrow-removebg-preview.png",      320.f, 405.f, 0.9f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/Screenshot_2026-04-24_223502-removebg-preview.png", 440.f, 415.f, 0.6f},
+            {"Assets/GameScreen/starbubble1.png",                                    580.f, 200.f, 0.9f},
+            {"Assets/GameScreen/sparkletrail.png",                                  580.f, 240.f, 0.9f},
+            {"Assets/GameScreen/scr_mouseleftclickarrow-removebg-preview.png",      320.f, 405.f, 0.9f},
+            {"Assets/GameScreen/Screenshot_2026-04-24_223502-removebg-preview.png", 440.f, 415.f, 0.6f},
         };
         for (int i = 0; i < 4; i++)
         {
@@ -3540,9 +3540,9 @@ void StartGameScreen(int level)
         ld.imageCount = 3;
         struct ImgInfo { const char* path; float x, y, sc; };
         ImgInfo imgs[3] = {
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/ffbubble1.png",                         250.f, 350.f, 1.0f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/sparkletrail.png",                     250.f, 400.f, 0.8f},
-            {"C:/Users/MOHAMED/source/repos/test1/x64/Debug/Assets/GameScreen/scr_frenzymeter-removebg-preview.png", 400.f, 280.f, 0.8f},
+            {"Assets/GameScreen/ffbubble1.png",                         250.f, 350.f, 1.0f},
+            {"Assets/GameScreen/sparkletrail.png",                     250.f, 400.f, 0.8f},
+            {"Assets/GameScreen/scr_frenzymeter-removebg-preview.png", 400.f, 280.f, 0.8f},
         };
         for (int i = 0; i < 3; i++)
         {
