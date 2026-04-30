@@ -22,9 +22,8 @@
 using namespace std;
 using namespace sf;
 
-void loading_screen();
+void LoadingScreen();
 void StartLoadingScreen();
-void UpdateLoadingScreen();
 bool DrawLoadingScreen(float totalTime);
 void MainMenu();
 void StartMainMenu();
@@ -87,6 +86,34 @@ void GameScreen(int level);
 void StartGameScreen(int level);
 void UpdateGameScreen();
 void DrawGameScreen();
+void centerText(Text& text);
+void bglevel();
+void Startbglevel();
+void Drawbglevel();
+void Movingplayer();
+void Startmovingplayer();
+void Updatemovingplayer(float deltaTime = 0.f); 
+void Drawmovingplayer();
+void StartSmallFish();
+void UpdateSmallFishes(float dt);
+void DrawSmallFishes(RenderWindow& window);
+void StartMediumFish();
+void UpdateMediumFishes(float dt);
+void DrawMediumFishes(sf::RenderWindow& window);
+void StartLargeFish();
+void UpdateLargeFishes(float dt);
+void DrawLargeFishes(sf::RenderWindow& window);
+void StartGameBubble(float x, float y, bool isAction);
+void UpdateGameBubbles(float dt);
+void DrawGameBubbles();
+void createScorePopup(float x, float y, int points);
+void StartMermaidEvent();
+void UpdateMermaidEvent(float dt);
+void DrawMermaidEvent();
+void Timeattacklevel();
+void SaveUnlocks();
+void LoadUnlocks();
+
 
 float getRandom(float min, float max)
 {
@@ -103,6 +130,8 @@ View view({ 400.f, 300.f }, Vector2f(window.getSize()));
 
 // =================================== Loading Screen =================================
 Shader swayShader;
+Shader swayShaderPlants; 
+
 float deltaTime;
 float startX = WindowWidth / 2.f;
 float spacing = 65.0f;
@@ -155,6 +184,10 @@ Texture pearlTexture("Assets/Select_level/white.jpeg");
 Texture pearlUnlockedTexture("Assets/Select_level/gold.jpeg");
 Texture loadBarTexture("Assets/Select_level/gamemap_loadbar.jpeg");
 
+
+//sound of loading
+Music loadingmusic("Assets/Music and Sounds/01_loadTrack.mp3");
+
 // pearl sprites - normal & time attack
 Sprite pearlSprite1(pearlTexture), pearlSprite2(pearlTexture), pearlSprite3(pearlTexture);
 Sprite ta_pearlSprite1(pearlTexture), ta_pearlSprite2(pearlTexture), ta_pearlSprite3(pearlTexture);
@@ -176,6 +209,7 @@ static sf::Text staticTxt(font, ""), nowLoadingTxt(font, ""), menuTxt(font, ""),
 bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
 bool ta_level1Unlocked = false, ta_level2Unlocked = false, ta_level3Unlocked = false;
 bool isTimeAttackMode = false;
+bool loadingdone = false;
 
 // pearl data struct
 struct PearlData
@@ -252,6 +286,8 @@ Text quitPopupLine1(font, "", 22), quitPopupLine2(font, "", 18);
 const float QUIT_POPUP_X = 400.f, QUIT_POPUP_Y = 330.f;
 const float QUIT_BTN1_Y = 300.f, QUIT_BTN2_Y = 360.f, QUIT_BTN3_Y = 420.f;
 const float QUIT_BTN_SCALE = 0.7f;
+bool pearlClicked = false;
+
 
 
 // --- تحميل الصور والأجسام ---
@@ -281,6 +317,8 @@ Texture bubbleSmallTex("Assets/Main menu & Loading/Loading Screen/Images/fx_bubb
 Sprite bubbleSmallSprite(bubbleSmallTex);
 Texture spark("Assets/Main menu & Loading/Loading Screen/Images/sparkleb0.png");
 Sprite sparkSprite(spark);
+SoundBuffer BubblesdoneBuffer("Assets/Music and Sounds/bubbleexploded.mpeg");
+Sound Bubbledone(BubblesdoneBuffer);
 
 // ===============================================================================
 // =================================== Main Menu =================================
@@ -300,6 +338,16 @@ int GFeat = 0;
 int GFturn = 0;
 float GFchangedir = -1;
 int counter = 0;
+
+// Text for welcome user 
+Font mainFont ("Assets/Fonts/ARIALNBI.TTF");
+Text welcomeLabel (mainFont , "" ,0);
+Text userNameText (mainFont , "" ,0);
+string userName = "Mohammad Sayed";
+
+// Welcome Button
+Texture welcometex("Assets/Main menu & Loading/Main Menu/Welcome.png");
+Sprite welcomebutton(welcometex);
 
 Texture Barracudatex("Assets/Fish/Barracuda/Barracuda.png");
 Sprite Barracuda(Barracudatex);
@@ -658,13 +706,425 @@ Texture texHSDoneNormalcredits("Assets/Credits/done_normal.png");
 Texture texHSDoneHovercredits("Assets/Credits/done_hover.png");
 Sprite sprHSDonePlankcredits(texHSDoneNormalcredits);
 
+//bg level
+Texture texbglevel("Assets/Levels/dribblecastle_backgrounD.png");
+Sprite sprbglevel(texbglevel);
+Texture reefsledge("Assets/Levels/dribblecastle_ledge_01.jpg");
+Sprite sprreefsledge(reefsledge);
+Texture reefsledge2("Assets/Levels/dribblecastle_ledge_02.jpg");
+Sprite sprreefsledge2(reefsledge2);
+Texture reefsoverhang("Assets/Levels/dribblecastle_overhang_01.jpg");
+Sprite sprreefsoverhang(reefsoverhang);
+Texture reefsgrass("Assets/Levels/sharedplants_grass_01.jpg");
+Sprite sprreefsgrass(reefsgrass);
+Texture reefsplants("Assets/Levels/sharedplants_plant_01.jpg");
+Sprite sprreefsplants(reefsplants);
+Texture reefsplants2("Assets/Levels/sharedplants_plant_02.jpg");
+Sprite sprreefsplants2(reefsplants2);
+Texture reefsplants23("Assets/Levels/sharedplants_plant_023.jpg");
+Sprite sprreefsplants23(reefsplants23);
+Texture reefsseaweed("Assets/Levels/sharedplants_seaweed_01.jpg");
+Sprite sprreefsseaweed(reefsseaweed);
+Texture reefsseaweed22("Assets/Levels/sharedplants_seaweed_01.jpg");
+Sprite sprreefsseaweed22(reefsseaweed22);
+Texture reefsseaweed2("Assets/Levels/sharedplants_seaweed_02.jpg");
+Sprite sprreefsseaweed2(reefsseaweed2);
+Texture reefsseaweed3("Assets/Levels/sharedplants_seaweed_03.jpg");
+Sprite sprreefsseaweed3(reefsseaweed3);
+Texture reefsseaweed31("Assets/Levels/sharedplants_seaweed_03.jpg");
+Sprite sprreefsseaweed31(reefsseaweed31);
+Texture reefsseaweed32("Assets/Levels/sharedplants_seaweed_03.jpg");
+Sprite sprreefsseaweed32(reefsseaweed32);
+Texture reefsseaweed33("Assets/Levels/sharedplants_seaweed_03.jpg");
+Sprite sprreefsseaweed33(reefsseaweed33);
+Texture reefsseaweed4("Assets/Levels/sharedplants_seaweed_04.jpg");
+Sprite sprreefsseaweed4(reefsseaweed4);
+Texture reefstubes("Assets/Levels/sharedplants_tubes_01.jpg");
+Sprite sprreefstubes(reefstubes);
+Texture reefstubes2("Assets/Levels/sharedplants_tubes_02.jpg");
+Sprite sprreefstubes2(reefstubes2);
+Texture reefstubes3("Assets/Levels/sharedplants_tubes_03.jpg");
+Sprite sprreefstubes3(reefstubes3);
+
+//player
+Texture texPlayerSwim("Assets/Fish/butterflyfish/swim.png");
+Texture texPlayerEat("Assets/Fish/butterflyfish/eat.png");
+Texture texPlayerTurn("Assets/Fish/butterflyfish/turn.png");
+Texture texPlayerIdle("Assets/Fish/butterflyfish/idle.png");
+Texture texPlayerall("Assets/Fish/butterflyfish/Butterflyfishall.png");
+Sprite sprPlayerSwim(texPlayerSwim);
+Sprite sprPlayerEat(texPlayerEat);
+Sprite sprPlayerTurn(texPlayerTurn);
+Sprite sprPlayerIdle(texPlayerIdle);
+Sprite sprPlayerall(texPlayerall);
+// ==========================================
+// 1. المتغيرات الصح (Global Variables)
+// ==========================================
+
+// ترتيب الصفوف في الصورة: 0=Eat, 1=Idle, 2=Swim, 3=Turn
+enum PlayerState { EAT = 0, IDLE = 1, SWIM = 2, TURN = 3 }; 
+
+// مصفوفة عدد الفريمات (عدد الأعمدة في كل صف)
+const int frameCounts[4] = { 6, 12, 14, 8 };
+
+// الحالة الحالية
+PlayerState currentState = IDLE;
+int currentFrame = 0;
+float timer = 0.f;
+// أضف هذا السطر مع المتغيرات العامة الخاصة باللاعب
+int playerIntroStep = 0; 
+bool pendingEat = false; // <--- أضف هذا السطر هنا
+
+
+// [1] مقاسات الشبكة (حسب صورتك: 4032 عرض ÷ 14 سمكة = 288)
+const int GRID_W = 288; 
+const int GRID_H = 224; // 896 طول ÷ 4 صفوف = 224
+
+// [2] مقاس الرسم (القص)
+const int DRAW_W = 288; 
+const int DRAW_H = 224; 
+
+// الحجم
+const float FISH_SCALE = 0.275f; 
+
+// متغيرات الحركة
+float lastMouseX = 0.0f;
+bool isFacingRight = false; 
+
+// [هام] المتغيرات اللي كانت ناقصة
+sf::Vector2i lastScreenMousePos = {0, 0}; 
+sf::Vector2f targetPos = {400.f, 300.f};  
+
+// متغيرات حجم الليفيل (عشان الكاميرا تتحرك)
+float LevelWidth = 950.0f;  
+float LevelHeight = 750.0f;  
+
+bool playerIntroActive = true;
+float playerIntroY = -150.f;
+
+
+//fish
+const int MAX_SMALL_FISH = 10; 
+
+sf::Texture smallFishTexture("Assets/Fish/herfish/herFish.png");
+float spawnTimer = 0.f;
+float spawnInterval = 0.5f; 
+
+struct SmallFish {
+    sf::Sprite* sprite; 
+    sf::Vector2f velocity;
+    float originalSpeedX; 
+    bool active; 
+
+    bool isFleeing = false; 
+    float verticalTimer = 0.f; 
+    bool canTurn = false; 
+    bool hasTurned = false; 
+    bool isTurning = false; 
+    float turnTimer = 0.f;  
+    float timeToNextTurn = 0.f; 
+    int currentFrame = 0;
+    float animTimer = 0.f;
+    bool facingRight = true; 
+    float spawnX = 0.f; 
+
+    SmallFish() {
+        sprite = nullptr; 
+        velocity = {0.f, 0.f};
+        active = false;
+    }
+    
+    ~SmallFish() {
+        if (sprite != nullptr) {
+            delete sprite;
+            sprite = nullptr;
+        }
+    }
+};
+// الـ Array الثابتة
+SmallFish smallFishes[MAX_SMALL_FISH];
+
+
+// ==========================================
+// Medium Fish (QueenTrigger) Settings
+// ==========================================
+const int MEDIUM_COLS = 14;
+const int MEDIUM_FRAME_W = 283;
+const int MEDIUM_FRAME_H = 156;
+const int MEDIUM_FRAMES_SWIM = 12;
+const int MEDIUM_FRAMES_EAT = 6;   
+const int MEDIUM_FRAMES_TURN = 5; 
+
+const int MAX_MEDIUM_FISH = 5; 
+sf::Texture mediumFishTexture;
+
+struct MediumFish {
+    sf::Sprite* sprite = nullptr;
+    sf::Vector2f velocity;
+    bool active = false;
+    
+    float timeToNextTurn = 0.f; 
+
+    int currentFrame = 0;
+    float animTimer = 0.f;
+    float verticalTimer = 0.f;
+    float turnTargetX = 0.f; // <--- أضف السطر ده
+
+    bool isFleeing = false; 
+    int state = 1; 
+    bool canTurn = false;
+    bool hasTurned = false;
+    float turnTimer = 0.f;
+    float spawnX = 0.f;
+
+    bool facingRight = true;
+};
+
+MediumFish mediumFishes[MAX_MEDIUM_FISH];
+float mediumSpawnTimer = 0.f;
+float mediumSpawnInterval = 6.0f; 
+
+// ==========================================
+// Large Fish (Barracuda) Settings
+// ==========================================
+const int LARGE_COLS = 14;
+const int LARGE_FRAME_W = 180;
+const int LARGE_FRAME_H = 160;
+const int LARGE_FRAMES_SWIM = 7;
+const int LARGE_FRAMES_TURN = 5; 
+const int LARGE_FRAMES_EAT = 6;    
+const int MAX_LARGE_FISH = 3;
+sf::Texture largeFishTexture;
+
+struct LargeFish {
+    sf::Sprite* sprite = nullptr;
+    sf::Vector2f velocity;
+    bool active = false;
+
+    bool isFleeing = false; 
+    int currentFrame = 0;
+    float animTimer = 0.f;
+    float verticalTimer = 0.f;
+    float turnTargetX = 0.f; // <--- أضف السطر ده
+    float timeToNextTurn = 0.f; 
+
+    int state = 1; 
+    bool canTurn = false;
+    bool hasTurned = false;
+    float turnTimer = 0.f;
+    float spawnX = 0.f;
+
+    bool facingRight = true;
+};
+
+LargeFish largeFishes[MAX_LARGE_FISH];
+float largeSpawnTimer = 0.f;
+float largeSpawnInterval = 10.0f; 
+
+//algorithm for level
+// ==========================================
+// Player Growth & Stats System
+// ==========================================
+int playerLevel = 1;          
+int score = 0;                
+int fishEatenCount = 0;       
+bool isPlayerDead = false;    
+Clock respawnClock;           
+bool isEscapeMode = false;    
+
+// متغيرات لحساب السمك المأكول
+int smallFishEatenCount = 0;
+int mediumFishEatenCount = 0;
+int largeFishEatenCount = 0;
+
+// متغير لمنع توليد سمك جديد
+bool stopSpawning = false;
+
+// متغيرات الـ Dash
+bool isDashing = false;
+Clock dashClock;
+float dashCooldown = 0.8f;     // الوقت اللي لازم يستنى قبل ما يعمل Dash تاني
+float dashDuration = 0.15f;    // مدة الـ Dash نفسه (سرعة فورية)
+float dashSpeedMult = 4.0f;    // مضاعف السرعة (4 أضعاف السرعة العادية)
+
+
+// ==========================================
+// Game Bubbles System (نظام الفقاعات الجديد)
+// ==========================================
+struct GameBubble {
+    float x, y, vx, vy;
+    float alpha;
+    bool active;
+    bool isAction; // true = لما تاكل أو Dash، false = عادية ماشية
+};
+const int MAX_GAME_BUBBLES = 20;
+GameBubble gameBubbles[MAX_GAME_BUBBLES];
+float gameBubbleSpawnTimer = 0.f;
+
+// متغير المضاعف
+int multiplier = 1;
+
+// هيكل خاص بنص السكور اللي بيظهر ويطير
+struct ScorePopup {
+    sf::Text text;
+    float alpha = 255.f; // شفافية
+    float ySpeed = -60.f; // سرعة الطيران لفوق
+    bool active = false;
+    sf::Color baseColor = sf::Color::White; // <--- أضفنا السطر ده
+
+    // *** إضافة Constructor لتهيئة النص بالخط اللي عندك ***
+    ScorePopup() : text(font) {}
+};
+
+// مصفوفة لتخزين نصوص السكور الظاهرة على الشاشة
+const int MAX_POPUPS = 20;
+ScorePopup scorePopups[MAX_POPUPS];
+
+// متغيرات نظام الـ Combo
+float noEatTimer = 0.0f;          // تايمر الوقوف (لو وصل 3 ثواني بينقص)
+const float PROGRESS_PER_EAT = 0.35f; // قيمة الزيادة لكل سمكة (تقريباً 3 سمكات تزود 1)
+const float COMBO_DECAY_TIME = 3.0f;  // الوقت المطلوب عشان ينقص (3 ثواني)
+const int MAX_MULTIPLIER = 6;     // أقصى قيمة للمضاعف
+
+// --- نظام الـ Combo المتقدم ---
+enum ComboState {
+    FILLING,      // بيأكل وبيملّي
+    WAIT_DRAIN,   // وقف، بيستنى 2 ثانية قبل ما يفرغ
+    DRAINING,     // بيفرغ البار
+    WAIT_DROP     // البار فضى، بيستنى 2 ثانية قبل ما ينقص الـ Multiplier
+};
+
+ComboState comboState = FILLING;
+float comboTimer = 0.0f;          // تايمر عشان نحسب الـ 2 ثانية
+float comboProgress = 0.0f;       // البار (0.0 إلى 1.0)
+const int FISH_TO_LEVEL_UP = 7;   // عدد السمكات المطلوبة
+const float WAIT_TIME = 2.0f;     // وقت الانتظار (2 ثواني)
+const float DRAIN_SPEED = 0.5f;   // سرعة التفريغ (1.0 يعني يفرغ في ثانية)
+
+// --- نظام الـ Lives والـ Game Over ---
+int lives = 3;                  // عدد الحيوات
+int hitsRemaining = 3;          // عدد المرات المسموح فيها انك تتاكل قبل ما تخسر حياة
+bool isGameOver = false;        // هل اللعبة خلصت
+
+// --- متغيرات أنيميشن SORRY ---
+// --- متغيرات أنيميشن SORRY ---
+// بنمرر الـ fontTexture للـ Sprite في الكونستركتور علطول
+Sprite s_Sorry_S(fontTexture);
+Sprite s_Sorry_O(fontTexture);
+Sprite s_Sorry_R(fontTexture);
+Sprite s_Sorry_R2(fontTexture);
+Sprite s_Sorry_Y(fontTexture);
+bool showSorryAnimation = false;
+bool sorryExploded = false;
+float sorryTimer = 0.f;
+float sorryLetterScales[5] = {0.f, 0.f, 0.f, 0.f, 0.f}; // لتكبير الحروف
+
+// --- [جديد] متغيرات أنيميشن PERFECT ---
+bool showPerfectAnimation = false;
+bool perfectExploded = false;
+float perfectTimer = 0.f;
+float perfectLetterScales[7] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; // 7 حروف
+
+// --- متغيرات نظام الـ Invincibility ---
+Clock hitCooldownClock;
+bool isInvincible = false;
+// ------------------------------------
+
+// ==========================================
+// Mermaid Event Variables (سمكة النجوم)
+// ==========================================
+Texture mermaidTex("Assets/fish/mermaid/mermaid.png");
+Sprite mermaidSprite(mermaidTex);
+Texture starTexture("Assets/bouns/starbubble1.png");
+bool isMermaidEventActive = false;
+bool mermaidFinished = false;
+Clock eventEndClock;
+
+struct Star {
+    Sprite* sprite = nullptr; // غيرناه لمؤشر عشان يشتغل في SFML 3
+    Vector2f velocity;
+    bool active = false;
+};
+const int MAX_STARS = 30;
+Star stars[MAX_STARS];
+
+// Animation vars
+int mermaidFrame = 0;
+float mermaidAnimTimer = 0.0f;
+float starSpawnTimer = 0.0f;
+
+// هيكل إعدادات المرحلة
+struct LevelSettings {
+    int fishToGrowToLevel2 = 15;  // عدد السمك المطلوب للنمو للمستوى 2
+    int fishToGrowToLevel3 = 40;  // عدد السمك المطلوي للنمو للمستوى 3
+};
+
+// متغير عام ليحمل إعدادات المرحلة الحالية
+LevelSettings currentLevelSettings;
+
+// === [جديد] متغيرات Time Attack ===
+int gameLEVEL; 
+
+
+
+enum Gamemode { CLASSIC, TIMEATTACK };
+Gamemode currentGamemode = TIMEATTACK;
+
+// Timer variables 
+float timeAttackDuration = 90.f;
+float remainingTime = 0.f;
+bool isGameWon = false;
+float finalTime = 0.f;
+Text timerText (font,"",40);
+bool  anyFishLeft; 
+const sf::Time totalDuration = sf::seconds(90.f);
+sf::Clock countdownClock;
+bool mermaidStarted = false;
+bool hasPlayedExitSound = false;
+
+SoundBuffer eatSoundBuffer ("Assets/Music and Sounds/bite1.ogg");
+Sound eatSound(eatSoundBuffer);
+
+SoundBuffer PlayergotEatenBuffer("Assets/Music and Sounds/bite3.ogg");
+Sound PlayergotEaten(PlayergotEatenBuffer);
+
+Music levelsound("Assets/Music and Sounds/02_track1_gameplay.mp3");
+
+
+SoundBuffer gameoverBuffer("Assets/Music and Sounds/10_gameOver.mp3");
+Sound gameover(gameoverBuffer);
+
+SoundBuffer mermaideventBuffer("Assets/Music and Sounds/11_mermaidSwimLoop.mp3");
+Sound mermaidevent(mermaideventBuffer);
+
+SoundBuffer dashBuffer("Assets/Music and Sounds/playerdash.ogg");
+Sound dashSound(dashBuffer);
+
+SoundBuffer levelUpBuffer("Assets/Music and Sounds/playergrow.ogg");
+Sound levelUpSound(levelUpBuffer);
+
+SoundBuffer StageClearBuffer("Assets/Music and Sounds/08_stageClear.mp3");
+Sound StageClearSound(StageClearBuffer);
+
+SoundBuffer spawnBuffer("Assets/Music and Sounds/playerspawn.ogg");
+Sound spawnSound(spawnBuffer);
+
+SoundBuffer dieBuffer("Assets/Music and Sounds/09_playerDie.mp3");
+Sound dieSound(dieBuffer);
+
+Music WaveSound("Assets/Music and Sounds/waterloop1.ogg");
+
+bool hasPlayedSpawnSound = false; // متغير لمنع تكرار الصوت
+Clock spawnDelayClock;
+
 int main()
 {
     cout << "SFML 3.0 and Standard Library are working!" << endl;
+    srand(time(0));
 
     window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2", State::Fullscreen);
 
-    StartLoadingScreen();
+    LoadingScreen();
     Clock clock;
     Clock totalClock;
 
@@ -677,7 +1137,7 @@ int main()
     view.setViewport(sf::FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
 
     window.setView(view);
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(120);
 
     while (window.isOpen())
     {
@@ -700,7 +1160,6 @@ int main()
 
     MainMenu();
 
-    window.setFramerateLimit(30);
     while (window.isOpen())
     {
         deltaTime = clock.restart().asSeconds();
@@ -717,9 +1176,8 @@ int main()
     return 0;
 }
 
-void loading_screen()
+void StartLoadingScreen()
 {
-    window.setFramerateLimit(45);
     if (!swayShader.loadFromFile("sway.frag", Shader::Type::Fragment))
     {
         cout << "Error loading shader!" << endl;
@@ -834,13 +1292,9 @@ void loading_screen()
     spark.setSmooth(true);
 }
 
-void StartLoadingScreen()
+void LoadingScreen()
 {
-    loading_screen();
-}
-
-void UpdateLoadingScreen()
-{
+    StartLoadingScreen();
 }
 
 bool DrawLoadingScreen(float totalTime)
@@ -852,65 +1306,88 @@ bool DrawLoadingScreen(float totalTime)
     window.draw(Game_Icon_sprite);
     window.draw(POPCAP_Logo_sprite);
     window.draw(LogoWood_sprite);
+
     float loadingStartTime = 1.0f;
     float progress = (totalTime - loadingStartTime) / 5.0f;
     if (progress < 0)
         progress = 0;
     if (progress > 1.0f)
         progress = 1.0f;
+
     Vector2u textureSize = loadBar.getSize();
     int currentWidth = (int)(textureSize.x * progress);
     loadBar_sprite.setTextureRect(IntRect({ 0, 0 }, { currentWidth, (int)textureSize.y }));
     window.draw(loadBar_empty_sprite);
     window.draw(loadBar_sprite);
+
     startX = WindowWidth / 2.0f - (3.5f * spacing) + 20.f;
-    Sprite* letters[] = { &s_L, &s_O, &s_A, &s_D, &s_I, &s_N, &s_G };
+    Sprite *letters[] = {&s_L, &s_O, &s_A, &s_D, &s_I, &s_N, &s_G};
+
     for (int i = 0; i < 7; i++)
     {
         float startDelay = 1.5f;
-        float letterDelay = i * 0.4f;
+        float letterDelay = i * 0.4f; // سرعة ظهور الحروف ورا بعض (بطيئة)
         float letterTime = totalTime - startDelay - letterDelay;
         float popScale = 0.0f;
         if (letterTime > 0)
         {
-            popScale = (letterTime < 0.4f) ? sin(letterTime * (3.14f / 0.4f)) * 1.2f : 1.0f;
-            if (popScale < 1.0f && letterTime > 0.2f)
+            float popDuration = 1.0f; // مدة الفرقعة (بطيئة)
+            popScale = (letterTime < popDuration) ? sin(letterTime * (3.14f / popDuration)) * 1.2f : 1.0f;
+            
+            if (popScale < 1.0f && letterTime > (popDuration / 2.0f))
                 popScale = 1.0f;
         }
+        
         float curX = startX + (i * spacing);
         float curY = (WindowHeight / 2.0f - 40.f) + sin(totalTime * 4.0f + i * 0.8f) * 12.0f;
-        bubbleSprite.setScale({ 0.7f * popScale, 0.7f * popScale });
-        letters[i]->setScale({ 0.92f * popScale, 0.92f * popScale });
-        bubbleSprite.setPosition({ curX, curY });
-        letters[i]->setPosition({ curX, curY });
+        
+        bubbleSprite.setScale({0.7f * popScale, 0.7f * popScale});
+        letters[i]->setScale({0.92f * popScale, 0.92f * popScale});
+        
+        bubbleSprite.setPosition({curX, curY});
+        letters[i]->setPosition({curX, curY});
         if (progress < 1.0f && popScale > 0)
         {
             window.draw(bubbleSprite);
             window.draw(*letters[i]);
         }
     }
+
     if (progress >= 1.0f && !exploded)
-    {
-        exploded = true;
+    {       
+        Bubbledone.play(); // ← أضف هنا             
+        exploded = true; 
         for (int i = 0; i < 35; i++)
-        {
-            int idx = i / 5;
-            float pX = startX + (idx * spacing);
+        {                                        
+            int idx = i / 5;                     
+            float pX = startX + (idx * spacing); 
             float pY = (WindowHeight / 2.0f - 40.f);
-            sparks[i].active = true;
+            
+            // --- شرارات (Particles) - انتشار أعرض ---
+            sparks[i].active = true; 
             sparks[i].x = pX;
-            sparks[i].y = pY;
-            sparks[i].vx = (float)(rand() % 60 - 20) / 15.0f;
-            sparks[i].vy = -((float)(rand() % 30 + 10)) / 6.0f;
-            sparks[i].alpha = 255.0f;
-            letterBubbles[i].active = true;
+            sparks[i].y = pY;                                   
+            
+            // تعديل: زودنا النطاق (من 120 بدل 60) وقللنا القسمة لعمل انفجار عريض جداً
+            sparks[i].vx = (float)(rand() % 50 - 25) / 30.0f;   
+            sparks[i].vy = -((float)(rand() % 50 + 20)) / 20.0f; // السرعة الرأسية كما هي أو أبطأ قليلاً عشان ينتشر أفقياً
+            sparks[i].alpha = 255.0f;                           
+
+            // --- فقاعات (Letter Bubbles) - طلوع أعلى وأسرع ---
+            letterBubbles[i].active = true;                     
             letterBubbles[i].x = pX;
             letterBubbles[i].y = pY;
-            letterBubbles[i].vx = (float)(rand() % 60 - 20) / 18.0f;
-            letterBubbles[i].vy = -((float)(rand() % 15 + 5)) / 5.0f;
+            
+            // تعديل 1: زيادة الانتشار الأفقي قليلاً عشان متطلع راسية بس
+            letterBubbles[i].vx = (float)(rand() % 50 - 25) / 40.0f;
+            
+            // تعديل 2: تقليل القسمة (من 40 إلى 20) لتسريع الطلوع بقوة للأعلى
+            letterBubbles[i].vy = -((float)(rand() % 30 + 10)) / 30.0f;
+            
             letterBubbles[i].alpha = 200.0f;
         }
     }
+
     if (exploded && !particlesFinished)
     {
         bool anyActive = false;
@@ -918,125 +1395,138 @@ bool DrawLoadingScreen(float totalTime)
         {
             if (sparks[i].active)
             {
-                anyActive = true;
-                sparks[i].x += sparks[i].vx;
-                sparks[i].vy += 0.2f;
-                sparks[i].y += sparks[i].vy;
-                sparks[i].alpha -= 6.f;
+                anyActive = true;            
+                sparks[i].x += sparks[i].vx; 
+                // === تعديل الجاذبية (مهم) ===
+                // قمنا بقسمة القسمة على 5 (من 0.2 إلى 0.04) لتصبح مناسبة لـ 120 FPS
+                sparks[i].vy += 0.04f;        
+                sparks[i].y += sparks[i].vy; 
+                // === تعديل سرعة الاختفاء ===
+                // قمنا بقسمة القسمة على 4 (من 6 إلى 1.5) لتبقى فترة أطول
+                sparks[i].alpha -= 1.5f;      
+
                 if (sparks[i].alpha <= 0)
-                {
-                    sparks[i].alpha = 0;
-                    sparks[i].active = false;
+                {                             
+                    sparks[i].alpha = 0;      
+                    sparks[i].active = false; 
                 }
                 else
                 {
-                    sparkSprite.setPosition({ sparks[i].x, sparks[i].y });
-                    sparkSprite.setColor(Color(255, 255, 255, (uint8_t)sparks[i].alpha));
-                    sparkSprite.setScale({ 0.55f, 0.55f });
-                    window.draw(sparkSprite);
+                    sparkSprite.setPosition({sparks[i].x, sparks[i].y});                  
+                    sparkSprite.setColor(Color(255, 255, 255, (uint8_t)sparks[i].alpha)); 
+                    sparkSprite.setScale({0.55f, 0.55f});                                 
+                    window.draw(sparkSprite);                                             
                 }
             }
             if (letterBubbles[i].active)
             {
-                anyActive = true;
-                letterBubbles[i].x += letterBubbles[i].vx;
-                letterBubbles[i].y += letterBubbles[i].vy;
-                letterBubbles[i].alpha -= 7.f;
+                anyActive = true;                          
+                letterBubbles[i].x += letterBubbles[i].vx; 
+                letterBubbles[i].y += letterBubbles[i].vy; 
+                // === تعديل سرعة الاختفاء للفقاعات ===
+                // قمنا بقسمة القسمة على 4 (من 7 إلى 1.75) لتبقى فترة أطول
+                letterBubbles[i].alpha -= 1.75f;             
                 if (letterBubbles[i].alpha <= 0)
-                {
+                { 
                     letterBubbles[i].alpha = 0;
                     letterBubbles[i].active = false;
                 }
                 else
                 {
-                    bubbleSmallSprite.setPosition({ letterBubbles[i].x, letterBubbles[i].y });
-                    bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)letterBubbles[i].alpha));
-                    window.draw(bubbleSmallSprite);
+                    bubbleSmallSprite.setPosition({letterBubbles[i].x, letterBubbles[i].y});           
+                    bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)letterBubbles[i].alpha)); 
+                    window.draw(bubbleSmallSprite);                                                    
                 }
             }
         }
         if (!anyActive)
-        {
-            particlesFinished = true;
+        {                             
+            particlesFinished = true; 
         }
     }
-    timerLeft += deltaTime;
-    timerRight += deltaTime;
-    bubbleTimer += deltaTime;
-    auto spawnBubble = [&](int ventIdx) {
+
+    timerLeft += deltaTime;                
+    timerRight += deltaTime;               
+    bubbleTimer += deltaTime;              
+
+    auto spawnBubble = [&](int ventIdx) { 
         for (int i = 0; i < 60; i++)
         {
             if (!ventBubbles[i].active)
-            {
-                ventBubbles[i].active = true;
-                ventBubbles[i].isVent = true;
-                ventBubbles[i].alpha = 255.0f;
-                ventBubbles[i].x = ventPositions[ventIdx].x + (rand() % 12 - 6);
-                ventBubbles[i].y = ventPositions[ventIdx].y;
-                ventBubbles[i].vx = (float)(rand() % 10 - 5) / 100.0f;
-                ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 20.0f;
+            {                                                                    
+                ventBubbles[i].active = true;                                    
+                ventBubbles[i].isVent = true;                                    
+                ventBubbles[i].alpha = 255.0f;                                   
+                ventBubbles[i].x = ventPositions[ventIdx].x + (rand() % 12 - 6); 
+                ventBubbles[i].y = ventPositions[ventIdx].y;                     
+                // فقاعات الـ Vent مضبوطة سابقاً لبطء
+                ventBubbles[i].vx = (float)(rand() % 10 - 5) / 150.0f;
+                ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 50.0f;
                 return true;
             }
         }
         return false;
         };
+
     if (timerLeft >= 0.8f)
     {
         if (spawnBubble(0))
             timerLeft = 0.0f;
-    }
+    } 
     if (timerRight >= 0.8f)
     {
         if (spawnBubble(1))
             timerRight = 0.0f;
-    }
+    } 
     if (bubbleTimer >= 1.5f)
-    {
+    { 
         for (int i = 0; i < 60; i++)
         {
             if (!ventBubbles[i].active)
             {
                 ventBubbles[i].active = true;
-                ventBubbles[i].isVent = false;
+                ventBubbles[i].isVent = false; 
                 ventBubbles[i].alpha = 255.0f;
-                ventBubbles[i].x = 810.f;
-                ventBubbles[i].y = (float)(rand() % 601);
-                ventBubbles[i].vx = -((float)(rand() % 30 + 15) / 10.f);
+                ventBubbles[i].x = 810.f;                                
+                ventBubbles[i].y = (float)(rand() % 601);                
+                ventBubbles[i].vx = -((float)(rand() % 30 + 15) / 20.f); 
                 ventBubbles[i].vy = 0.0f;
                 bubbleTimer = 0.0f;
                 break;
             }
         }
     }
+
     for (int i = 0; i < 60; i++)
-    {
+    { 
         if (ventBubbles[i].active)
         {
-            ventBubbles[i].x += ventBubbles[i].vx;
-            ventBubbles[i].y += ventBubbles[i].vy;
+            ventBubbles[i].x += ventBubbles[i].vx; 
+            ventBubbles[i].y += ventBubbles[i].vy; 
             if (ventBubbles[i].isVent)
-            {
-                ventBubbles[i].x += sin(totalTime * 4.0f + i) * 0.25f;
+            {                                                          
+                ventBubbles[i].x += sin(totalTime * 4.0f + i) * 0.25f; 
                 if (ventBubbles[i].y < 200.f)
-                    ventBubbles[i].alpha -= 8.0f;
+                    ventBubbles[i].alpha -= 8.0f; 
                 if (ventBubbles[i].alpha <= 0 || ventBubbles[i].y < 10.f)
-                    ventBubbles[i].active = false;
+                    ventBubbles[i].active = false; 
             }
             else
-            {
+            { 
                 if (ventBubbles[i].x < -50.f)
-                    ventBubbles[i].active = false;
+                    ventBubbles[i].active = false; 
             }
             if (ventBubbles[i].active)
-            {
-                bubbleSmallSprite.setPosition({ ventBubbles[i].x, ventBubbles[i].y });
-                bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)ventBubbles[i].alpha));
-                float s = ventBubbles[i].isVent ? (0.8f + (i % 3) * 0.2f) : 0.65f;
-                bubbleSmallSprite.setScale({ s, s });
-                window.draw(bubbleSmallSprite);
+            {                                                                                    
+                bubbleSmallSprite.setPosition({ventBubbles[i].x, ventBubbles[i].y});             
+                bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)ventBubbles[i].alpha)); 
+                float s = ventBubbles[i].isVent ? (0.8f + (i % 3) * 0.2f) : 0.65f;               
+                bubbleSmallSprite.setScale({s, s});                                              
+                window.draw(bubbleSmallSprite);                                                  
             }
         }
     }
+
     if (particlesFinished)
     {
         if (!transitionStarted)
@@ -1057,54 +1547,73 @@ bool DrawLoadingScreen(float totalTime)
     return false;
 }
 
-void MainMenu()
-{
-    view.setSize({ WindowWidth, WindowHeight });
-    view.setCenter({ WindowWidth / 2.f, WindowHeight / 2.f });
-    view.setViewport(FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
+void MainMenu() {
+    view.setSize({WindowWidth, WindowHeight});
+    view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
+    view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+
     window.setView(view);
     StartMainMenu();
+
     FadeInFromBlack();
+
     Clock frameClock;
-    while (window.isOpen())
-    {
+
+    while (window.isOpen()) {
         deltaTime = frameClock.restart().asSeconds();
         totaltime += deltaTime;
-        while (const optional event = window.pollEvent())
-        {
-            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape))
-                window.close();
-            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
-            {
-                if (mouseEvent->button == Mouse::Button::Left)
-                {
+
+        while (const optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape)) window.close();
+
+            if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>()) {
+                if (mouseEvent->button == Mouse::Button::Left) {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+
+                    // === تعديل: فصل أزرار الكلاسيك والتايم اتاك ===
                     if (startgamebutton.getGlobalBounds().contains(mousePos)) {
-                        isTimeAttackMode = false;
-                        FadeOutToBlack();
+                        currentGamemode = CLASSIC; // تحديد الوضع كلاسيك
+                        isTimeAttackMode = false;  // <--- أضف هذا السطر
+                        FadeOutToBlack(); 
                         Select_level();
-                        FadeInFromBlack();
+                        FadeInFromBlack(); 
                     }
-                    if (timeattackbutton.getGlobalBounds().contains(mousePos)) {
-                        isTimeAttackMode = true;
-                        FadeOutToBlack();
+                    else if (timeattackbutton.getGlobalBounds().contains(mousePos)) {
+                        currentGamemode = TIMEATTACK; // تحديد الوضع تايم اتاك
+                        isTimeAttackMode = true;  // <--- أضف هذا السطر
+                        FadeOutToBlack(); 
                         Select_level();
-                        FadeInFromBlack();
+                        FadeInFromBlack(); 
                     }
-                    if (switchuserbutton.getGlobalBounds().contains(mousePos))
-                    {
+                    
+                    if (switchuserbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
                         SwitchUser();
                         FadeInFromBlack();
-                    }
-                    if (optionsbutton.getGlobalBounds().contains(mousePos))
-                    {
+                            // 1. التحقق من المتغير CurUser وتحديث userName
+                        if (!CurUser.empty()) {
+                            userName = CurUser; 
+                            welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+                        } else {
+                            userName = "Guest"; // اسم افتراضي في حالة لم يتم اختيار أحد
+                            welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+                        }
+
+                        // 2. تحديث نص الاسم المعروض على الشاشة
+                        userNameText.setString(userName);
+
+                        // 3. إعادة حساب النقطة الوسطية للنص (Origin) لضبط المحاذاة في حال تغير طول الاسم
+                        userNameText.setOrigin(userNameText.getLocalBounds().size / 2.0f);
+                        FloatRect wBounds = welcomeLabel.getLocalBounds();
+                        welcomeLabel.setOrigin({ wBounds.size.x / 2.0f, wBounds.size.y / 2.0f });
+                        }
+
+                    if (optionsbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
                         OptionsMenu();
                         FadeInFromBlack();
                     }
-                    if (quitbutton.getGlobalBounds().contains(mousePos))
-                    {
+                    if (quitbutton.getGlobalBounds().contains(mousePos)) {
                         FadeOutToBlack();
                         QuitGame();
                         FadeInFromBlack();
@@ -1123,11 +1632,11 @@ void MainMenu()
                     }
                 }
             }
-            else if (const auto* resizeEvent = event->getIf<Event::Resized>())
-            {
-                view.setViewport(sf::FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
+            else if (const auto *resizeEvent = event->getIf<Event::Resized>()) {
+                view.setViewport(sf::FloatRect({0.f, 0.f}, {1.f, 1.f}));
             }
         }
+
         window.setView(view);
         background.setTexture(mainbackground);
         UpdateMainMenu();
@@ -1141,6 +1650,21 @@ void StartMainMenu()
     {
         cout << "Error loading shader!" << endl;
     }
+
+    // ==========================================
+    // === التعديل المطلوب: تحديث النص واسم المستخدم ===
+    // ==========================================
+    if (!CurUser.empty()) {
+        // إذا تم اختيار مستخدم من شاشة Switch User (لست عاد)
+        userName = CurUser; 
+        welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+    } else {
+        // إذا لم يتم اختيار مستخدم (أول مرة تدخل)
+        userName = "Guest"; // اسم افتراضي
+        welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+    }
+    // ==========================================
+
     smallfishs.clear();
     if (isMusicEnabled && mainmenumusic.getStatus() != Music::Status::Playing)
         mainmenumusic.play();
@@ -1167,7 +1691,7 @@ void StartMainMenu()
         obj.sprite.setScale({ 0.2f * obj.changedir, 0.2f });
         smallfishs.push_back(obj);
     }
-    window.setFramerateLimit(30);
+    welcometex.setSmooth(true);
     logo.setSmooth(true);
     mainbackground.setSmooth(true);
     timeattackpressed.setSmooth(true);
@@ -1209,6 +1733,29 @@ void StartMainMenu()
     creditsbutton.setPosition(Vector2f({ WindowWidth / 2.0f - 300, WindowHeight / 2.0f + 240 }));
     Barracuda.setPosition(Vector2f({ WindowWidth / 2.f - 700, WindowHeight / 2.f - 200 }));
     QueenTrigger.setPosition({ 1450, 360 });
+    
+    // welcome text
+    welcomeLabel.setFont(mainFont);
+    // تم تغيير النص بالأعلى، هنا نعيد تحديد الخصائص الأساسية فقط
+    welcomeLabel.setCharacterSize(18); 
+    welcomeLabel.setFillColor(Color::White);
+    welcomeLabel.setOutlineColor(Color::Black);
+    welcomeLabel.setOutlineThickness(1);
+    welcomeLabel.setOrigin(welcomeLabel.getLocalBounds().size / 2.0f);
+    welcomeLabel.setPosition(Vector2f({ WindowWidth / 2.0f + 300 , WindowHeight / 2.0f + 165 }));
+
+    // user name text
+    userNameText.setFont(mainFont);
+    userNameText.setString(userName);
+    userNameText.setCharacterSize(16);
+    userNameText.setFillColor(Color(180, 255, 100)); 
+    userNameText.setOutlineColor(Color::Black);
+    userNameText.setOutlineThickness(1);
+    userNameText.setOrigin(userNameText.getLocalBounds().size / 2.0f);
+    userNameText.setPosition(Vector2f({ WindowWidth / 2.0f + 300 , WindowHeight / 2.0f + 190 }));
+    
+    welcomebutton.setOrigin(welcomebutton.getLocalBounds().size / 2.0f);
+    welcomebutton.setPosition(Vector2f({ WindowWidth / 2.0f +300 , WindowHeight / 2.0f + 180 }));
 }
 
 void UpdateMainMenu()
@@ -1249,6 +1796,8 @@ void UpdateMainMenu()
                 obj.sprite.setPosition({ posX, WindowHeight + 99.f });
         }
     }
+    // Re-center if the name length changed
+    userNameText.setOrigin(userNameText.getLocalBounds().size / 2.0f);
     PlayingSound(true);
     ChangingButtonShape();
     BarracudaFishanimation();
@@ -1313,6 +1862,9 @@ void DrawMainMenu()
     window.draw(switchuserbutton);
     window.draw(creditsbutton);
     window.draw(logosp);
+    window.draw(welcomebutton);
+    window.draw(welcomeLabel);
+    window.draw(userNameText);
     window.display();
 }
 
@@ -2096,7 +2648,6 @@ void drawCenteredSprite(sf::RenderWindow& window, sf::Sprite& sprite, sf::Textur
 
 void StartOptions()
 {
-    window.setFramerateLimit(60);
     window.setView(view);
     srand(static_cast<unsigned int>(time(NULL)));
     if (!globalFont.openFromFile("Assets/Fonts/Barmeno.ttf"))
@@ -2280,7 +2831,6 @@ void UpdateOptions()
                     view.setCenter({ 400.f, 300.f });
                     view.setViewport(FloatRect({ 0.f, 0.f }, { 1.f, 1.f }));
                     window.setView(view);
-                    window.setFramerateLimit(60);
                 }
                 else
                 {
@@ -2799,7 +3349,6 @@ void addNewHighScore(string name, int score, bool isStoryMode)
 
 void StartHighscore()
 {
-    window.setFramerateLimit(60);
     window.setView(view);
     texHSDoneNormal.setSmooth(true);
     texHSDoneHover.setSmooth(true);
@@ -3042,7 +3591,6 @@ void Credits()
 
 void StartCredits()
 {
-    window.setFramerateLimit(60);
     window.setView(view);
     creditsText.emplace(fontcredits);
     fontcredits.setSmooth(true);
@@ -3127,6 +3675,7 @@ void DrawCredits()
 // load all assets & init texts/pearls
 void StartSelectLevel()
 {
+    LoadUnlocks();
     isLoading = false;
     loadProgress = 0.f;
 
@@ -3190,6 +3739,8 @@ void centerText(Text& text)
 }
 
 // update pearl states, button hover, load bar progress
+// update pearl states, button hover, load bar progress
+// update pearl states, button hover, load bar progress
 void UpdateSelectLevel(float dt)
 {
     PearlData* activePearls = isTimeAttackMode ? ta_pearls : pearls;
@@ -3204,18 +3755,24 @@ void UpdateSelectLevel(float dt)
     for (int i = 0; i < 3; ++i)
     {
         auto& p = activePearls[i];
+
+        // === التعديل: استخدام موقع وحجم موحدد للكل الحالات ===
+        // سنستخدم دائماً الموقع والحجم الخاص بـ "اللؤلؤة المفتوحة" (unlockedPos / unlockedScale)
+        // هذا سيجعل اللؤلؤة البيضاء (المقفولة) في نفس المكان تماماً مثل الذهبية (المفتوحة)
+        p.sprite->setPosition(p.unlockedPos);
+        p.sprite->setScale(p.unlockedScale);
+
+        // تغيير التكستشر (الصورة) فقط بناءً على حالة الفتح
         if (*p.unlocked)
         {
             p.sprite->setTexture(pearlUnlockedTexture);
-            p.sprite->setPosition(p.unlockedPos);
-            p.sprite->setScale(p.unlockedScale);
         }
         else
         {
             p.sprite->setTexture(pearlTexture);
-            p.sprite->setPosition(p.lockedPos);
-            p.sprite->setScale(p.lockedScale);
         }
+        // =============================================================
+
         FloatRect bounds = p.sprite->getGlobalBounds();
         Vector2f center = { bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f };
         if (hypot(mf.x - center.x, mf.y - center.y) <= p.radius)
@@ -3241,14 +3798,82 @@ void UpdateSelectLevel(float dt)
     // advance load bar; on complete → transition to game
     if (isLoading)
     {
+        // === التعديل 1: التحكم في الموسيقى أثناء التحميل ===
+        
+        // 1. إيقاف موسيقى القائمة الرئيسية
+        if (mainmenumusic.getStatus() == SoundSource::Status::Playing) {
+            mainmenumusic.stop();
+        }
+
+        // 2. تشغيل موسيقى التحميل
+        if (loadingmusic.getStatus() != SoundSource::Status::Playing) {
+            loadingmusic.play();
+            loadingmusic.setLooping(true);
+        }
+        
+        mySprite.setPosition({-3000.f,-3000.f});
+        menuTxt.setPosition({-3000.f,-3000.f});
         loadProgress += barSpeed * dt;
         if (loadProgress >= barWidth)
         {
             loadProgress = barWidth;
             DrawSelectLevel();
-            FadeOutToBlack();
-            GameScreen(selectedLevel);
-            FadeInFromBlack();
+            fadeAlpha = 0.f;
+            fadeClock.restart();
+            while (fadeAlpha < 255.f)
+            {
+                fadeAlpha = std::min(255.f, fadeClock.getElapsedTime().asSeconds() * 800.f);
+                fadeRect.setFillColor(Color(0, 0, 0, (uint8_t)fadeAlpha));
+                window.setView(view);
+                DrawSelectLevel();
+                window.draw(fadeRect);
+                window.display();
+            }
+
+            // تفعيل حالة التحميل المكتملة
+            loadingdone = true;
+
+            int clickedPearlIndex = selectedLevel - 1;
+
+            if (loadingdone && clickedPearlIndex != -1)
+            {
+                // === تحديد الإعدادات بناءً على المرحلة المختارة ===
+                switch (clickedPearlIndex) {
+                    case 0: // Level 1
+                        currentLevelSettings.fishToGrowToLevel2 = 15;
+                        currentLevelSettings.fishToGrowToLevel3 = 40;
+                        timeAttackDuration = 60.0f; // دقيقة واحدة
+                        break;
+                    case 1: // Level 2
+                        currentLevelSettings.fishToGrowToLevel2 = 25;
+                        currentLevelSettings.fishToGrowToLevel3 = 60;
+                        timeAttackDuration = 45.0f; // 45 ثانية
+                        break;
+                    case 2: // Level 3
+                        currentLevelSettings.fishToGrowToLevel2 = 35;
+                        currentLevelSettings.fishToGrowToLevel3 = 80;
+                        timeAttackDuration = 30.0f; // 30 ثانية
+                        break;
+                    case 3: // Level 4
+                        currentLevelSettings.fishToGrowToLevel2 = 50;
+                        currentLevelSettings.fishToGrowToLevel3 = 120;
+                        timeAttackDuration = 20.0f; //20 ثانية
+                        break;
+                }
+
+                // بدء اللعبة
+                // التحقق من المصفوفة المناسبة (عادية أو تايم أتاك)
+                PearlData* targetPearls = isTimeAttackMode ? ta_pearls : pearls;
+                
+                if (*targetPearls[clickedPearlIndex].unlocked) {
+                    GameScreen(clickedPearlIndex + 1); 
+                    bglevel(); // استدعاء الدالة الموحدة
+                    
+                    isLoading = false;
+                    loadingdone = false;
+                }
+            }
+            // FadeInFromBlack();
             isLoading = false;
             loadProgress = 0.f;
             pearlClicked = false;
@@ -3329,6 +3954,7 @@ void Select_level()
                                 isLoading = true;
                                 loadProgress = 0.f;
                                 selectedLevel = i + 1;
+                                pearlClicked = true;
                             }
                         }
                     }
@@ -3350,7 +3976,6 @@ void StartGameScreen(int level)
 {
     selectedLevel = level;
     gameScreenActive = true;
-    window.setFramerateLimit(60);
     window.setView(view);
 
     // background
@@ -3706,24 +4331,2430 @@ void GameScreen(int level)
                     {
                         if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
                         {
-                            showQuitPopup = false; MainMenu(); return;
+                            loadingmusic.stop();
+                            showQuitPopup = false;
+                            MainMenu();
+                            return;
                         }
                         if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
                         {
-                            showQuitPopup = false; MainMenu(); return;
+                            loadingmusic.stop();
+                            showQuitPopup = false;
+                            MainMenu();
+                            return;
                         }
                         if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
                             showQuitPopup = false;
                     }
-                    else
+                else
+                {
+                    if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos)) 
+                        OptionsMenu();
+                    if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos)) 
+                        showQuitPopup = true;
+                    
+                    // زرار continue
+                    if (gsBtns[2].sprite)
                     {
-                        if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos)) OptionsMenu();
-                        if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos)) showQuitPopup = true;
+                        bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
+                                    mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
+                                    mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
+                                    mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
+                        if (hovered)
+                        {
+                            // 1. إيقاف موسيقى التحميل
+                            loadingmusic.stop();
+                            
+                            // 2. تشغيل موسيقى المرحلة
+                            levelsound.play();
+                            levelsound.setLooping(true);
+                            bglevel();
+                            return;
+                        }
                     }
+                }
                 }
             }
         }
         UpdateGameScreen();
         DrawGameScreen();
+    }
+}
+
+// bglevel and player logic
+
+void bglevel()
+{
+	gameLEVEL = 1;
+    Startbglevel();
+    Startmovingplayer();
+
+    // 1. إرجاع حجم الكاميرا للقيمة الأصلية
+    view.setSize({ 800.f, 600.f });
+    
+    // 2. توسيط الكاميرا في المنتصف
+    view.setCenter({ WindowWidth / 2.f, WindowHeight / 2.f });
+    
+    // 3. تأكد إن الدوران (Rotation) صفر (مش لفوت)
+    view.setRotation(sf::degrees(0.f));
+
+    // 4. تطبيق التعديلات
+    window.setView(view);
+
+    // 5. إعادة ضبط الماوس للنص تماماً
+    sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
+    sf::Mouse::setPosition(windowCenter, window);
+    
+    // 6. تحديد مكان الهدف (Target) بالنص
+    targetPos = { LevelWidth / 2.f, LevelHeight / 2.f };
+
+    Clock clock;
+    while (window.isOpen()) {
+        float deltaTime = clock.restart().asSeconds();
+        totaltime += deltaTime;
+
+        while (const optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>()) window.close();
+            if (Keyboard::isKeyPressed(Keyboard::Key::Escape)) {
+                window.close();
+                return;
+            }
+        }
+
+        Updatemovingplayer(deltaTime);
+        UpdateSmallFishes(deltaTime);
+        UpdateMediumFishes(deltaTime);
+        UpdateLargeFishes(deltaTime);
+        UpdateGameBubbles(deltaTime);
+        UpdateMermaidEvent(deltaTime);
+
+        // لو الـ Game Over مفعلة بس اللاعب لسه "ميت" (بيشتغل أنيميشن)، استنى.
+        // لو الـ Game Over مفعلة واللاعب مش ميت (خلص الكلام ده)، اقفل.
+        if (isGameOver && !isPlayerDead) {
+            window.close();
+            return;
+        }
+
+        Vector2f playerPos = sprPlayerall.getPosition();
+        Vector2f camCenter = view.getCenter();
+        camCenter.x += (playerPos.x - camCenter.x) * 5.f * deltaTime;
+        camCenter.y += (playerPos.y - camCenter.y) * 5.f * deltaTime;
+
+        camCenter.x = max(WindowWidth / 2.f, min(camCenter.x, LevelWidth - WindowWidth / 2.f));
+        camCenter.y = max(WindowHeight / 2.f, min(camCenter.y, LevelHeight - WindowHeight / 2.f));
+
+        view.setCenter(camCenter);
+        window.setView(view);
+
+        window.clear();
+        Drawbglevel();
+        window.display();
+    }
+}
+
+
+void Timeattacklevel()
+{
+    currentGamemode = TIMEATTACK;
+    bool isGameWon = false; 
+    float finalTime = 0.f;
+    Startbglevel();
+    Startmovingplayer();
+
+    sf::Text timerText(font);
+    timerText.setCharacterSize(60);
+    timerText.setFillColor(sf::Color::White);
+    timerText.setPosition({ 300.f, 250.f });
+
+    // 1 minute and 30 seconds = 90 seconds
+    const sf::Time totalDuration = sf::seconds(90.f);
+    sf::Clock countdownClock;
+    view.setCenter({ WindowWidth / 2.f, WindowHeight / 2.f });
+    window.setView(view);
+
+    Clock clock;
+    while (window.isOpen()) {
+        float deltaTime = clock.restart().asSeconds();
+        totaltime += deltaTime;
+
+        while (const optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>()) window.close();
+            if (Keyboard::isKeyPressed(Keyboard::Key::Escape)) {
+                window.close();
+                return;
+            }
+        }
+
+        Updatemovingplayer(deltaTime);
+        UpdateSmallFishes(deltaTime);
+        UpdateMediumFishes(deltaTime);
+        UpdateLargeFishes(deltaTime);
+        UpdateGameBubbles(deltaTime);
+        UpdateMermaidEvent(deltaTime);
+        sf::Time elapsed = countdownClock.getElapsedTime();
+        float remainingSeconds = totalDuration.asSeconds() - elapsed.asSeconds();
+
+        // 2. Stop at zero
+        if (remainingSeconds < 0.f) {
+            remainingSeconds = 0.f;
+        }
+		
+        // 3. Format the display (MM:SS)
+        int minutes = static_cast<int>(remainingSeconds) / 60;
+        int seconds = static_cast<int>(remainingSeconds) % 60;
+        
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(2) << minutes << ":"
+            << std::setfill('0') << std::setw(2) << seconds;
+        timerText.setString(ss.str());
+        // لو الـ Game Over مفعلة بس اللاعب لسه "ميت" (بيشتغل أنيميشن)، استنى.
+        // لو الـ Game Over مفعلة واللاعب مش ميت (خلص الكلام ده)، اقفل.
+        if (isGameOver && !isPlayerDead) {
+            window.close();
+            return;
+        }
+
+        Vector2f playerPos = sprPlayerall.getPosition();
+        Vector2f camCenter = view.getCenter();
+        camCenter.x += (playerPos.x - camCenter.x) * 5.f * deltaTime;
+        camCenter.y += (playerPos.y - camCenter.y) * 5.f * deltaTime;
+
+        camCenter.x = max(WindowWidth / 2.f, min(camCenter.x, LevelWidth - WindowWidth / 2.f));
+        camCenter.y = max(WindowHeight / 2.f, min(camCenter.y, LevelHeight - WindowHeight / 2.f));
+
+        view.setCenter(camCenter);
+        window.setView(view);
+
+        window.clear();
+        Drawbglevel();
+
+        window.display();
+    }
+}
+
+void Startbglevel()
+{
+
+    if (!swayShader.loadFromFile("sway.frag", Shader::Type::Fragment))
+    {
+        cout << "Error loading sway shader!" << endl;
+    }
+
+    if (!swayShaderPlants.loadFromFile("sway_plants.frag", Shader::Type::Fragment))
+    {
+        cout << "Error loading sway_plants shader!" << endl;
+    }
+    if (!smallFishTexture.loadFromFile("Assets/Fish/herfish/herFish.png")) {
+        cout << "Error loading small fish texture!" << endl;
+    }
+
+    if (!mediumFishTexture.loadFromFile("Assets/Fish/cod/cod.png")) {
+        cout << "Error loading Medium Fish texture!" << endl;
+    }
+
+    if (!largeFishTexture.loadFromFile("Assets/Fish/lionfish/lionfish.png")) {
+        cout << "Error loading Large Fish texture!" << endl;
+    }
+
+    largeFishTexture.setSmooth(true);
+    mediumFishTexture.setSmooth(true);
+    smallFishTexture.setSmooth(true);
+    texbglevel.setSmooth(true);
+    reefsgrass.setSmooth(true);
+    reefsledge2.setSmooth(true);
+    reefsledge.setSmooth(true);
+    reefsoverhang.setSmooth(true);
+    reefsplants.setSmooth(true);
+    reefsplants2.setSmooth(true);
+    reefsseaweed.setSmooth(true);
+    reefsseaweed2.setSmooth(true);
+    reefsseaweed3.setSmooth(true);
+    reefsseaweed4.setSmooth(true);
+    reefstubes.setSmooth(true);
+    reefstubes2.setSmooth(true);
+    reefstubes3.setSmooth(true);
+    reefsplants23.setSmooth(true);
+    reefsseaweed22.setSmooth(true);
+    sprreefsgrass.setTexture(reefsgrass);
+    
+    Vector2u grassSize = reefsgrass.getSize();
+    
+    float grassScale = 0.4f; 
+    sprreefsgrass.setScale({grassScale, grassScale});
+
+    float grassX = LevelWidth - 160.f;
+    float grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsgrass.setPosition({grassX, grassY}); 
+
+    sprreefsseaweed3.setTexture(reefsseaweed3);
+    
+    grassSize = reefsseaweed3.getSize();
+    grassScale = 0.4f; 
+    sprreefsseaweed3.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth - 35.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsseaweed3.setPosition({grassX, grassY}); 
+
+    sprreefstubes3.setTexture(reefstubes3);
+    
+    grassSize = reefstubes3.getSize();
+    grassScale = 1.3f; 
+    sprreefstubes3.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth - 135.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefstubes3.setPosition({grassX, grassY}); 
+
+    sprreefstubes.setTexture(reefstubes);
+    
+    grassSize = reefstubes.getSize();
+    grassScale = 0.65f; 
+    sprreefstubes.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth - 210.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefstubes.setPosition({grassX, grassY}); 
+
+    sprreefsseaweed.setTexture(reefsseaweed);
+    
+    grassSize = reefsseaweed.getSize();
+    grassScale = 0.45f; 
+    sprreefsseaweed.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth/2.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsseaweed.setPosition({grassX, grassY}); 
+
+    sprreefsseaweed22.setTexture(reefsseaweed22);
+    
+    grassSize = reefsseaweed22.getSize();
+    grassScale = 0.45f; 
+    sprreefsseaweed22.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth/2.f -80.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsseaweed22.setPosition({grassX, grassY}); 
+
+    sprreefsplants2.setTexture(reefsplants2);
+    
+    grassSize = reefsplants2.getSize();
+    grassScale = 0.55f; 
+    sprreefsplants2.setScale({grassScale, grassScale});
+
+    grassX = 10.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsplants2.setPosition({grassX, grassY}); 
+
+    sprreefsplants23.setTexture(reefsplants23);
+    
+    grassSize = reefsplants23.getSize();
+    grassScale = 0.40f; 
+    sprreefsplants23.setScale({grassScale, grassScale});
+
+    grassX = -10.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsplants23.setPosition({grassX, grassY});
+    
+    sprreefsseaweed31.setTexture(reefsseaweed31);
+    
+    grassSize = reefsseaweed31.getSize();
+    grassScale = 0.45f; 
+    sprreefsseaweed31.setScale({grassScale, grassScale});
+
+    grassX = LevelWidth/2.f - 255.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 130.f;
+    
+    sprreefsseaweed31.setPosition({grassX, grassY}); 
+
+    sprreefsseaweed32.setTexture(reefsseaweed32);
+    
+    grassSize = reefsseaweed32.getSize();
+    grassScale = 0.40f; 
+    sprreefsseaweed32.setScale({grassScale, grassScale});
+
+    grassX = -10.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsseaweed32.setPosition({grassX, grassY});
+
+    sprreefsseaweed33.setTexture(reefsseaweed33);
+    
+    grassSize = reefsseaweed33.getSize();
+    grassScale = 0.40f; 
+    sprreefsseaweed33.setScale({grassScale, grassScale});
+
+    grassX = -10.f;
+    grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
+    
+    sprreefsseaweed33.setPosition({grassX, grassY});
+    
+}
+
+void Drawbglevel()
+{
+    window.setMouseCursorVisible(false);
+    window.setView(view);
+
+    swayShader.setUniform("time", totaltime);
+    window.draw(sprbglevel, &swayShader);
+
+    swayShaderPlants.setUniform("time", totaltime);
+    window.draw(sprreefstubes3, &swayShaderPlants);
+
+    DrawLargeFishes(window);
+    DrawMediumFishes(window);
+    DrawSmallFishes(window);
+    Drawmovingplayer();
+    DrawGameBubbles();
+    DrawMermaidEvent();
+
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        if (scorePopups[i].active) {
+            window.draw(scorePopups[i].text);
+        }
+    }
+
+    window.draw(sprreefsplants2, &swayShaderPlants);
+    window.draw(sprreefsseaweed31, &swayShaderPlants);
+    window.draw(sprreefsseaweed22, &swayShaderPlants);
+    window.draw(sprreefsseaweed, &swayShaderPlants);
+    window.draw(sprreefstubes, &swayShaderPlants);
+    window.draw(sprreefsgrass, &swayShaderPlants);
+    window.draw(sprreefsplants23, &swayShaderPlants);
+
+    // --- رسم أنيميشن SORRY ---
+    if (showSorryAnimation && !sorryExploded) {
+        float centerX = view.getCenter().x;
+        float centerY = view.getCenter().y - 100.f;
+
+        std::string sorryStr = "SORRY";
+        float spacing = 60.f;
+        float startX = centerX - (2.f * spacing);
+
+        for (int i = 0; i < 5; i++) {
+            if (sorryLetterScales[i] > 0.01f) {
+                float curX = startX + (i * spacing);
+                float offsetY = sin(totaltime * 3.0f + i) * 5.f; // حركة بطيئة للفقاعات
+
+                // 1. رسم الفقاعة
+                bubbleSprite.setScale({ 0.9f * sorryLetterScales[i], 0.9f * sorryLetterScales[i] });
+                bubbleSprite.setOrigin(bubbleSprite.getLocalBounds().size / 2.f);
+                bubbleSprite.setPosition({ curX, centerY + offsetY });
+                window.draw(bubbleSprite);
+
+                // 2. إعداد الحرف
+                static sf::Text letterText(font);
+                letterText.setString(std::string(1, sorryStr[i]));
+                letterText.setCharacterSize(35);
+                letterText.setFillColor(sf::Color(255, 50, 50));
+                letterText.setOutlineColor(sf::Color::Black);
+                letterText.setOutlineThickness(2.f);
+
+                // 3. [إصلاح] وضع الحرف تماماً في النص
+                // benستیخدم الـ Bounds لتوسط النص نفسه، وبنضيف الـ Offset بتاع الفقاعة
+                sf::FloatRect b = letterText.getLocalBounds();
+                letterText.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+                letterText.setScale({ sorryLetterScales[i], sorryLetterScales[i] });
+
+                // بنحط الحرف في نفس مكان الفقاعة بالظبط
+                letterText.setPosition({ curX, centerY + offsetY });
+
+                window.draw(letterText);
+            }
+        }
+    }
+
+    // --- [جديد] رسم أنيميشن PERFECT ---
+    if (showPerfectAnimation && !perfectExploded) {
+        float centerX = view.getCenter().x;
+        float centerY = view.getCenter().y - 100.f;
+
+        std::string perfectStr = "PERFECT";
+        float spacing = 60.f;
+        float startX = centerX - (3.f * spacing); // تعديل لوسطنة 7 حروف
+
+        for (int i = 0; i < 7; i++) {
+            if (perfectLetterScales[i] > 0.01f) {
+                float curX = startX + (i * spacing);
+                float offsetY = sin(totaltime * 3.0f + i) * 5.f;
+
+                // 1. رسم الفقاعة
+                bubbleSprite.setScale({ 0.9f * perfectLetterScales[i], 0.9f * perfectLetterScales[i] });
+                bubbleSprite.setOrigin(bubbleSprite.getLocalBounds().size / 2.f);
+                bubbleSprite.setPosition({ curX, centerY + offsetY });
+                window.draw(bubbleSprite);
+
+                // 2. إعداد الحرف
+                static sf::Text letterText(font);
+                letterText.setString(std::string(1, perfectStr[i]));
+                letterText.setCharacterSize(35);
+
+                // لون أخضر فاتح
+                letterText.setFillColor(sf::Color(160, 211, 74));
+                letterText.setOutlineColor(sf::Color::Black);
+                letterText.setOutlineThickness(2.f);
+
+                sf::FloatRect b = letterText.getLocalBounds();
+                letterText.setOrigin({ b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f });
+                letterText.setScale({ perfectLetterScales[i], perfectLetterScales[i] });
+
+                letterText.setPosition({ curX, centerY + offsetY });
+
+                window.draw(letterText);
+            }
+        }
+    }
+
+    // رسم الانفجارات (النجوم) - حركة بطيئة جداً
+    for (int i = 0; i < 35; i++) {
+        if (sparks[i].alpha <= 0) {
+            sparks[i].active = false;
+        }
+
+        if (sparks[i].active) {
+            // تحريك النجوم بالسرعات البطيئة اللي عرفناها فوق
+            sparks[i].x += sparks[i].vx;
+            sparks[i].y += sparks[i].vy;
+
+            // [هام] إزالة الجاذبية أو جعلها صفرية عشان النجوم ماتوقعش بسرعة
+            // sparks[i].vy += 0.02f;  // ممكن نلغي السطر ده لو عايزينها تطير مستقيمة
+
+            // إضافة حركة عشوائية بسيطة (Optional) عشان تبقى natural
+            sparks[i].vy += (float)(rand() % 10 - 5) / 500.0f;
+
+            // [هام] تبطئة الاختفاء (1.0f رقم صغير جداً)
+            sparks[i].alpha -= 1.0f;
+
+            sparkSprite.setPosition({ sparks[i].x, sparks[i].y });
+            sparkSprite.setColor(Color(255, 255, 255, (uint8_t)sparks[i].alpha));
+            sparkSprite.setScale({ 0.6f, 0.6f });
+            window.draw(sparkSprite);
+        }
+    }
+	if (currentGamemode == TIMEATTACK) {
+		Vector2f viewCenter = view.getCenter();
+		Vector2f viewSize = view.getSize();
+		timerText.setPosition({ viewCenter.x - 70.f, viewCenter.y - (viewSize.y / 2.f) + 500.f });
+        window.draw(timerText);
+    }
+}
+
+
+void createScorePopup(float x, float y, int points) {
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        if (!scorePopups[i].active) {
+            scorePopups[i].active = true;
+            scorePopups[i].alpha = 255.f;
+
+            scorePopups[i].text.setFont(font);
+            scorePopups[i].text.setString("+" + std::to_string(points));
+            scorePopups[i].text.setCharacterSize(30);
+
+            // === تحديد اللون بناءً على الـ Multiplier ===
+            sf::Color textColor = sf::Color::White;
+
+            switch (multiplier) {
+            case 1:
+                textColor = sf::Color::White;
+                break;
+            case 2:
+                textColor = sf::Color(0, 255, 0); // أخضر
+                break;
+            case 3:
+                textColor = sf::Color(255, 165, 0); // برتقالي
+                break;
+            case 4:
+                textColor = sf::Color(21, 145, 234); // لبني
+                break;
+            case 5:
+                textColor = sf::Color::Yellow; // أصفر
+                break;
+            case 6:
+                textColor = sf::Color::Red; // أحمر
+                break;
+            }
+
+            scorePopups[i].text.setFillColor(textColor);
+            scorePopups[i].baseColor = textColor; // <--- حفظ اللون عشان نستخدمه بعدين
+
+            scorePopups[i].text.setOutlineThickness(2);
+            scorePopups[i].text.setOutlineColor(sf::Color::Black);
+
+            sf::FloatRect bounds = scorePopups[i].text.getLocalBounds();
+            scorePopups[i].text.setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
+            scorePopups[i].text.setPosition({ x, y });
+
+            break;
+        }
+    }
+}
+
+void Movingplayer()
+{
+    Startmovingplayer();
+
+    sf::Clock deltaClock;
+    while (window.isOpen()) {
+
+        while (const std::optional<sf::Event> event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>())
+                window.close();
+        }
+
+        float dt = deltaClock.restart().asSeconds();
+        Updatemovingplayer(dt);
+
+        window.clear(sf::Color(0, 105, 148));
+        Drawmovingplayer();
+        window.display();
+    }
+}
+
+void Startmovingplayer() {
+
+        // أضف دول في الأول
+
+    static float* pCurrentVisualScale = nullptr;
+    static bool* pCanDash = nullptr;
+    static bool* pIsDashingNow = nullptr;
+    static bool* pWasMousePressed = nullptr;
+    static float* pCurrentRotation = nullptr;
+    playerIntroActive = true;
+    playerIntroStep = 0;
+    playerIntroY = -150.f;
+    
+    // إعادة تصفير كل المتغيرات
+    isPlayerDead = false;
+    isGameOver = false;
+    isEscapeMode = false;
+    stopSpawning = false;
+    isMermaidEventActive = false;
+    mermaidFinished = false;
+    lives = 3;
+    score = 0;
+    multiplier = 1;
+    comboProgress = 0.f;
+    comboState = FILLING;
+    playerLevel = 1;    
+    fishEatenCount = 0; // تصفير عداد الأسماك المأكولة
+    
+    
+    // تصفير السمك
+    for (int i = 0; i < MAX_SMALL_FISH; i++) {
+        if (smallFishes[i].sprite) {
+            delete smallFishes[i].sprite;
+            smallFishes[i].sprite = nullptr;
+        }
+        smallFishes[i].active = false;
+    }
+    for (int i = 0; i < MAX_MEDIUM_FISH; i++) {
+        if (mediumFishes[i].sprite) {
+            delete mediumFishes[i].sprite;
+            mediumFishes[i].sprite = nullptr;
+        }
+        mediumFishes[i].active = false;
+    }
+    for (int i = 0; i < MAX_LARGE_FISH; i++) {
+        if (largeFishes[i].sprite) {
+            delete largeFishes[i].sprite;
+            largeFishes[i].sprite = nullptr;
+        }
+        largeFishes[i].active = false;
+    }
+
+    (void)texPlayerall.loadFromFile("Assets/Fish/butterflyfish/Butterflyfishall.png");
+    spawnDelayClock.restart();
+    sprPlayerall.setTexture(texPlayerall);
+
+    sprPlayerall.setOrigin({ DRAW_W / 2.0f, DRAW_H / 2.0f });
+
+    sprPlayerall.setScale({ FISH_SCALE, FISH_SCALE });
+
+    texPlayerall.setSmooth(true);
+    levelsound.setLooping(true);
+    levelsound.play();
+    WaveSound.play();
+    levelsound.setLooping(true);
+    WaveSound.setLooping(true);
+    hasPlayedSpawnSound = false;
+
+    currentState = IDLE;
+    currentFrame = 0;
+    isFacingRight = false;
+    sprPlayerall.setScale({ FISH_SCALE, FISH_SCALE });
+    lastMouseX = window.mapPixelToCoords(sf::Mouse::getPosition(window), view).x;
+
+    fishEatenCount = 0; // تصفير العداد عشان يبدأ عداد السمك من الصفر في المرحلة الجديدة
+    playerLevel = 1;    // تصفير ليفل اللاعب
+	if (currentGamemode == TIMEATTACK) {
+        remainingTime = timeAttackDuration; // إعادة تعيين الوقت المتبقي لوضع Time Attack
+		timerText.setFont(font);
+        timerText.setCharacterSize(40);
+        timerText.setFillColor(sf::Color::White);
+        timerText.setOutlineThickness(2); 
+		timerText.setOutlineColor(sf::Color::Black);
+    }
+	else { remainingTime = 0; } // تصفير الوقت المتبقي لوضع Classic
+
+    // في آخر دالة Startmovingplayer، تأكد من ده:
+targetPos = { LevelWidth / 2.f, LevelHeight / 2.f };
+sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
+sf::Mouse::setPosition(windowCenter, window);
+}
+
+void Updatemovingplayer(float dt)
+{
+    timer += dt;
+
+    if (currentGamemode == TIMEATTACK && !isPlayerDead && remainingTime > 0)
+    {
+        remainingTime -= dt;
+        // 
+        stringstream ss;
+        ss << fixed << setprecision(1) << remainingTime;
+        timerText.setString("Time: " + ss.str());
+
+
+        if (remainingTime <= 10)
+        {
+            timerText.setFillColor(sf::Color::Red);
+        }
+
+
+        if (remainingTime <= 0)
+        {
+            remainingTime = 0;
+			isPlayerDead = true;
+			isEscapeMode = true; // تفعيل وضع الهروب
+			stopSpawning = true; // إيقاف ظهور الأسماك الجديدة
+            lives = 0;
+            isGameOver = true;
+            gameover.play();
+            // 
+           if (!anyFishLeft)
+            {
+                showSorryAnimation = true;
+                sorryExploded = false;
+                sorryTimer = 0.f;
+                for (int i = 0; i < 5; i++) {
+                    sorryLetterScales[i] = 0.f; // تصفير مقاييس الحروف عشان تبدأ من الصفر
+                }
+                respawnClock.restart();
+            }
+        }
+        if (!isGameWon && fishEatenCount >= currentLevelSettings.fishToGrowToLevel3) {
+            isGameWon = true;
+            finalTime = totalDuration.asSeconds() - countdownClock.getElapsedTime().asSeconds();
+
+            // Trigger the events you requested
+            
+            stopSpawning = true; // Stop new fish from appearing
+        }
+        if (!isGameWon) {
+            sf::Time elapsed = countdownClock.getElapsedTime();
+            remainingTime = totalDuration.asSeconds() - elapsed.asSeconds();
+
+            // Handle Game Over (Time ran out)
+            if (remainingTime <= 0.f) {
+                remainingTime = 0.f;
+                if (!isGameOver) {
+                    showSorryAnimation = true;
+                    isPlayerDead = true;
+                    stopSpawning = true;
+                }
+            }
+            if (isGameWon && !mermaidStarted && !anyFishLeft) {
+                StartMermaidEvent();
+                showPerfectAnimation = true;
+                mermaidStarted = true; // Mark that we've triggered the event
+            }
+        }
+        else {
+            // If won, use the time we saved the moment we hit 'max'
+            remainingTime = finalTime;
+        }
+        int minutes = static_cast<int>(remainingTime) / 60;
+        int seconds = static_cast<int>(remainingTime) % 60;
+    }
+ 
+
+    // المتغيرات الثابتة للحفاظ على الحالة
+    static float currentVisualScale = FISH_SCALE;
+
+    // === تصفير الـ Invincibility ===
+    if (isInvincible && hitCooldownClock.getElapsedTime().asSeconds() > 5.0f) {
+        isInvincible = false;
+    }
+
+    // --- Combo Logic ---
+    static bool hasEatenThisFrame = false;
+    hasEatenThisFrame = false;
+    switch (comboState) {
+    case FILLING:
+        comboTimer += dt;
+        if (comboTimer >= WAIT_TIME) {
+            comboState = WAIT_DRAIN;
+            comboTimer = 0.0f;
+        }
+        break;
+    case WAIT_DRAIN:
+        comboTimer += dt;
+        if (comboTimer >= WAIT_TIME) {
+            comboState = DRAINING;
+            comboTimer = 0.0f;
+        }
+        break;
+    case DRAINING:
+        comboProgress -= DRAIN_SPEED * dt;
+        if (comboProgress <= 0.0f) {
+            comboProgress = 0.0f;
+            comboState = WAIT_DROP;
+            comboTimer = 0.0f;
+        }
+        break;
+    case WAIT_DROP:
+        comboTimer += dt;
+        if (comboTimer >= WAIT_TIME) {
+            if (multiplier > 1) {
+                multiplier--;
+                comboState = DRAINING;
+            }
+            else {
+                comboState = FILLING;
+            }
+            comboTimer = 0.0f;
+        }
+        break;
+    }
+
+    if (isPlayerDead) {
+        float elapsed = respawnClock.getElapsedTime().asSeconds();
+
+        if (showSorryAnimation) {
+            sorryTimer += dt;
+
+            // [تعديل 1] زودنا الفاصل الزمني بين كل حرف والتالي لـ 0.5f
+            float delay = 0.25f;
+
+            for (int i = 0; i < 5; i++) {
+                float t = sorryTimer - (i * delay);
+                if (t > 0) {
+                    // [تعديل 2] قللنا سرعة التكبير جداً لـ 0.8f عشان تظهر ناعمة
+                    sorryLetterScales[i] += dt * 1.5f;
+                    if (sorryLetterScales[i] > 1.0f) sorryLetterScales[i] = 1.0f;
+                }
+            }
+        }
+
+        // [تعديل 3] أخّرنا الانفجار لحد 4 ثواني عشان الجملة تكمل وتستقر
+        // الانفجار (Sparks)
+        // [تعديل] تأخرنا الانفجار 4 ثواني عشان الجملة تظهر براحة
+        if (elapsed >= 4.0f && !sorryExploded) {
+            sorryExploded = true;
+            Bubbledone.play(); // ← أضف هنا
+
+            for (int i = 0; i < 35; i++) {
+                int idx = i / 7;
+                float pX = view.getCenter().x - (3 * 50.f) + (idx * 50.f);
+                float pY = view.getCenter().y - 120.f;
+
+                sparks[i].active = true;
+                sparks[i].x = pX;
+                sparks[i].y = pY;
+
+                // [تعديل 1] سرعة أفقية (vx): الانتشار من -60 لـ +60 وقسمة على 20
+                // النتيجة: سرعة متوسطة، منتشرة يمين وشمال
+                sparks[i].vx = (float)(rand() % 20 - 5) / 10.0f;
+
+                // [تعديل 2] سرعة رأسية (vy): تبدأ بسرعة لفوق (سالب) عشان تطلع وبعدين الجاذبية تنزلها
+                // القيم من -60 لـ -10 (للفوق) وقسمة على 20
+                sparks[i].vy = -((float)(rand() % 20 - 10)) / 10.0f;
+
+                sparks[i].alpha = 255.0f;
+            }
+        }
+
+        // [تعديل 4] خلياه يستنى 5 ثواني قبل ما يقفل (بعد الانفجار)
+        if (lives <= 0 && elapsed >= 5.0f) {
+            window.close();
+            return;
+        }
+
+        if (elapsed >= 5.0f) {
+            isPlayerDead = false;
+            isInvincible = true;
+            hitCooldownClock.restart();
+            playerIntroActive = true;
+            playerIntroStep = 0;
+            hasPlayedSpawnSound = false;
+            spawnDelayClock.restart();   // <--- أضف هذا السطر لإعادة تشغيل المؤقت عند العودة للحياة
+            levelsound.play(); 
+
+            showSorryAnimation = false;
+            sorryExploded = false;
+            sorryTimer = 0.f;
+
+            multiplier = 1;
+            comboProgress = 0.0f; // نصفر البار كمان عشان ميبقاش فيه نية
+            comboState = FILLING;
+
+            pendingEat = false; // [هام] تصفير الأكل المعلق
+            currentVisualScale = FISH_SCALE;
+
+            float targetScale = FISH_SCALE;
+            if (playerLevel == 2) targetScale = 0.4f;
+            else if (playerLevel == 3) targetScale = 0.6f;
+
+            isFacingRight = true;
+            sprPlayerall.setScale({ -currentVisualScale, currentVisualScale });
+            sprPlayerall.setColor(Color::White);
+
+            if (playerLevel == 1) {
+            fishEatenCount = 0; // المستوى الأول يبدأ من الصفر
+            } 
+            else if (playerLevel == 2) {
+                // المستوى الثاني: نضعه عند الحد الأدنى للوصول له (مثلاً 15 نقطة)
+                fishEatenCount = currentLevelSettings.fishToGrowToLevel2;
+            } 
+            else if (playerLevel == 3) {
+                // المستوى الثالث: نضعه عند الحد الأدنى للوصول له (مثلاً 40 نقطة)
+                fishEatenCount = currentLevelSettings.fishToGrowToLevel3;
+            }
+        }
+
+        // تحديث الـ Score Popups
+        for (int i = 0; i < MAX_POPUPS; i++) {
+            if (scorePopups[i].active) {
+                sf::Vector2f pos = scorePopups[i].text.getPosition();
+                pos.y += scorePopups[i].ySpeed * dt;
+                scorePopups[i].text.setPosition(pos);
+                scorePopups[i].alpha -= 150.f * dt;
+                if (scorePopups[i].alpha <= 0.f) scorePopups[i].active = false;
+                else {
+                    scorePopups[i].text.setFillColor(sf::Color(scorePopups[i].baseColor.r, scorePopups[i].baseColor.g, scorePopups[i].baseColor.b, (uint8_t)scorePopups[i].alpha));
+                    scorePopups[i].text.setOutlineColor(sf::Color(0, 0, 0, (uint8_t)scorePopups[i].alpha));
+                }
+            }
+        }
+        return;
+    }
+
+    // --- Intro Logic ---
+    float introTargetY = LevelHeight / 2.0f;
+    float sinkDepth = 40.0f;
+    float sinkTargetY = introTargetY + sinkDepth;
+
+    if (playerIntroActive) {
+        sf::Vector2f pos = sprPlayerall.getPosition();
+        if (playerIntroStep == 0) {
+            pos.x = LevelWidth / 2.0f;
+            pos.y = -350.0f;
+            sprPlayerall.setPosition(pos);
+            isFacingRight = true;
+            sprPlayerall.setScale({ -currentVisualScale, currentVisualScale });
+            sprPlayerall.setRotation(degrees(45.f));
+            view.setCenter({ pos.x, pos.y });
+            playerIntroStep = 1;
+        }
+        else if (playerIntroStep == 1) {
+            float fallSpeed = 700.0f;
+            pos.x = LevelWidth / 2.0f;
+            if (pos.y < introTargetY) {
+                pos.y += fallSpeed * dt;
+                sprPlayerall.setPosition(pos);
+                view.setCenter({ pos.x, pos.y });
+                currentState = SWIM;
+                if (timer >= 0.15f) {
+                    timer = 0.0f;
+                    currentFrame++;
+                    if (currentFrame >= frameCounts[(int)SWIM]) currentFrame = 0;
+                    int gridX = currentFrame * GRID_W;
+                    int gridY = (int)SWIM * GRID_H;
+                    int offsetX = (GRID_W - DRAW_W) / 2;
+                    int offsetY = (GRID_H - DRAW_H) / 2;
+                    sprPlayerall.setTextureRect(sf::IntRect({ gridX + offsetX, gridY + offsetY }, { DRAW_W, DRAW_H }));
+                }
+            }
+            else {
+                pos.y = introTargetY;
+                sprPlayerall.setPosition(pos);
+                playerIntroStep = 2;
+            }
+        }
+        else if (playerIntroStep == 2) {
+            float sinkSpeed = 300.0f;
+            pos.x = LevelWidth / 2.0f;
+            if (pos.y < sinkTargetY) {
+                pos.y += sinkSpeed * dt;
+                sprPlayerall.setPosition(pos);
+                currentState = SWIM;
+                if (timer >= 0.15f) {
+                    timer = 0.0f;
+                    currentFrame++;
+                    if (currentFrame >= frameCounts[(int)SWIM]) currentFrame = 0;
+                    int gridX = currentFrame * GRID_W;
+                    int gridY = (int)SWIM * GRID_H;
+                    int offsetX = (GRID_W - DRAW_W) / 2;
+                    int offsetY = (GRID_H - DRAW_H) / 2;
+                    sprPlayerall.setTextureRect(sf::IntRect({ gridX + offsetX, gridY + offsetY }, { DRAW_W, DRAW_H }));
+                }
+            }
+            else {
+                sprPlayerall.setRotation(degrees(0.f));
+                playerIntroStep = 3;
+            }
+        }
+        else if (playerIntroStep == 3) {
+            float floatSpeed = 200.0f;
+            pos.x = LevelWidth / 2.0f;
+            if (pos.y > introTargetY) {
+                pos.y -= floatSpeed * dt;
+                sprPlayerall.setPosition(pos);
+                currentState = SWIM;
+                if (timer >= 0.15f) {
+                    timer = 0.0f;
+                    currentFrame++;
+                    if (currentFrame >= frameCounts[(int)SWIM]) currentFrame = 0;
+                    int gridX = currentFrame * GRID_W;
+                    int gridY = (int)SWIM * GRID_H;
+                    int offsetX = (GRID_W - DRAW_W) / 2;
+                    int offsetY = (GRID_H - DRAW_H) / 2;
+                    sprPlayerall.setTextureRect(sf::IntRect({ gridX + offsetX, gridY + offsetY }, { DRAW_W, DRAW_H }));
+                }
+            }
+            else {
+                pos.y = introTargetY;
+                sprPlayerall.setPosition(pos);
+                playerIntroActive = false;
+                currentState = IDLE;
+                targetPos = pos;
+                sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
+                sf::Mouse::setPosition(windowCenter, window);
+            }
+        }
+        return;
+    }
+
+    // --- Growth System ---
+    float targetScale = FISH_SCALE;
+    if (playerLevel == 2) targetScale = 0.4f;
+    else if (playerLevel == 3) targetScale = 0.6f;
+
+    if (std::abs(currentVisualScale - targetScale) > 0.01f) {
+        currentVisualScale += (targetScale - currentVisualScale) * 3.0f * dt;
+        if (isFacingRight) sprPlayerall.setScale({ -currentVisualScale, currentVisualScale });
+        else sprPlayerall.setScale({ currentVisualScale, currentVisualScale });
+    }
+
+    // --- Movement Logic ---
+    sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
+    sf::Vector2i currentScreenMousePos = sf::Mouse::getPosition(window);
+    sf::Vector2i screenDelta = currentScreenMousePos - windowCenter;
+    float worldPerPixel = view.getSize().x / (float)window.getSize().x;
+    targetPos.x += screenDelta.x * worldPerPixel;
+    targetPos.y += screenDelta.y * worldPerPixel;
+    sf::Mouse::setPosition(windowCenter, window);
+
+    float margin = 30.0f;
+    if (targetPos.x < margin) targetPos.x = margin;
+    if (targetPos.x > LevelWidth - margin) targetPos.x = LevelWidth - margin;
+    if (targetPos.y < margin) targetPos.y = margin;
+    if (targetPos.y > LevelHeight - margin) targetPos.y = LevelHeight - margin;
+
+    sf::Vector2f currentPos = sprPlayerall.getPosition();
+    sf::Vector2f toMouse = targetPos - currentPos;
+    float distance = std::sqrt(toMouse.x * toMouse.x + toMouse.y * toMouse.y);
+
+    sf::Vector2f moveDirection(0.f, 0.f);
+    bool isMouseMoving = false;
+    if (distance > 5.0f) {
+        moveDirection = toMouse / distance;
+        isMouseMoving = true;
+    }
+    else {
+        moveDirection = { (isFacingRight ? 1.0f : -1.0f), 0.0f };
+    }
+
+    // --- Dash Logic ---
+    static bool canDash = true;
+    static bool isDashingNow = false;
+    static Clock dashTimer;
+    static bool wasMousePressed = false;
+    static sf::Vector2f dashDirection = { 1.f, 0.f };
+
+    bool isMousePressedNow = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+    if (isMousePressedNow && !wasMousePressed && canDash && !isPlayerDead) {
+        sf::Vector2f toTarget = targetPos - currentPos;
+        float len = std::sqrt(toTarget.x * toTarget.x + toTarget.y * toTarget.y);
+        if (len > 5.f) dashDirection = toTarget / len;
+        else dashDirection = { (isFacingRight ? 1.0f : -1.0f), 0.0f };
+        isDashingNow = true;
+        canDash = false;
+        dashTimer.restart();
+        dashSound.play(); // <--- أضف هذا السطر لتشغيل صوت الاندفاع
+    }
+    wasMousePressed = isMousePressedNow;
+    if (isDashingNow) {
+        if (dashTimer.getElapsedTime().asSeconds() > dashDuration) isDashingNow = false;
+    }
+    if (!canDash) {
+        if (dashTimer.getElapsedTime().asSeconds() > dashCooldown) canDash = true;
+    }
+
+    bool isMoving = false;
+    float playerSpeed = 1000.0f;
+    if (isDashingNow) {
+        playerSpeed *= 1.5f;
+        currentPos += dashDirection * playerSpeed * dt; // التعديل هنا
+        currentPos.x = std::max(margin, std::min(currentPos.x, LevelWidth - margin));
+        currentPos.y = std::max(margin, std::min(currentPos.y, LevelHeight - margin));
+        sprPlayerall.setPosition(currentPos);
+        isMoving = true;
+        if (dashDirection.x > 0.1f && !isFacingRight) {
+            isFacingRight = true;
+            sprPlayerall.setScale({ -currentVisualScale, currentVisualScale });
+        }
+        else if (dashDirection.x < -0.1f && isFacingRight) {
+            isFacingRight = false;
+            sprPlayerall.setScale({ currentVisualScale, currentVisualScale });
+        }
+        targetPos = currentPos;
+        static float dashBubbleTimer = 0.f;
+        dashBubbleTimer += dt;
+        if (dashBubbleTimer > 0.02f) {
+            dashBubbleTimer = 0.f;
+            StartGameBubble(currentPos.x + getRandom(-20.f, 20.f), currentPos.y + getRandom(-10.f, 10.f), true);
+        }
+    }
+    else if (isMouseMoving) {
+        currentPos += moveDirection * playerSpeed * dt;
+        sprPlayerall.setPosition(currentPos);
+        isMoving = true;
+    }
+
+    // --- Rotation ---
+    static float currentRotation = 0.f;
+    float maxTiltAngle = 35.0f;
+    float targetRotation = 0.f;
+    if (currentState != TURN && currentState != EAT) {
+        if (isDashingNow) targetRotation = dashDirection.y * maxTiltAngle;
+        else targetRotation = moveDirection.y * maxTiltAngle;
+        if (!isFacingRight) targetRotation *= -1.0f;
+    }
+    currentRotation += (targetRotation - currentRotation) * 10.0f * dt;
+    sprPlayerall.setRotation(degrees(currentRotation));
+
+    // [تعديل] منطق الحركة مع الـ Pending Action
+    if (currentState != EAT && !pendingEat) {
+        if (isMoving) {
+            if (isDashingNow) {
+                if (currentState != SWIM) currentState = SWIM;
+            }
+            else {
+                bool movingRight = (moveDirection.x > 0);
+                if (movingRight != isFacingRight) {
+                    if (currentState != TURN) {
+                        currentState = TURN;
+                        currentFrame = 0;
+                        timer = 0.f;
+                    }
+                }
+                else {
+                    if (currentState != TURN) currentState = SWIM;
+                }
+            }
+        }
+        else {
+            if (currentState != TURN) currentState = IDLE;
+        }
+    }
+
+    // --- 5. Collisions (Player Eats Fish ONLY) ---
+    sf::Vector2f playerPos = sprPlayerall.getPosition();
+    sf::Vector2f mouthPos = playerPos;
+
+    float scaleRatio = currentVisualScale / FISH_SCALE;
+    float baseMouthOffset = 60.f;
+    float baseEatRadius = 40.f;
+    float dynamicMouthOffset = baseMouthOffset * scaleRatio;
+    float dynamicEatRadius = baseEatRadius * scaleRatio;
+    if (isDashingNow) dynamicEatRadius *= 1.5f;
+
+    sf::Vector2f collisionDir = isDashingNow ? dashDirection : moveDirection;
+    if (distance > 5.0f || isDashingNow) mouthPos += collisionDir * dynamicMouthOffset;
+    else {
+        if (isFacingRight) mouthPos.x += dynamicMouthOffset;
+        else mouthPos.x -= dynamicMouthOffset;
+    }
+
+    // Small Fish
+    for (int i = 0; i < MAX_SMALL_FISH; i++) {
+        if (smallFishes[i].active && smallFishes[i].sprite && !smallFishes[i].isFleeing) {
+            float dx = smallFishes[i].sprite->getPosition().x - mouthPos.x;
+            float dy = smallFishes[i].sprite->getPosition().y - mouthPos.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+            if (dist < dynamicEatRadius) {
+                eatSound.play();
+                smallFishes[i].active = false;
+                delete smallFishes[i].sprite;
+                smallFishes[i].sprite = nullptr;
+                int points = 10 * multiplier;
+                score += points;
+                createScorePopup(mouthPos.x, mouthPos.y, points);
+                hasEatenThisFrame = true;
+                comboState = FILLING;
+                comboTimer = 0.0f;
+                comboProgress += (1.0f / FISH_TO_LEVEL_UP);
+                if (comboProgress >= 1.0f) {
+                    if (multiplier < MAX_MULTIPLIER) multiplier++;
+                    comboProgress = 0.0f;
+                }
+                fishEatenCount++;
+                smallFishEatenCount++;
+                for (int k = 0; k < 5; k++) StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
+
+                // [تعديل] تفعيل الـ Pending Action لو بيحصل Turn
+                if (currentState == TURN) pendingEat = true;
+                else {
+                    currentState = EAT;
+                    currentFrame = 0;
+                    timer = 0.f;
+                }
+            }
+        }
+    }
+
+    // Medium Fish
+    for (int i = 0; i < MAX_MEDIUM_FISH; i++) {
+        if (mediumFishes[i].active && mediumFishes[i].sprite && !mediumFishes[i].isFleeing) {
+            float dx = mediumFishes[i].sprite->getPosition().x - mouthPos.x;
+            float dy = mediumFishes[i].sprite->getPosition().y - mouthPos.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+
+            if (dist < dynamicEatRadius + 10.f) {
+                if (playerLevel >= 2) {
+                    eatSound.play();
+                    mediumFishes[i].active = false;
+                    delete mediumFishes[i].sprite;
+                    mediumFishes[i].sprite = nullptr;
+                    int points = 20 * multiplier;
+                    score += points;
+                    createScorePopup(mouthPos.x, mouthPos.y, points);
+                    hasEatenThisFrame = true;
+                    comboState = FILLING;
+                    comboTimer = 0.0f;
+                    comboProgress += (1.0f / FISH_TO_LEVEL_UP);
+                    if (comboProgress >= 1.0f) {
+                        if (multiplier < MAX_MULTIPLIER) multiplier++;
+                        comboProgress = 0.0f;
+                    }
+                    fishEatenCount += 3;
+                    mediumFishEatenCount++;
+                    for (int k = 0; k < 5; k++) StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
+
+                    if (currentState == TURN) pendingEat = true;
+                    else {
+                        currentState = EAT;
+                        currentFrame = 0;
+                        timer = 0.f;
+                    }
+                }
+            }
+        }
+    }
+
+    // Large Fish
+    for (int i = 0; i < MAX_LARGE_FISH; i++) {
+        if (largeFishes[i].active && largeFishes[i].sprite && !largeFishes[i].isFleeing) {
+            float dx = largeFishes[i].sprite->getPosition().x - mouthPos.x;
+            float dy = largeFishes[i].sprite->getPosition().y - mouthPos.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+
+            if (dist < dynamicEatRadius + 20.f) {
+                if (playerLevel >= 3) {
+                    eatSound.play();
+                    largeFishes[i].active = false;
+                    delete largeFishes[i].sprite;
+                    largeFishes[i].sprite = nullptr;
+                    int points = 35 * multiplier;
+                    score += points;
+                    createScorePopup(mouthPos.x, mouthPos.y, points);
+                    hasEatenThisFrame = true;
+                    comboState = FILLING;
+                    comboTimer = 0.0f;
+                    comboProgress += (1.0f / FISH_TO_LEVEL_UP);
+                    if (comboProgress >= 1.0f) {
+                        if (multiplier < MAX_MULTIPLIER) multiplier++;
+                        comboProgress = 0.0f;
+                    }
+                    isEscapeMode = true;
+                    stopSpawning = true;
+                    for (int k = 0; k < 5; k++) StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
+
+                    if (currentState == TURN) pendingEat = true;
+                    else {
+                        currentState = EAT;
+                        currentFrame = 0;
+                        timer = 0.f;
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Level Up & Animation Loop ---
+    if (playerLevel == 1 && fishEatenCount >= currentLevelSettings.fishToGrowToLevel2){
+    playerLevel = 2;
+    levelUpSound.play(); // <--- أضف هذا السطر عند الصعود للمستوى 2
+    }
+    else if (playerLevel == 2 && fishEatenCount >= currentLevelSettings.fishToGrowToLevel3){
+    playerLevel = 3;
+    levelUpSound.play(); // <--- أضف هذا السطر عند الصعود للمستوى 2
+    }
+    float currentSpeed = 0.15f;
+    if (currentState == TURN) currentSpeed = 0.04f;
+    else if (currentState == EAT) currentSpeed = 0.08f;
+
+    if (timer >= currentSpeed) {
+        timer = 0.0f;
+        currentFrame++;
+        if (currentFrame >= frameCounts[(int)currentState]) {
+            currentFrame = 0;
+            if (currentState == EAT) {
+                currentState = IDLE;
+                pendingEat = false; // تصفير العلم بعد الأكل
+            }
+            else if (currentState == TURN) {
+                isFacingRight = !isFacingRight;
+                if (isFacingRight) sprPlayerall.setScale({ -currentVisualScale, currentVisualScale });
+                else sprPlayerall.setScale({ currentVisualScale, currentVisualScale });
+
+                // [تعديل] تنفيذ الـ Pending Action بعد الالتفات
+                if (pendingEat) {
+                    currentState = EAT;
+                    pendingEat = false;
+                }
+                else {
+                    if (isMoving) currentState = SWIM;
+                    else currentState = IDLE;
+                }
+            }
+        }
+        int gridX = currentFrame * GRID_W;
+        int gridY = (int)currentState * GRID_H;
+        int offsetX = (GRID_W - DRAW_W) / 2;
+        int offsetY = (GRID_H - DRAW_H) / 2;
+        sprPlayerall.setTextureRect(sf::IntRect({ gridX + offsetX, gridY + offsetY }, { DRAW_W, DRAW_H }));
+    }
+
+    // Score Popups Update
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        if (scorePopups[i].active) {
+            sf::Vector2f pos = scorePopups[i].text.getPosition();
+            pos.y += scorePopups[i].ySpeed * dt;
+            scorePopups[i].text.setPosition(pos);
+            scorePopups[i].alpha -= 150.f * dt;
+            if (scorePopups[i].alpha <= 0.f) scorePopups[i].active = false;
+            else {
+                scorePopups[i].text.setFillColor(sf::Color(scorePopups[i].baseColor.r, scorePopups[i].baseColor.g, scorePopups[i].baseColor.b, (uint8_t)scorePopups[i].alpha));
+                scorePopups[i].text.setOutlineColor(sf::Color(0, 0, 0, (uint8_t)scorePopups[i].alpha));
+            }
+        }
+    }
+    // تفعيل حدسمكة النجوم لما السمك يخلص
+    if (isEscapeMode && !isMermaidEventActive) {
+         bool anyFishLeft = false; 
+        
+       
+        for (int i = 0; i < MAX_SMALL_FISH; i++) if (smallFishes[i].active) anyFishLeft = true;
+        for (int i = 0; i < MAX_MEDIUM_FISH; i++) if (mediumFishes[i].active) anyFishLeft = true;
+        for (int i = 0; i < MAX_LARGE_FISH; i++) if (largeFishes[i].active) anyFishLeft = true;
+
+        // لو مفيش سمك تاني، ابدأ الحدث
+        if (!anyFishLeft) {
+            StartMermaidEvent();
+        }
+    }
+
+    // --- [جديد] تحديث أنيميشن PERFECT ---
+    if (showPerfectAnimation) {
+        perfectTimer += dt;
+
+        // 1. تحجيم الحروف (نفس سرعة SORRY تماماً)
+        if (!perfectExploded) {
+            float delay = 0.25f;
+            for (int i = 0; i < 7; i++) {
+                float t = perfectTimer - (i * delay);
+                if (t > 0) {
+                    perfectLetterScales[i] += dt * 1.5f;
+                    if (perfectLetterScales[i] > 1.0f) perfectLetterScales[i] = 1.0f;
+                }
+            }
+        }
+
+        // 2. الانفجار (Sparks) - نفس توقيت وسرعة SORRY
+        if (perfectTimer >= 4.0f && !perfectExploded) {
+            perfectExploded = true;
+            Bubbledone.play(); // ← أضف هنا
+
+            // تنظيف أي شرارات قديمة
+            for (int i = 0; i < 35; i++) sparks[i].active = false;
+
+            for (int i = 0; i < 35; i++) {
+                int idx = i / 5;
+
+                // حساب المركز لـ 7 حروف
+                float centerX = view.getCenter().x;
+                float centerY = view.getCenter().y - 100.f;
+                float spacing = 60.f;
+                float startX = centerX - (3.f * spacing); // تعديل الوسطنة لـ 7 حروف
+
+                float pX = startX + (idx * spacing);
+                float pY = centerY;
+
+                sparks[i].active = true;
+                sparks[i].x = pX;
+                sparks[i].y = pY;
+
+                // [هام] نسخ نفس السرعات والانتشار من SORRY بالضبط
+                sparks[i].vx = (float)(rand() % 20 - 5) / 10.0f;
+                sparks[i].vy = -((float)(rand() % 20 - 10)) / 10.0f;
+
+                sparks[i].alpha = 255.0f;
+            }
+        }
+
+        // 3. إغلاق اللعبة (الانفجار يحصل عند 4 ثواني، ننتظر 3 ثواني بعدها = 7 ثواني إجمالي)
+        if (perfectTimer >= 6.0f) {
+            window.close();
+        }
+    }
+}
+
+void Drawmovingplayer()
+{
+    if (!isPlayerDead) {
+        // [تعديل] تأثير الـ Force Shield (Fading Fish)
+        if (isInvincible) {
+            // معادلة الفيدنج: بتستخدم sin عشان تعمل موجات ظهور واختفاء
+            // الرقم 10.0f بيحدد سرعة الذبذبة (كل ما زاد لزمت سرعة التذبذب)
+            float fadeValue = (std::sin(totaltime * 10.0f) + 1.0f) * 0.75f; // النتيجة بتكون من 0.0 لـ 1.0
+            int alpha = static_cast<int>(fadeValue * 255); // تحويلها لشفافية من 0 ل 255
+
+            sprPlayerall.setColor(sf::Color(255, 255, 255, alpha));
+        }
+        else {
+            // لو مش محمي، يرجع لونه طبيعي (مجمد)
+            sprPlayerall.setColor(sf::Color::White);
+        }
+
+        window.draw(sprPlayerall);
+
+        // هنفضل نرجع اللون أبيض في كل الحالات عشان أي رسم تاني متتأثرش
+        sprPlayerall.setColor(sf::Color::White);
+    }
+}
+
+void StartSmallFish() {
+    int freeIndex = -1;
+    for (int i = 0; i < MAX_SMALL_FISH; i++) {
+        if (smallFishes[i].active == false) {
+            freeIndex = i;
+            break;
+        }
+    }
+    if (freeIndex == -1) return;
+
+    SmallFish& newFish = smallFishes[freeIndex];
+    newFish.sprite = new sf::Sprite(minowfishtex);
+
+    float fishScale = 0.2f;
+    newFish.sprite->setOrigin(sf::Vector2f(286 / 2.f, 126 / 2.f));
+
+    newFish.active = true;
+    newFish.isTurning = false;
+    newFish.currentFrame = 0;
+
+    newFish.canTurn = (rand() % 4 == 0);
+    newFish.hasTurned = false;
+
+    if (newFish.canTurn) {
+        newFish.timeToNextTurn = 3.0f + static_cast<float>(rand() % 5);
+    }
+
+    float randomSpeed = 40.0f + static_cast<float>(rand() % 40);
+
+    float randomYSpeed = static_cast<float>(rand() % 60 - 30);
+
+    float minY = 50.0f;
+    float maxY = LevelHeight - 50.0f;
+    float randomY = minY + (rand() % (int)(maxY - minY));
+
+    int side = rand() % 2;
+
+    sf::Vector2f viewCenter = view.getCenter();
+    sf::Vector2f viewSize = view.getSize();
+    float viewLeft = viewCenter.x - viewSize.x / 2.0f;
+    float viewRight = viewCenter.x + viewSize.x / 2.0f;
+
+    if (side == 0) {
+        newFish.sprite->setPosition(sf::Vector2f(viewLeft - 200.f, randomY));
+        newFish.velocity = { randomSpeed, randomYSpeed };
+        newFish.originalSpeedX = randomSpeed;
+        newFish.sprite->setScale(sf::Vector2f(-fishScale, fishScale));
+    }
+    else {
+        newFish.sprite->setPosition(sf::Vector2f(viewRight + 200.f, randomY));
+        newFish.velocity = { -randomSpeed, randomYSpeed };
+        newFish.originalSpeedX = -randomSpeed;
+        newFish.sprite->setScale(sf::Vector2f(fishScale, fishScale));
+    }
+
+    newFish.spawnX = newFish.sprite->getPosition().x;
+    newFish.sprite->setTextureRect(sf::IntRect({ 0, 0 }, { 286, 126 }));
+}
+
+void UpdateSmallFishes(float dt) {
+    // لا تولد سمك جديد لو التوليد توقف
+    if (!stopSpawning) {
+        spawnTimer += dt;
+        if (spawnTimer >= spawnInterval) {
+            spawnTimer = 0.f;
+            StartSmallFish();
+        }
+    }
+
+    for (int i = 0; i < MAX_SMALL_FISH; i++) {
+        if (smallFishes[i].active) {
+            SmallFish& fish = smallFishes[i];
+
+            if (isEscapeMode && !fish.isFleeing) {
+                fish.isFleeing = true;
+                fish.velocity.x *= 3.0f;
+                fish.velocity.y = 0;
+                fish.canTurn = false;
+            }
+
+            if (fish.isFleeing) {
+                fish.sprite->move(fish.velocity * dt);
+
+                sf::Vector2f pos = fish.sprite->getPosition();
+                if (pos.x < -200.f || pos.x > LevelWidth + 200.f) {
+                    fish.active = false;
+                    if (fish.sprite) {
+                        delete fish.sprite;
+                        fish.sprite = nullptr;
+                    }
+                }
+                continue;
+            }
+
+            if (fish.isTurning) {
+                fish.animTimer += dt;
+                if (fish.animTimer >= 0.15f) {
+                    fish.animTimer = 0.f;
+                    fish.currentFrame++;
+                    if (fish.currentFrame > 5) fish.currentFrame = 0;
+                    fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * 286, 126 }, { 286, 126 }));
+                }
+
+                fish.turnTimer += dt;
+                if (fish.turnTimer >= 0.7f) {
+                    fish.isTurning = false;
+                    fish.currentFrame = 0;
+                    fish.animTimer = 0.f;
+                    fish.sprite->setTextureRect(sf::IntRect({ 0, 0 }, { 286, 126 }));
+
+                    fish.velocity.x = -fish.originalSpeedX;
+                    fish.originalSpeedX = fish.velocity.x;
+
+                    fish.velocity.y = static_cast<float>(rand() % 41 - 20);
+
+                    float fishScale = std::abs(fish.sprite->getScale().x);
+                    if (fish.velocity.x > 0) fish.sprite->setScale(sf::Vector2f(-fishScale, fishScale));
+                    else fish.sprite->setScale(sf::Vector2f(fishScale, fishScale));
+
+                    fish.hasTurned = true;
+                }
+            }
+            else {
+                fish.verticalTimer -= dt;
+                if (fish.verticalTimer <= 0.f) {
+                    fish.velocity.y = static_cast<float>(rand() % 101 - 50);
+                    fish.verticalTimer = 1.0f + static_cast<float>(rand() % 300) / 100.0f;
+                }
+
+                fish.sprite->move(fish.velocity * dt);
+                sf::Vector2f pos = fish.sprite->getPosition();
+
+                float margin = 50.0f;
+
+                if (pos.y < margin) {
+                    fish.velocity.y = 40.0f;
+                    fish.verticalTimer = 2.0f;
+                }
+                else if (pos.y > LevelHeight - margin) {
+                    fish.velocity.y = -40.0f;
+                    fish.verticalTimer = 2.0f;
+                }
+
+                if (fish.canTurn && !fish.hasTurned) {
+                    float distanceTraveled = std::abs(pos.x - fish.spawnX);
+                    bool shouldTurn = false;
+                    if (distanceTraveled >= 150.f) {
+                        bool isSafeFromBorders = (pos.x > 150.f && pos.x < LevelWidth - 150.f);
+                        if (isSafeFromBorders) {
+                            fish.timeToNextTurn -= dt;
+                            if (fish.timeToNextTurn <= 0.f) shouldTurn = true;
+                        }
+                    }
+
+                    if (shouldTurn) {
+                        fish.isTurning = true;
+                        fish.turnTimer = 0.f;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                    }
+                }
+
+                fish.animTimer += dt;
+                if (fish.animTimer >= 0.15f) {
+                    fish.animTimer = 0.f;
+                    fish.currentFrame++;
+                    if (fish.currentFrame > 5) fish.currentFrame = 0;
+                    fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * 286, 0 }, { 286, 126 }));
+                }
+            }
+
+            sf::Vector2f finalPos = fish.sprite->getPosition();
+            if (finalPos.x < -200.f || finalPos.x > LevelWidth + 200.f) {
+                fish.active = false;
+                if (fish.sprite) {
+                    delete fish.sprite;
+                    fish.sprite = nullptr;
+                }
+            }
+        }
+    }
+}
+
+void DrawSmallFishes(sf::RenderWindow& window) {
+    for (int i = 0; i < MAX_SMALL_FISH; i++) {
+        if (smallFishes[i].active && smallFishes[i].sprite) {
+            window.draw(*smallFishes[i].sprite);
+        }
+    }
+}
+
+void StartMediumFish() {
+    int freeIndex = -1;
+    for (int i = 0; i < MAX_MEDIUM_FISH; i++) {
+        if (!mediumFishes[i].active) {
+            freeIndex = i;
+            break;
+        }
+    }
+    if (freeIndex == -1) return;
+
+    MediumFish& fish = mediumFishes[freeIndex];
+    fish.sprite = new sf::Sprite(mediumFishTexture);
+
+    float scale = 0.5f;
+    fish.sprite->setOrigin({ (float)MEDIUM_FRAME_W / 2.f, (float)MEDIUM_FRAME_H / 2.f });
+
+    int side = rand() % 2;
+    float randomY = 100.f + rand() % (int)(LevelHeight - 200.f);
+    float speed = 80.f;
+    float randomYSpeed = static_cast<float>(rand() % 61 - 30);
+
+    fish.canTurn = (rand() % 4 == 0);
+    fish.hasTurned = false;
+
+    fish.timeToNextTurn = 5.f + static_cast<float>(rand() % 350) / 100.0f;
+
+    if (side == 0) {
+        fish.sprite->setPosition({ -100.f, randomY });
+        fish.velocity = { speed, randomYSpeed };
+        fish.facingRight = true;
+        fish.sprite->setScale({ -scale, scale });
+    }
+    else {
+        fish.sprite->setPosition({ LevelWidth + 100.f, randomY });
+        fish.velocity = { -speed, randomYSpeed };
+        fish.facingRight = false;
+        fish.sprite->setScale({ scale, scale });
+    }
+
+    fish.spawnX = fish.sprite->getPosition().x;
+    fish.active = true;
+    fish.state = 1;
+    fish.currentFrame = 0;
+    fish.animTimer = 0.f;
+    fish.sprite->setTextureRect(sf::IntRect({ 0, 1 * MEDIUM_FRAME_H }, { MEDIUM_FRAME_W, MEDIUM_FRAME_H }));
+}
+
+void UpdateMediumFishes(float dt) {
+    if (!stopSpawning) {
+        mediumSpawnTimer += dt;
+        if (mediumSpawnTimer >= mediumSpawnInterval) {
+            mediumSpawnTimer = 0.f;
+            StartMediumFish();
+        }
+    }
+
+    for (int i = 0; i < MAX_MEDIUM_FISH; i++) {
+        if (!mediumFishes[i].active) continue;
+        MediumFish& fish = mediumFishes[i];
+
+        // Escape Mode Logic
+        if (isEscapeMode && !fish.isFleeing) {
+            fish.isFleeing = true;
+            fish.velocity.x *= 2.5f;
+            fish.velocity.y = 0;
+            fish.state = 1;
+            fish.canTurn = false;
+        }
+        if (fish.isFleeing) {
+            fish.sprite->move(fish.velocity * dt);
+            sf::Vector2f pos = fish.sprite->getPosition();
+            if (pos.x < -300.f || pos.x > LevelWidth + 300.f) {
+                fish.active = false;
+                if (fish.sprite) {
+                    delete fish.sprite;
+                    fish.sprite = nullptr;
+                }
+            }
+            continue;
+        }
+
+        // Movement Logic
+        if (fish.state == 1) {
+            fish.sprite->move(fish.velocity * dt);
+            fish.verticalTimer -= dt;
+            if (fish.verticalTimer <= 0.f) {
+                fish.velocity.y = static_cast<float>(rand() % 61 - 30);
+                fish.verticalTimer = 1.5f + static_cast<float>(rand() % 400) / 100.0f;
+            }
+            sf::Vector2f pos = fish.sprite->getPosition();
+            if (pos.y < 80.0f) fish.velocity.y = 30.0f;
+            else if (pos.y > LevelHeight - 80.0f) fish.velocity.y = -30.0f;
+        }
+
+        // Turning Logic
+        if (fish.state == 1 && fish.canTurn && !fish.hasTurned) {
+            sf::Vector2f pos = fish.sprite->getPosition();
+
+            // [تعديل] غيرت المسافة من 50 لـ 250 عشان تلف من بعيد ومتخبطش في الحيطة
+            float turnDistance = 250.f;
+
+            bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
+
+            if (outOfBounds) {
+                fish.state = 2;
+                fish.currentFrame = 0;
+                fish.animTimer = 0.f;
+                fish.hasTurned = true;
+            }
+            else {
+                if (fish.timeToNextTurn > 0.f) fish.timeToNextTurn -= dt;
+                if (fish.timeToNextTurn <= 0.f) {
+                    fish.state = 2;
+                    fish.currentFrame = 0;
+                    fish.animTimer = 0.f;
+                    fish.hasTurned = true;
+                }
+            }
+        }
+
+        // Animation Logic
+        fish.animTimer += dt;
+        float animSpeed = (fish.state == 0) ? 0.06f : ((fish.state == 2) ? 0.08f : 0.12f);
+
+        if (fish.animTimer >= animSpeed) {
+            fish.animTimer = 0.f;
+            fish.currentFrame++;
+
+            if (fish.state == 0 && fish.currentFrame >= MEDIUM_FRAMES_EAT) {
+                fish.currentFrame = 0;
+                fish.state = 1;
+            } // Finish Eating -> Swim
+            else if (fish.state == 2 && fish.currentFrame >= MEDIUM_FRAMES_TURN) {
+                fish.currentFrame = 0;
+                fish.state = 1;
+                fish.velocity.x = -fish.velocity.x;
+                float scale = std::abs(fish.sprite->getScale().x);
+                fish.sprite->setScale({ (fish.velocity.x > 0 ? -scale : scale), scale });
+                fish.spawnX = fish.sprite->getPosition().x;
+            }
+            else if (fish.state == 1 && fish.currentFrame >= MEDIUM_FRAMES_SWIM) {
+                fish.currentFrame = 0;
+            }
+        }
+
+        // === Interaction Logic (Eating & Death) ===
+        if (fish.state == 1) {
+
+            // 1. Medium Fish Eats Small Fish
+            for (int j = 0; j < MAX_SMALL_FISH; j++) {
+                if (smallFishes[j].active && smallFishes[j].sprite) {
+                    float dx = smallFishes[j].sprite->getPosition().x - fish.sprite->getPosition().x;
+                    float dy = smallFishes[j].sprite->getPosition().y - fish.sprite->getPosition().y;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+
+                    if (dist < 40.f) { // Eating Range
+                        // Remove Small Fish
+                        
+
+                        smallFishes[j].active = false;
+                        delete smallFishes[j].sprite;
+                        smallFishes[j].sprite = nullptr;
+
+                        // Play Eat Animation
+                        fish.state = 0;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                        break; // Eat only one
+                    }
+                }
+            }
+
+            // 2. Medium Fish Eats Player
+            if (playerLevel < 2 && !isPlayerDead && !isInvincible) {
+                // Mouth Check
+                sf::Vector2f fishDir(1.f, 0.f);
+                if (fish.velocity.x != 0) fishDir.x = (fish.velocity.x > 0) ? 1.f : -1.f;
+                float predatorMouthOffset = 60.f;
+                sf::Vector2f predatorMouthPos = fish.sprite->getPosition();
+                predatorMouthPos.x += fishDir.x * predatorMouthOffset;
+
+                float dx = sprPlayerall.getPosition().x - predatorMouthPos.x;
+                float dy = sprPlayerall.getPosition().y - predatorMouthPos.y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+
+                if (distance < 35.f) {
+                    fish.state = 0;
+                    fish.currentFrame = 0;
+                    fish.animTimer = 0.f;
+                    lives--;
+
+                    // === التعديل: التحقق من عدد القلوب ===
+                    if (lives > 0) {
+                        levelsound.stop();      // إيقاف موسيقى الليفل
+                        PlayergotEaten.play();  // صوت العض
+                        dieSound.play(); // <--- ضع هذا السطر هنا (صوت الظهور)
+                    }
+                    else {
+                        levelsound.stop();      // إيقاف موسيقى الليفل
+                        gameover.play();        // صوت الخسارة فقط
+                        isGameOver = true;      // تفعيل الخسارة
+                        dieSound.play(); // <--- ضع هذا السطر هنا فوراً بعد الموت
+
+                    }
+
+                    isPlayerDead = true;
+                    respawnClock.restart();
+                    dieSound.play(); // <--- ضع هذا السطر هنا فوراً بعد الموت
+                    showSorryAnimation = true;
+                    sorryExploded = false;
+                    sorryTimer = 0.f;
+                    for (int k = 0; k < 5; k++) sorryLetterScales[k] = 0.f;
+                }
+            }
+        }
+
+        // Out of Bounds
+        sf::Vector2f pos = fish.sprite->getPosition();
+        if (pos.x < -300.f || pos.x > LevelWidth + 300.f) {
+            fish.active = false;
+            if (fish.sprite) {
+                delete fish.sprite;
+                fish.sprite = nullptr;
+            }
+            continue;
+        }
+
+        int row = fish.state;
+        fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * MEDIUM_FRAME_W, row * MEDIUM_FRAME_H }, { MEDIUM_FRAME_W, MEDIUM_FRAME_H }));
+    }
+}
+
+void DrawMediumFishes(sf::RenderWindow& window) {
+    for (int i = 0; i < MAX_MEDIUM_FISH; i++) {
+        if (mediumFishes[i].active && mediumFishes[i].sprite) {
+            window.draw(*mediumFishes[i].sprite);
+        }
+    }
+}
+
+void StartLargeFish() {
+    int freeIndex = -1;
+    for (int i = 0; i < MAX_LARGE_FISH; i++) {
+        if (!largeFishes[i].active) {
+            freeIndex = i;
+            break;
+        }
+    }
+    if (freeIndex == -1) return;
+
+    LargeFish& fish = largeFishes[freeIndex];
+    fish.sprite = new sf::Sprite(largeFishTexture);
+
+    float scale = 0.9f;
+    fish.sprite->setOrigin({ (float)LARGE_FRAME_W / 2.f, (float)LARGE_FRAME_H / 2.f });
+
+    int side = rand() % 2;
+    float randomY = 100.f + rand() % (int)(LevelHeight - 200.f);
+    float speed = 120.f;
+    float randomYSpeed = static_cast<float>(rand() % 61 - 30);
+
+    fish.canTurn = (rand() % 4 == 0);
+    fish.hasTurned = false;
+
+    fish.timeToNextTurn = 4.0f + static_cast<float>(rand() % 300) / 100.0f;
+
+    if (side == 0) {
+        fish.sprite->setPosition({ -100.f, randomY });
+        fish.velocity = { speed, randomYSpeed };
+        fish.facingRight = true;
+        fish.sprite->setScale({ -scale, scale });
+    }
+    else {
+        fish.sprite->setPosition({ LevelWidth + 100.f, randomY });
+        fish.velocity = { -speed, randomYSpeed };
+        fish.facingRight = false;
+        fish.sprite->setScale({ scale, scale });
+    }
+
+    fish.spawnX = fish.sprite->getPosition().x;
+    fish.active = true;
+    fish.state = 1;
+    fish.currentFrame = 0;
+    fish.animTimer = 0.f;
+    fish.sprite->setTextureRect(sf::IntRect({ 0, 1 * LARGE_FRAME_H }, { LARGE_FRAME_W, LARGE_FRAME_H }));
+}
+
+void UpdateLargeFishes(float dt) {
+    if (!stopSpawning) {
+        largeSpawnTimer += dt;
+        if (largeSpawnTimer >= largeSpawnInterval) {
+            largeSpawnTimer = 0.f;
+            StartLargeFish();
+        }
+    }
+
+    for (int i = 0; i < MAX_LARGE_FISH; i++) {
+        if (!largeFishes[i].active) continue;
+        LargeFish& fish = largeFishes[i];
+
+        // Escape Mode
+        if (isEscapeMode && !fish.isFleeing) {
+            fish.isFleeing = true;
+            fish.velocity.x *= 2.0f;
+            fish.velocity.y = 0;
+            fish.state = 1;
+            fish.canTurn = false;
+        }
+        if (fish.isFleeing) {
+            fish.sprite->move(fish.velocity * dt);
+            sf::Vector2f pos = fish.sprite->getPosition();
+            if (pos.x < -400.f || pos.x > LevelWidth + 400.f) {
+                fish.active = false;
+                if (fish.sprite) {
+                    delete fish.sprite;
+                    fish.sprite = nullptr;
+                }
+            }
+            continue;
+        }
+
+        // Movement
+        if (fish.state == 1) {
+            fish.sprite->move(fish.velocity * dt);
+            fish.verticalTimer -= dt;
+            if (fish.verticalTimer <= 0.f) {
+                fish.velocity.y = static_cast<float>(rand() % 41 - 20);
+                fish.verticalTimer = 2.0f + static_cast<float>(rand() % 500) / 100.0f;
+            }
+            sf::Vector2f pos = fish.sprite->getPosition();
+            if (pos.y < 120.0f) fish.velocity.y = 20.0f;
+            else if (pos.y > LevelHeight - 120.0f) fish.velocity.y = -20.0f;
+        }
+
+        // Turning
+        if (fish.state == 1 && fish.canTurn && !fish.hasTurned) {
+            sf::Vector2f pos = fish.sprite->getPosition();
+
+            // [تعديل] غيرت المسافة من 50 لـ 250 عشان تلف من بعيد ومتخبطش في الحيطة
+            float turnDistance = 325.f;
+
+            bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
+
+            if (outOfBounds) {
+                fish.state = 2;
+                fish.currentFrame = 0;
+                fish.animTimer = 0.f;
+                fish.hasTurned = true;
+            }
+            else {
+                if (fish.timeToNextTurn > 0.f) fish.timeToNextTurn -= dt;
+                if (fish.timeToNextTurn <= 0.f) {
+                    fish.state = 2;
+                    fish.currentFrame = 0;
+                    fish.animTimer = 0.f;
+                    fish.hasTurned = true;
+                }
+            }
+        }
+
+        // Animation
+        fish.animTimer += dt;
+        float animSpeed = (fish.state == 0) ? 0.06f : ((fish.state == 2) ? 0.08f : 0.1f);
+        if (fish.animTimer >= animSpeed) {
+            fish.animTimer = 0.f;
+            fish.currentFrame++;
+            if (fish.state == 0 && fish.currentFrame >= LARGE_FRAMES_EAT) {
+                fish.currentFrame = 0;
+                fish.state = 1;
+            } // Finish Eat
+            else if (fish.state == 2 && fish.currentFrame >= LARGE_FRAMES_TURN) {
+                fish.currentFrame = 0;
+                fish.state = 1;
+                fish.velocity.x = -fish.velocity.x;
+                float scale = std::abs(fish.sprite->getScale().x);
+                fish.sprite->setScale({ (fish.velocity.x > 0 ? -scale : scale), scale });
+                fish.spawnX = fish.sprite->getPosition().x;
+            }
+            else if (fish.state == 1 && fish.currentFrame >= LARGE_FRAMES_SWIM) {
+                fish.currentFrame = 0;
+            }
+        }
+
+        // === Interaction Logic ===
+        if (fish.state == 1) {
+
+            // 1. Large Fish Eats Medium Fish
+            for (int j = 0; j < MAX_MEDIUM_FISH; j++) {
+                if (mediumFishes[j].active && mediumFishes[j].sprite) {
+                    float dx = mediumFishes[j].sprite->getPosition().x - fish.sprite->getPosition().x;
+                    float dy = mediumFishes[j].sprite->getPosition().y - fish.sprite->getPosition().y;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+
+                    if (dist < 50.f) { // Eating Range
+
+                        mediumFishes[j].active = false;
+                        delete mediumFishes[j].sprite;
+                        mediumFishes[j].sprite = nullptr;
+
+                        fish.state = 0;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                        break;
+                    }
+                }
+            }
+
+            // 2. Large Fish Eats Small Fish
+            for (int j = 0; j < MAX_SMALL_FISH; j++) {
+                if (smallFishes[j].active && smallFishes[j].sprite) {
+                    float dx = smallFishes[j].sprite->getPosition().x - fish.sprite->getPosition().x;
+                    float dy = smallFishes[j].sprite->getPosition().y - fish.sprite->getPosition().y;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+
+                    if (dist < 50.f) {
+                        
+
+                        smallFishes[j].active = false;
+                        delete smallFishes[j].sprite;
+                        smallFishes[j].sprite = nullptr;
+
+                        fish.state = 0;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Large Fish Eats Player
+            if (playerLevel < 3 && !isPlayerDead && !isInvincible) {
+                sf::Vector2f fishDir(1.f, 0.f);
+                if (fish.velocity.x != 0) fishDir.x = (fish.velocity.x > 0) ? 1.f : -1.f;
+
+                float predatorMouthOffset = 100.f;
+                sf::Vector2f predatorMouthPos = fish.sprite->getPosition();
+                predatorMouthPos.x += fishDir.x * predatorMouthOffset;
+
+                float dx = sprPlayerall.getPosition().x - predatorMouthPos.x;
+                float dy = sprPlayerall.getPosition().y - predatorMouthPos.y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+
+                if (distance < 40.f) {
+                    fish.state = 0;
+                    fish.currentFrame = 0;
+                    fish.animTimer = 0.f;
+                    lives--;
+
+                    // === التعديل: التحقق من عدد القلوب ===
+                    if (lives > 0) {
+                        levelsound.stop();      // إيقاف موسيقى الليفل
+                        PlayergotEaten.play();  // صوت العض
+                    }
+                    else {
+                        levelsound.stop();      // إيقاف موسيقى الليفل
+                        gameover.play();        // صوت الخسارة فقط
+                        isGameOver = true;      // تفعيل الخسارة
+                    }
+
+                    isPlayerDead = true;
+                    respawnClock.restart();
+                    dieSound.play(); // <--- ضع هذا السطر هنا فوراً بعد الموت
+                    showSorryAnimation = true;
+                    sorryExploded = false;
+                    sorryTimer = 0.f;
+                    for (int k = 0; k < 5; k++) sorryLetterScales[k] = 0.f;
+                }
+            }
+        }
+
+        sf::Vector2f pos = fish.sprite->getPosition();
+        if (pos.x < -400.f || pos.x > LevelWidth + 400.f) {
+            fish.active = false;
+            if (fish.sprite) {
+                delete fish.sprite;
+                fish.sprite = nullptr;
+            }
+            continue;
+        }
+
+        int row = fish.state;
+        fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * LARGE_FRAME_W, row * LARGE_FRAME_H }, { LARGE_FRAME_W, LARGE_FRAME_H }));
+    }
+}
+
+void DrawLargeFishes(sf::RenderWindow& window) {
+    for (int i = 0; i < MAX_LARGE_FISH; i++) {
+        if (largeFishes[i].active && largeFishes[i].sprite) {
+            window.draw(*largeFishes[i].sprite);
+        }
+    }
+}
+
+// دالة لتوليد فقاعة جديدة
+void StartGameBubble(float x, float y, bool isAction) {
+    for (int i = 0; i < MAX_GAME_BUBBLES; i++) {
+        if (!gameBubbles[i].active) {
+            gameBubbles[i].active = true;
+            gameBubbles[i].x = x;
+            gameBubbles[i].y = y;
+            gameBubbles[i].alpha = 255.f;
+            gameBubbles[i].isAction = isAction;
+
+            if (isAction) {
+                // فقاعات الأكل: أكبر انتشار وأعلى
+                gameBubbles[i].vx = getRandom(-60.f, 60.f);  // انتشار أعرض
+                gameBubbles[i].vy = getRandom(-100.f, -40.f); // تطلع لفوق أكتر
+            }
+            else {
+                // فقاعات الخلفية: ماشية بالعرض
+                gameBubbles[i].vx = getRandom(-120.f, -60.f);
+                gameBubbles[i].vy = getRandom(-10.f, 10.f);
+            }
+            break;
+        }
+    }
+}
+
+// تحديث الفقاعات
+void UpdateGameBubbles(float dt) {
+    // === تعديل توليد فقاعات الخلفية ===
+    gameBubbleSpawnTimer += dt;
+
+    // غيرنا الشرط من 0.8f إلى 3.0f عشان يتولد فقاعة كل 3 ثواني بدل ما يخنق المكان
+    if (gameBubbleSpawnTimer > 3.0f) {
+        gameBubbleSpawnTimer = 0.f;
+
+        // أزلنا الـ loop (for) عشان يولد فقاعة واحدة بس بدل 3
+        float spawnX = view.getCenter().x + view.getSize().x / 2.f + 50.f;
+        float spawnY = getRandom(50.f, LevelHeight - 50.f);
+        StartGameBubble(spawnX, spawnY, false);
+    }
+
+    // === تحريك الفقاعات (نفس الكود القديم) ===
+    for (int i = 0; i < MAX_GAME_BUBBLES; i++) {
+        if (gameBubbles[i].active) {
+            gameBubbles[i].x += gameBubbles[i].vx * dt;
+            gameBubbles[i].y += gameBubbles[i].vy * dt;
+
+            if (gameBubbles[i].isAction) {
+                gameBubbles[i].alpha -= 350.f * dt;
+                if (gameBubbles[i].alpha <= 0) gameBubbles[i].active = false;
+            }
+            else {
+                // لو خرجت من الشمال
+                if (gameBubbles[i].x < view.getCenter().x - view.getSize().x / 2.f - 100.f) {
+                    gameBubbles[i].active = false;
+                }
+            }
+        }
+    }
+}
+
+// رسم الفقاعات
+void DrawGameBubbles() {
+    for (int i = 0; i < MAX_GAME_BUBBLES; i++) {
+        if (gameBubbles[i].active) {
+            bubbleSmallSprite.setPosition({ gameBubbles[i].x, gameBubbles[i].y });
+            bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)gameBubbles[i].alpha));
+
+            // تعديل الحجم: فقاعات الأكل بقى حجمها 0.5 بدل 0.3
+            float s = gameBubbles[i].isAction ? 0.5f : 0.6f;
+
+            bubbleSmallSprite.setScale({ s, s });
+            window.draw(bubbleSmallSprite);
+        }
+    }
+}
+
+// ==========================================
+// Mermaid Event Logic
+// ==========================================
+
+void StartMermaidEvent() {
+    // تحميل صورة السمكة (6000x200)
+    if (!mermaidTex.loadFromFile("Assets/fish/mermaid/mermaid.png")) {
+        cout << "Error loading mermaid.png" << endl;
+    }
+    // تحميل صورة النجمة (52x51)
+    if (!starTexture.loadFromFile("Assets/bouns/starbubble1.png")) {
+        cout << "Error loading starbubble1.png" << endl;
+    }
+
+    hasPlayedExitSound = false;
+
+    mermaidTex.setSmooth(true);
+    starTexture.setSmooth(true);
+
+    mermaidSprite.setTexture(mermaidTex);
+    // حساب عرض الفريم: 6000 \ 20 = 300
+    mermaidSprite.setTextureRect(IntRect({ 0, 0 }, { 299, 88 }));
+    mermaidSprite.setScale({ 1.0f, 1.0f });
+    mermaidSprite.setOrigin({ 149.5f, 44.f }); // منتصف الفريم
+
+    // تظهر من نص الـ Y axis ومن يمين الشاشة
+    float startX = view.getCenter().x + (view.getSize().x / 2.f) + 150.f;
+    float startY = LevelHeight / 2.0f;
+
+    mermaidSprite.setPosition({ startX, startY });
+
+    mermaidFrame = 0;
+    mermaidAnimTimer = 0.0f;
+    starSpawnTimer = 0.0f;
+    isMermaidEventActive = true;
+    mermaidFinished = false;
+    levelsound.stop();      // إيقاف موسيقى المرحلة
+    mermaidevent.play();
+    // تنظيف النجوم القديمة
+    for (int i = 0; i < MAX_STARS; i++) stars[i].active = false;
+}
+
+void UpdateMermaidEvent(float dt) {
+    if (!isMermaidEventActive) return;
+
+    // 1. حركة السمكة
+    float moveSpeed = 250.0f;
+    mermaidSprite.move({ -moveSpeed * dt, 0 });
+
+    // 2. أنيميشن السباحة
+    mermaidAnimTimer += dt;
+    if (mermaidAnimTimer >= 0.08f) {
+        mermaidAnimTimer = 0.0f;
+        mermaidFrame++;
+
+        if (mermaidFrame >= 20) mermaidFrame = 0;
+
+        int frameWidth = 299;
+        int frameHeight = 88;
+
+        mermaidSprite.setTextureRect(IntRect({ mermaidFrame * frameWidth, 0 }, { frameWidth, frameHeight }));
+    }
+
+    mermaidSprite.setOrigin({ 149.5f, 44.f });
+
+    // 3. إنزال النجوم
+    starSpawnTimer += dt;
+    if (starSpawnTimer >= 0.5f) {
+        starSpawnTimer = 0.0f;
+        for (int i = 0; i < MAX_STARS; i++) {
+            if (!stars[i].active) {
+                stars[i].active = true;
+
+                if (stars[i].sprite == nullptr) {
+                    stars[i].sprite = new Sprite(starTexture);
+                }
+                else {
+                    stars[i].sprite->setTexture(starTexture);
+                }
+
+                stars[i].sprite->setScale({ 0.8f, 0.8f });
+                stars[i].sprite->setOrigin({ 26, 25.5f });
+                stars[i].sprite->setPosition(mermaidSprite.getPosition());
+                stars[i].velocity = { 0, 120.f };
+                break;
+            }
+        }
+    }
+
+    // 4. تحديث النجوم والتصادم مع اللاعب
+    for (int i = 0; i < MAX_STARS; i++) {
+        if (stars[i].active && stars[i].sprite != nullptr) {
+            stars[i].sprite->move(stars[i].velocity * dt);
+
+            sf::Vector2f pPos = sprPlayerall.getPosition();
+            sf::Vector2f sPos = stars[i].sprite->getPosition();
+            float dist = sqrt(pow(pPos.x - sPos.x, 2) + pow(pPos.y - sPos.y, 2));
+
+            if (dist < 50.f) {
+                stars[i].active = false;
+                score += 100 * multiplier;
+                createScorePopup(sPos.x, sPos.y, 100 * multiplier);
+
+                eatSound.play();   // صوت الأكل العادي
+
+                if (currentState == TURN) {
+                    pendingEat = true;
+                }
+                else {
+                    currentState = EAT;
+                    currentFrame = 0;
+                    timer = 0.f;
+                }
+            }
+
+            if (stars[i].sprite->getPosition().y > LevelHeight + 50.f) {
+                stars[i].active = false;
+            }
+        }
+    }
+
+    // ... (كود التحديث السابق للسمكة والنجوم) ...
+    // 5. الخروج وتفعيل أنيميشن PERFECT
+    float camLeft = view.getCenter().x - (view.getSize().x / 2.f);
+    if (mermaidSprite.getPosition().x < camLeft - 200.f) {
+        if (!mermaidFinished) {
+            mermaidFinished = true;
+            eventEndClock.restart();
+        }
+    }
+
+    if (mermaidFinished) {
+        float elapsed = eventEndClock.getElapsedTime().asSeconds();
+
+        // === تشغيل أنيميشن PERFECT ===
+        if (elapsed >= 1.0f && !showPerfectAnimation && !perfectExploded) {
+            showPerfectAnimation = true;
+            perfectTimer = 0.f;
+            for (int k = 0; k < 7; k++) perfectLetterScales[k] = 0.f;
+        }
+
+        // === تشغيل صوت الخروج ===
+        if (elapsed >= 2.0f && !hasPlayedExitSound) {
+            StageClearSound.play();
+            hasPlayedExitSound = true;
+        }
+
+        // === كود إغلاق اللعبة + فتح المرحلة التالية ===
+        if (elapsed >= 6.0f) {
+            
+            // [1] منطق القصة (Classic)
+            if (currentGamemode == CLASSIC) {
+                if (selectedLevel == 1) {
+                    level2Unlocked = true;      // فتح الليفل 2 في القصة فقط
+                }
+                else if (selectedLevel == 2) {
+                    level3Unlocked = true;      // فتح الليفل 3 في القصة فقط
+                }
+            }
+            // [2] منطق التايم أتاك (Time Attack)
+            else if (currentGamemode == TIMEATTACK) {
+                if (selectedLevel == 1) {
+                    ta_level2Unlocked = true;   // فتح الليفل 2 في التايم أتاك فقط
+                }
+                else if (selectedLevel == 2) {
+                    ta_level3Unlocked = true;   // فتح الليفل 3 في التايم أتاك فقط
+                }
+            }
+            
+            // حفظ التغييرات في ملف واحد (لكل الوضعين)
+            SaveUnlocks();
+
+            window.close();
+        }
+    }
+}
+
+
+void DrawMermaidEvent() {
+    if (!isMermaidEventActive) return;
+
+    // رسم السمكة
+    window.draw(mermaidSprite);
+
+    // رسم النجوم
+    for (int i = 0; i < MAX_STARS; i++) {
+        // في جزء رسم النجوم
+        if (stars[i].active && stars[i].sprite != nullptr) {
+            window.draw(*stars[i].sprite); // لاحظ النجمة *
+        }
+    }
+}
+
+// دالة لحفظ حالة المراحل المفتوحة في ملف نصي
+void SaveUnlocks()
+{
+    ofstream file("level_unlocks.txt");
+    if (file.is_open())
+    {
+        file << level1Unlocked << " " << level2Unlocked << " " << level3Unlocked << "\n";
+        file << ta_level1Unlocked << " " << ta_level2Unlocked << " " << ta_level3Unlocked << "\n";
+        file.close();
+        cout << "Game Progress Saved!" << endl;
+    }
+    else
+    {
+        cout << "Error: Could not save progress file." << endl;
+    }
+}
+
+// دالة لتحميل حالة المراحل المفتوحة من الملف
+void LoadUnlocks()
+{
+    ifstream file("level_unlocks.txt");
+    if (file.is_open())
+    {
+        file >> level1Unlocked >> level2Unlocked >> level3Unlocked;
+        file >> ta_level1Unlocked >> ta_level2Unlocked >> ta_level3Unlocked;
+        file.close();
+        cout << "Game Progress Loaded!" << endl;
+    }
+    else
+    {
+        // إذا لم يوجد ملف، نستخدم القيم الافتراضية
+        level1Unlocked = true;
+        level2Unlocked = false;
+        level3Unlocked = false;
+        
+        ta_level1Unlocked = true;
+        ta_level2Unlocked = false;
+        ta_level3Unlocked = false;
+        cout << "No save file found. Starting fresh." << endl;
     }
 }
