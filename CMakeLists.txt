@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(SP_Project)
+set(SFML_DIR "D:/vs projects/sfmllink/External/lib/cmake/SFML")
+set(CMAKE_PREFIX_PATH "D:/vs projects/sfmllink/External")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,32 +15,31 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} (${CMAKE_CXX_COMPILER})")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     message(STATUS "Using GCC flags")
-    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra -O2)
+    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra) # <-- Removed -O2
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(STATUS "Using Clang flags")
-    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra -O2)
+    target_compile_options(${EXE_NAME} PRIVATE -Wall -Wextra) # <-- Removed -O2
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     message(STATUS "Using MSVC flags")
-    target_compile_options(${EXE_NAME} PRIVATE /W4 /O2)
+    target_compile_options(${EXE_NAME} PRIVATE /W4)           # <-- Removed /O2
 endif()
 
 # ── Find SFML dynamically ───────────────────────────────────────────────────
 # Prefer find_package; fall back to manual MSYS2/MinGW paths if it fails
-set(SFML_COMPONENTS graphics window system audio)
+set(SFML_COMPONENTS Graphics Window System Audio Main) # <-- FIXED: Capitalized!
 
 find_package(SFML 3 COMPONENTS ${SFML_COMPONENTS} QUIET)
 
 if(SFML_FOUND)
     message(STATUS "SFML found via find_package")
     if(MSVC)
-        # MSVC needs sfml-main on Windows
+        # MSVC needs SFML::Main on Windows
         target_link_libraries(${EXE_NAME} PRIVATE
-            sfml-graphics sfml-window sfml-system sfml-audio sfml-main)
+            SFML::Graphics SFML::Window SFML::System SFML::Audio SFML::Main) # <-- FIXED: Modern SFML 3 linking!
     else()
         target_link_libraries(${EXE_NAME} PRIVATE
-            sfml-graphics sfml-window sfml-system sfml-audio)
+            SFML::Graphics SFML::Window SFML::System SFML::Audio) # <-- FIXED: Modern SFML 3 linking!
     endif()
-
 else()
     message(STATUS "find_package failed — trying manual SFML search")
 
