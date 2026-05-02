@@ -3,6 +3,8 @@
 #include <SFML/Network.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
+#include <SFML/Audio/Sound.hpp>
 #include <SFML/Window.hpp>
 #include <iostream>
 #include <cctype>
@@ -130,6 +132,10 @@ bool ShowEndGameMenu();
 void LoadGameData();
 void SaveGameData();
 void QuitLevelLoadingScreen();
+void StartPowerUps();
+void UpdatePowerUps(float dt);
+void DrawPowerUps();
+void loadSounds();
 
 float getRandom(float min, float max)
 {
@@ -143,6 +149,11 @@ float WindowWidth = 800;
 float WindowHeight = 600;
 RenderWindow window(VideoMode({(unsigned int)WindowWidth, (unsigned int)WindowHeight}), "Feeding Frenzy 2");
 View view({400.f, 300.f}, Vector2f(window.getSize()));
+View uiView({400.f, 300.f}, {800.f, 600.f});
+
+const int SOUND_COUNT = 5;
+SoundBuffer soundBuffers[SOUND_COUNT];
+Sound *sounds[SOUND_COUNT];
 
 // =================================== Loading Screen =================================
 Shader swayShader;
@@ -542,13 +553,14 @@ struct Player
 {
     string name = "";
     int id = 0;
+    long long score = 0;
     // ---> INDIVIDUAL PROGRESS <---
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
 };
 Player players[7];
 int NumberOfUsers = 0;
-
+const string SAVE_FILE = "Assets/Switch User/save.txt";
 const int MaxNumberOfUsers = 7;
 int SelectedUser = -1;
 Text *PlayersTexts[8];
@@ -849,6 +861,46 @@ Sprite sprPlayerEat(texPlayerEat);
 Sprite sprPlayerTurn(texPlayerTurn);
 Sprite sprPlayerIdle(texPlayerIdle);
 Sprite sprPlayerall(texPlayerall);
+
+// ============== Power-Ups =========================
+
+// Power-up type IDs
+// 0 = Time Bonus (+5 sec, time attack only)
+// 1 = Star       (+100 * multiplier score)
+// 2 = Speed Boost (5 sec speed x2)
+
+struct PowerUp
+{
+    float x, y; // world position
+    float vy;   // falling speed (pixels/sec)
+    int type;   // 0 / 1 / 2
+    bool active;
+
+    bool isPopping; // true once the player touches it
+    float popTimer; // counts up while popping
+    float scaleX;   // current render scale
+    float scaleY;
+};
+
+const int MAX_POWERUPS = 6;
+PowerUp powerUps[MAX_POWERUPS];
+
+float powerUpSpawnTimer = 0.f;
+float powerUpSpawnInterval = 15.f; // one bubble every 8 seconds
+
+bool speedBoostActive = false;
+float speedBoostTimer = 0.f;
+const float SPEED_BOOST_DURATION = 5.f;
+const float SPEED_BOOST_MULT = 2.0f;
+
+Texture texPowerUpTime("Assets\\bouns\\timebubble1.png");
+Texture texPowerUpStar("Assets\\bouns\\starbubble1.png");
+Texture texPowerUpSpeed("Assets\\bouns\\speedbubble1.png");
+Texture texPowerUpShrink("Assets\\bouns\\shrinkbubble1.png");
+Texture texBubblePop0("Assets/bouns/_bubblepop0.png");
+Texture texBubblePop1("Assets/bouns/_bubblepop1.png");
+bool powerUpTexLoaded = false;
+
 // ==========================================
 // 1. المتغيرات الصح (Global Variables)
 // ==========================================
@@ -941,6 +993,25 @@ struct SmallFish
         }
     }
 };
+void loadSounds()
+{
+    const char *paths[SOUND_COUNT] = {
+        "Assets/Music and Sounds/DoubleFrenzy/DoubleFrenzy.wav",
+        "Assets/Music and Sounds/DoubleFrenzy/TrippleFrenzy.wav",
+        "Assets/Music and Sounds/DoubleFrenzy/SuperFrenzy.wav",
+        "Assets/Music and Sounds/DoubleFrenzy/MegaFrenzy.wav",
+        "Assets/Music and Sounds/DoubleFrenzy/FeedingFrenzy.wav"};
+
+    for (int i = 0; i < SOUND_COUNT; i++)
+    {
+        if (!soundBuffers[i].loadFromFile(paths[i]))
+        {
+            std::cout << "Failed to load sound " << i << "\n";
+        }
+
+        sounds[i] = new Sound(soundBuffers[i]);
+    }
+}
 // الـ Array الثابتة
 SmallFish smallFishes[MAX_SMALL_FISH];
 
@@ -1226,7 +1297,7 @@ Clock spawnDelayClock;
 
 struct HighScoreSave
 {
-    char name[50] = "Mr. Minnow";
+    char name[50] = "";
     int score = 0;
 };
 
@@ -1234,6 +1305,7 @@ struct PlayerSave
 {
     char name[50] = "";
     int id = 0;
+    long long score = 0;
     // ---> INDIVIDUAL PROGRESS <---
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
@@ -1282,7 +1354,7 @@ void LoadGameData()
 
         NumberOfUsers = g_data.numberOfUsers;
         CurUser = string(g_data.currentUser);
-        if (CurUser.empty() || CurUser == "Mr. Minnow")
+        if (CurUser.empty())
         {
             CurUser = "Guest";
         }
@@ -1328,8 +1400,8 @@ void LoadGameData()
             ta_level1Unlocked = true;
             for (int i = 0; i < 25; i++)
             {
-                story_scores[i] = {"Mr. Minnow", (25 - i) * 1000};
-                timeattack_scores[i] = {"Speedy", (25 - i) * 1000};
+                story_scores[i] = {"", 0};
+                timeattack_scores[i] = {"", 0};
             }
         }
         cout << "Data Loaded Successfully!" << endl;
@@ -1341,8 +1413,8 @@ void LoadGameData()
         ta_level1Unlocked = true;
         for (int i = 0; i < 25; i++)
         {
-            story_scores[i] = {"Mr. Minnow", (25 - i) * 1000};
-            timeattack_scores[i] = {"Speedy", (25 - i) * 1000};
+            story_scores[i] = {"", 0};
+            timeattack_scores[i] = {"", 0};
         }
     }
 }
@@ -1379,7 +1451,7 @@ void SaveGameData()
         strncpy(g_data.players[i].name, players[i].name.c_str(), 49);
         g_data.players[i].name[49] = '\0';
         g_data.players[i].id = players[i].id;
-
+        g_data.players[i].score = players[i].score;
         // Save the individual unlocks down into the binary struct
         g_data.players[i].level1Unlocked = players[i].level1Unlocked;
         g_data.players[i].level2Unlocked = players[i].level2Unlocked;
@@ -1415,7 +1487,7 @@ void SaveGameData()
 int main()
 {
     LoadGameData();
-
+    loadSounds();
     cout << "SFML 3.0 and Standard Library are working!" << endl;
     srand(time(0));
 
@@ -2332,7 +2404,13 @@ void PlayingSound(bool isMainMenu)
                      YesButton.getGlobalBounds().contains(mouseWorldPos) ||
                      NoButton.getGlobalBounds().contains(mouseWorldPos) ||
                      sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||
-                     sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos);
+                     sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos) ||
+                     quit_button_sprite.getGlobalBounds().contains(mouseWorldPos) ||
+                     sprHSDonePlank.getGlobalBounds().contains(mouseWorldPos) ||
+                     DoneAddingUser.getGlobalBounds().contains(mouseWorldPos) ||
+                     CancelAddingUser.getGlobalBounds().contains(mouseWorldPos) ||
+                     FullOKButton.getGlobalBounds().contains(mouseWorldPos) ||
+                     DeletethisUser.getGlobalBounds().contains(mouseWorldPos);
     }
     if (isHovering)
     {
@@ -2570,16 +2648,16 @@ void StartSwitchUser()
 {
     ResetStats();
     float X = WindowWidth / 2.f, Y = WindowHeight / 2.f;
-    CreateButton(Full, FullTex, "Assets/Switch User/BG.png", X, Y, 0.2, 0.2);
-    X = WindowWidth * 0.25f, Y = WindowHeight * 0.78f;
+    CreateButton(Full, FullTex, "Assets/Switch User/listofusers.png", X, Y, 0.2, 0.2);
+    X = WindowWidth * 0.25f, Y = WindowHeight * 0.85f;
     CreateButton(NewButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!NewButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
-    X = WindowWidth * 0.5f, Y = WindowHeight * 0.78f;
+    X = WindowWidth * 0.5f, Y = WindowHeight * 0.85f;
     CreateButton(SelectButton, SelectButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!SelectButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
-    X = WindowWidth * 0.75f, Y = WindowHeight * 0.78f;
+    X = WindowWidth * 0.75f, Y = WindowHeight * 0.85f;
     CreateButton(DeleteButton, DeleteButtonTex, "Assets/Switch User/Button.png", X, Y, 1.2, 1.2);
     if (!DeleteButtonHLTex.loadFromFile("Assets/Switch User/Button High.png"))
         cout << "Failed to load: ButtonHL" << "\n";
@@ -2589,7 +2667,6 @@ void StartSwitchUser()
     SetupButtonText(SelectText, "Select", SelectButton);
     SetupButtonText(DeleteText, "Delete", DeleteButton);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.175f;
-    CreateButton(Title, TitleTex, "Assets/Switch User/shell_chooseuser_hdr.png", X, Y, 1.5, 1.5);
 
     RefreshUsersList();
     SelectUserHL.setSize({WindowWidth * 0.35f, 45.f});
@@ -2787,7 +2864,7 @@ void UpdateSwitchUser()
             CursorTimer.restart();
         }
         FloatRect textBounds = DisplayText.getLocalBounds();
-        float X = DisplayText.getPosition().x + textBounds.size.x + 5, Y = DisplayText.getPosition().y + 25;
+        float X = DisplayText.getPosition().x + textBounds.size.x + 8, Y = DisplayText.getPosition().y + 25;
         Blink.setPosition({X, Y});
         DisplayText.setString(InputString);
     }
@@ -2822,6 +2899,7 @@ void HoverButton(Sprite &button, const Texture &normalTex, const Texture &highli
         button.setTexture(normalTex);
         text.setFillColor(Color(210, 240, 90));
     }
+    PlayingSound(false);
 }
 
 void EnterYourName()
@@ -2839,15 +2917,15 @@ void EnterYourName()
     Vector2f mousePos = static_cast<Vector2f>(Mouse::getPosition(window));
     NameEntry = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/EnterYourName.png", X, Y, 0.2, 0.2);
+    CreateButton(EnterYourNamebg, EnterYourNameBgTex, "Assets/Switch User/enteryourname.png", X, Y, 0.2, 0.2);
     if (!Inputfont.openFromFile("Assets/Fonts/trebuc.ttf"))
         cout << "Cant Open Font!";
     DisplayText.setFont(Inputfont);
     DisplayText.setCharacterSize(30);
     DisplayText.setFillColor(Color::White);
-    X = WindowWidth * 0.24f, Y = WindowHeight * 0.34f;
+    X = WindowWidth * 0.28f, Y = WindowHeight * 0.34f;
     DisplayText.setPosition({(float)X, (float)Y});
-    X = WindowWidth * 0.375f, Y = WindowHeight * 0.448f;
+    X = WindowWidth * 0.4f, Y = WindowHeight * 0.448f;
     CreateButton(Blink, BlinkTex, "Assets/Switch User/shell_editboxcursor.jpg", X, Y, 1, 1);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.62f;
     CreateButton(DoneAddingUser, DoneAddingUserTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
@@ -2874,7 +2952,7 @@ void RefreshUsersList()
         PlayersTexts[id] = new Text(btnFont, players[id].name, 25);
         PlayersTexts[id]->setFillColor(Color::White);
         float X = WindowWidth * 0.5f;
-        float Y = WindowHeight * 0.23f + (id * 40.f);
+        float Y = WindowHeight * 0.2f + (id * 40.f);
         FloatRect bounds = PlayersTexts[id]->getLocalBounds();
         PlayersTexts[id]->setOrigin({bounds.size.x / 2.f, 0.f});
         PlayersTexts[id]->setPosition({X, Y});
@@ -2886,7 +2964,7 @@ void DeleteUser()
     JustOpenDeleteConfirm = 1;
     isConfirmUserDelete = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/DeleteUserBg.png", X, Y, 0.175, 0.175);
+    CreateButton(DeleteUserBg, DelteUserBgTex, "Assets/Switch User/deleteuser.png", X, Y, 0.175, 0.175);
     X = WindowWidth * 0.4f, Y = WindowHeight * 0.7f;
     CreateButton(YesButton, NewButtonTex, "Assets/Switch User/Button.png", X, Y, 1.25, 1.25);
     SetupButtonText(YesButtonText, "Yes", YesButton);
@@ -2903,7 +2981,7 @@ void FullList()
 {
     isListFull = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/ListIsFull.png", X, Y, 0.2, 0.2);
+    CreateButton(ListisFull, ListisFullTex, "Assets/Switch User/listisfull.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.64f;
     CreateButton(FullOKButton, FullOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(FullListOKBtnText, "OK", FullOKButton);
@@ -2914,7 +2992,7 @@ void DupplicateUser()
 {
     DupplicateName = 1;
     unsigned int X = WindowWidth * 0.5f, Y = WindowHeight * 0.5f;
-    CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/DupplicateUser.png", X, Y, 0.2, 0.2);
+    CreateButton(DupplicateBg, DupplicateBgTex, "Assets/Switch User/dupplicateuser.png", X, Y, 0.2, 0.2);
     X = WindowWidth * 0.5f, Y = WindowHeight * 0.72f;
     CreateButton(DupplicateOKButton, DupplicateOKButtonTex, "Assets/Switch User/Button.png", X, Y, 1.5, 1.5);
     SetupButtonText(DupplicateOKBtnText, "OK", DupplicateOKButton);
@@ -2935,11 +3013,11 @@ void DisplaySwitchUser()
     window.draw(NewText);
     window.draw(SelectText);
     window.draw(DeleteText);
+    if (SelectedUser >= 0)
+        window.draw(SelectUserHL);
     for (int user = 0; user < NumberOfUsers; user++)
         if (PlayersTexts[user] != nullptr)
             window.draw(*PlayersTexts[user]);
-    if (SelectedUser >= 0)
-        window.draw(SelectUserHL);
     if (isUserSelected)
     {
         isUserSelected = 0;
@@ -3224,7 +3302,7 @@ void UpdateOptions()
     if (g_optionsFromPause)
     {
         // If in a level, calculate mouse based on the static screen
-        MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+        MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
     }
     else
     {
@@ -3367,7 +3445,7 @@ void DrawOptions()
         window.clear(Color(20, 100, 160));
         Drawbglevel(); // Draws the ocean, fishes, AND the HUD!
         window.setMouseCursorVisible(true);
-        window.setView(window.getDefaultView()); // Lock options UI to screen
+        window.setView(uiView); // Lock options UI to screen
     }
     else
     {
@@ -3737,8 +3815,8 @@ void resetScores()
     // Reset BOTH arrays back to default values
     for (int i = 0; i < MAX_SCORES; i++)
     {
-        story_scores[i] = {"Mr. Minnow", (MAX_SCORES - i) * 1000};
-        timeattack_scores[i] = {"Speedy", (MAX_SCORES - i) * 1000};
+        story_scores[i] = {"", 0};
+        timeattack_scores[i] = {"", 0};
     }
 
     scrollOffset = 0;
@@ -4982,11 +5060,259 @@ void GameScreen(int level)
     }
 }
 
+// ==========================================
+// Power-Up System
+// ==========================================
+
+void StartPowerUps()
+{
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+        powerUps[i].active = false;
+        powerUps[i].isPopping = false;
+        powerUps[i].popTimer = 0.f;
+        powerUps[i].scaleX = 1.f;
+        powerUps[i].scaleY = 1.f;
+    }
+    powerUpSpawnTimer = 0.f;
+    speedBoostActive = false;
+    speedBoostTimer = 0.f;
+
+    if (!powerUpTexLoaded)
+    {
+        if (!texPowerUpTime.loadFromFile("Assets/bouns/timebubble1.png"))
+            cout << "PowerUp: missing time texture\n";
+        if (!texPowerUpStar.loadFromFile("Assets/bouns/starbubble1.png"))
+            cout << "PowerUp: missing star texture\n";
+        if (!texPowerUpSpeed.loadFromFile("Assets/bouns/speedbubble1.png"))
+            cout << "PowerUp: missing speed texture\n";
+        if (!texPowerUpShrink.loadFromFile("Assets/bouns/shrinkbubble1.png"))
+            cout << "PowerUp: missing shrink texture\n";
+
+        texPowerUpShrink.setSmooth(true);
+        texPowerUpTime.setSmooth(true);
+        texPowerUpStar.setSmooth(true);
+        texPowerUpSpeed.setSmooth(true);
+        powerUpTexLoaded = true;
+    }
+}
+
+void UpdatePowerUps(float dt)
+{
+    if (isPlayerDead || isGameOver)
+        return;
+
+    if (!stopSpawning)
+    {
+        powerUpSpawnTimer += dt;
+        if (powerUpSpawnTimer >= powerUpSpawnInterval)
+        {
+            powerUpSpawnTimer = 0.f;
+
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (!powerUps[i].active)
+                {
+                    powerUps[i].active = true;
+                    powerUps[i].isPopping = false;
+                    powerUps[i].popTimer = 0.f;
+                    powerUps[i].scaleX = 1.f;
+                    powerUps[i].scaleY = 1.f;
+
+                    // Random X across the level, spawn just above the visible top
+                    powerUps[i].x = getRandom(60.f, LevelWidth - 60.f);
+                    powerUps[i].y = view.getCenter().y - view.getSize().y / 2.f - 60.f;
+                    powerUps[i].vy = getRandom(70.f, 130.f); // fall speed
+
+                    // Pick type: in classic mode skip type 0 (time bonus)
+                    if (currentGamemode == TIMEATTACK)
+                    {
+                        powerUps[i].type = rand() % 3;
+                    }
+                    else if (gameLEVEL == 1)
+                    {
+                        powerUps[i].type = 1;
+                    }
+                    else if (gameLEVEL == 2)
+                    {
+                        powerUps[i].type = 1 + rand() % 2;
+                    }
+                    else if (gameLEVEL == 3)
+                    {
+                        int roll = rand() % 2;
+                        powerUps[i].type = (roll == 0) ? 2 : 3;
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    // --- Update each bubble ---
+    Vector2f playerPos = sprPlayerall.getPosition();
+
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+        if (!powerUps[i].active)
+            continue;
+
+        PowerUp &p = powerUps[i];
+
+        if (p.isPopping)
+        {
+            p.popTimer += dt;
+            const float FRAME0_DURATION = 0.15f; // how long _bubblepop0 shows
+            const float FRAME1_DURATION = 0.15f; // how long _bubblepop1 shows
+            const float POP_DURATION = FRAME0_DURATION + FRAME1_DURATION;
+
+            if (p.popTimer >= POP_DURATION)
+            {
+                p.active = false;
+                p.isPopping = false;
+                continue;
+            }
+            continue; // don't move or collide while popping
+        }
+
+        // Fall downward
+        p.y += p.vy * dt;
+
+        // Remove if it fell below the level floor
+        if (p.y > LevelHeight + 80.f)
+        {
+            p.active = false;
+            continue;
+        }
+
+        // --- Collision with player ---
+        if (!isPlayerDead && !isInvincible)
+        {
+            float dx = playerPos.x - p.x;
+            float dy = playerPos.y - p.y;
+            float dist = sqrt(dx * dx + dy * dy);
+
+            if (dist < 45.f) // collection radius
+            {
+                // Start pop animation
+                p.isPopping = true;
+                p.popTimer = 0.f;
+
+                // Apply effect
+                if (p.type == 0)
+                {
+                    // +5 seconds (time attack)
+                    if (currentGamemode == TIMEATTACK)
+                        remainingTime += 5.f;
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, 5); // visual feedback (0 pts shown)
+                }
+                else if (p.type == 1)
+                {
+                    int pts = 100 * multiplier;
+                    score += pts;
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, pts);
+
+                    // Eat animation on player
+                    if (currentState == TURN)
+                        pendingEat = true;
+                    else
+                    {
+                        currentState = EAT;
+                        currentFrame = 0;
+                        timer = 0.f;
+                    }
+                }
+                else if (p.type == 2)
+                {
+                    // Speed boost
+                    speedBoostActive = true;
+                    speedBoostTimer = 0.f;
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, 0);
+                }
+                else if (p.type == 3)
+                {
+                    // Shrink: make all active fish tiny and eatable
+                    const float shrinkScale = 0.2f; // same as small fish
+
+                    for (int j = 0; j < MAX_SMALL_FISH; j++)
+                        if (smallFishes[j].active && smallFishes[j].sprite)
+                        {
+                            sf::Vector2f s = smallFishes[j].sprite->getScale();
+                            smallFishes[j].sprite->setScale({(s.x < 0 ? -shrinkScale : shrinkScale),
+                                                             shrinkScale});
+                        }
+
+                    for (int j = 0; j < MAX_MEDIUM_FISH; j++)
+                        if (mediumFishes[j].active && mediumFishes[j].sprite)
+                        {
+                            sf::Vector2f s = mediumFishes[j].sprite->getScale();
+                            mediumFishes[j].sprite->setScale({(s.x < 0 ? -shrinkScale : shrinkScale),
+                                                              shrinkScale});
+                            // Mark as eatable by player level 1 rules
+                            mediumFishes[j].isFleeing = false;
+                        }
+
+                    for (int j = 0; j < MAX_LARGE_FISH; j++)
+                        if (largeFishes[j].active && largeFishes[j].sprite)
+                        {
+                            sf::Vector2f s = largeFishes[j].sprite->getScale();
+                            largeFishes[j].sprite->setScale({(s.x < 0 ? -shrinkScale : shrinkScale),
+                                                             shrinkScale});
+                            largeFishes[j].isFleeing = false;
+                        }
+
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, 0);
+                }
+
+                // Burst bubbles at collection point
+                for (int k = 0; k < 6; k++)
+                    StartGameBubble(p.x + getRandom(-15.f, 15.f),
+                                    p.y + getRandom(-15.f, 15.f), true);
+            }
+        }
+    }
+
+    // --- Speed boost countdown ---
+    if (speedBoostActive)
+    {
+        speedBoostTimer += dt;
+        if (speedBoostTimer >= SPEED_BOOST_DURATION)
+        {
+            speedBoostActive = false;
+            speedBoostTimer = 0.f;
+        }
+    }
+}
+
+void DrawPowerUps()
+{
+    Texture *texPtrs[4] = {&texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink};
+
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+        if (!powerUps[i].active)
+            continue;
+
+        PowerUp &p = powerUps[i];
+
+        Sprite bub(*texPtrs[p.type]);
+        bub.setOrigin({texPtrs[p.type]->getSize().x / 2.f,
+                       texPtrs[p.type]->getSize().y / 2.f});
+        bub.setPosition({p.x, p.y});
+        bub.setScale({0.8f, 0.8f});
+        window.draw(bub);
+    }
+}
+
 // bglevel and player logic
 
 void bglevel()
 {
-    gameLEVEL = 1;
+    gameLEVEL = selectedLevel;
     isLevelRunning = true;
     goToMainMenuFromLevel = false;
     Startbglevel();
@@ -5040,6 +5366,7 @@ void bglevel()
         UpdateLargeFishes(deltaTime);
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
+        UpdatePowerUps(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -5124,6 +5451,7 @@ void Timeattacklevel()
         UpdateLargeFishes(deltaTime);
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
+        UpdatePowerUps(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -5346,6 +5674,7 @@ void Drawbglevel()
     Drawmovingplayer();
     DrawGameBubbles();
     DrawMermaidEvent();
+    DrawPowerUps();
 
     for (int i = 0; i < MAX_POPUPS; i++)
     {
@@ -5611,6 +5940,9 @@ void Startmovingplayer()
             smallFishes[i].sprite = nullptr;
         }
         smallFishes[i].active = false;
+        smallFishes[i].isFleeing = false;
+        smallFishes[i].hasTurned = false;
+        smallFishes[i].isTurning = false;
     }
     for (int i = 0; i < MAX_MEDIUM_FISH; i++)
     {
@@ -5620,6 +5952,9 @@ void Startmovingplayer()
             mediumFishes[i].sprite = nullptr;
         }
         mediumFishes[i].active = false;
+        mediumFishes[i].isFleeing = false;
+        mediumFishes[i].hasTurned = false;
+        mediumFishes[i].state = 1;
     }
     for (int i = 0; i < MAX_LARGE_FISH; i++)
     {
@@ -5629,6 +5964,9 @@ void Startmovingplayer()
             largeFishes[i].sprite = nullptr;
         }
         largeFishes[i].active = false;
+        largeFishes[i].isFleeing = false;
+        largeFishes[i].hasTurned = false;
+        largeFishes[i].state = 1;
     }
 
     (void)texPlayerall.loadFromFile("Assets/Fish/butterflyfish/Butterflyfishall.png");
@@ -5646,6 +5984,7 @@ void Startmovingplayer()
     levelsound.setLooping(true);
     WaveSound.setLooping(true);
     hasPlayedSpawnSound = false;
+    StartPowerUps();
 
     currentState = IDLE;
     currentFrame = 0;
@@ -6077,7 +6416,7 @@ void Updatemovingplayer(float dt)
 
     Vector2f moveDirection(0.f, 0.f);
     bool isMouseMoving = false;
-    if (distance > 5.0f)
+    if (distance > 4.0f)
     {
         moveDirection = toMouse / distance;
         isMouseMoving = true;
@@ -6121,7 +6460,8 @@ void Updatemovingplayer(float dt)
     }
 
     bool isMoving = false;
-    float playerSpeed = 1000.0f;
+    float playerSpeed = speedBoostActive ? 1000.0f * SPEED_BOOST_MULT : 1000.0f;
+
     if (isDashingNow)
     {
         playerSpeed *= 1.5f;
@@ -6257,11 +6597,31 @@ void Updatemovingplayer(float dt)
                     if (multiplier < MAX_MULTIPLIER)
                     {
                         multiplier++;
+                        if (multiplier == 2)
+                        {
+                            sounds[0]->play();
+                        }
+                        else if (multiplier == 3)
+                        {
+                            sounds[1]->play();
+                        }
+                        else if (multiplier == 4)
+                        {
+                            sounds[2]->play();
+                        }
+                        else if (multiplier == 5)
+                        {
+                            sounds[3]->play();
+                        }
+                        else if (multiplier == 6)
+                        {
+                            sounds[4]->play();
+                        }
                         comboProgress -= 1.0f;
                     }
                     else
                     {
-                        comboProgress = 1.0f; // Clamp perfectly at Max!
+                        comboProgress = 1.0f;
                     }
                 }
 
@@ -6293,7 +6653,8 @@ void Updatemovingplayer(float dt)
 
             if (dist < dynamicEatRadius + 10.f)
             {
-                if (playerLevel >= 2)
+                bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
+                if (playerLevel >= 2 or mediumShrunk)
                 {
                     eatSound.play();
                     mediumFishes[i].active = false;
@@ -6349,7 +6710,8 @@ void Updatemovingplayer(float dt)
 
             if (dist < dynamicEatRadius + 20.f)
             {
-                if (playerLevel >= 3)
+                bool largeShrunk = abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
+                if (playerLevel >= 3 or largeShrunk)
                 {
                     eatSound.play();
                     largeFishes[i].active = false;
@@ -6613,6 +6975,7 @@ void StartSmallFish()
     newFish.sprite->setOrigin(sf::Vector2f(286 / 2.f, 126 / 2.f));
 
     newFish.active = true;
+    newFish.isFleeing = false;
     newFish.isTurning = false;
     newFish.currentFrame = 0;
 
@@ -6879,6 +7242,7 @@ void StartMediumFish()
 
     fish.spawnX = fish.sprite->getPosition().x;
     fish.active = true;
+    fish.isFleeing = false;
     fish.state = 1;
     fish.currentFrame = 0;
     fish.animTimer = 0.f;
@@ -6943,6 +7307,14 @@ void UpdateMediumFishes(float dt)
                 fish.velocity.y = 30.0f;
             else if (pos.y > LevelHeight - 80.0f)
                 fish.velocity.y = -30.0f;
+        }
+        Vector2f p = fish.sprite->getPosition();
+        if (p.x < -300.f || p.x > LevelWidth + 300.f)
+        {
+            fish.active = false;
+            delete fish.sprite;
+            fish.sprite = nullptr;
+            continue;
         }
 
         // Turning Logic
@@ -7167,6 +7539,7 @@ void StartLargeFish()
 
     fish.spawnX = fish.sprite->getPosition().x;
     fish.active = true;
+    fish.isFleeing = false;
     fish.state = 1;
     fish.currentFrame = 0;
     fish.animTimer = 0.f;
@@ -7231,6 +7604,14 @@ void UpdateLargeFishes(float dt)
                 fish.velocity.y = 20.0f;
             else if (pos.y > LevelHeight - 120.0f)
                 fish.velocity.y = -20.0f;
+        }
+        Vector2f p = fish.sprite->getPosition();
+        if (p.x < -400.f || p.x > LevelWidth + 400.f)
+        {
+            fish.active = false;
+            delete fish.sprite;
+            fish.sprite = nullptr;
+            continue;
         }
 
         // Turning
@@ -7689,7 +8070,15 @@ void UpdateMermaidEvent(float dt)
         {
 
             addNewHighScore(userName, score, currentGamemode == CLASSIC);
-
+            for (int i = 0; i < NumberOfUsers; i++)
+            {
+                if (players[i].name == CurUser)
+                {
+                    players[i].score = score;
+                    break;
+                }
+            }
+            SaveGameData();
             // [1] منطق القصة (Classic)
             if (currentGamemode == CLASSIC)
             {
@@ -7920,7 +8309,7 @@ void StartLevelHud()
 void UpdateLevelHud()
 {
 
-    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
 
     while (const optional event = window.pollEvent())
     {
@@ -8040,7 +8429,7 @@ void UpdateLevelHud()
 
 void DrawLevelHud(bool doClear)
 {
-    window.setView(window.getDefaultView());
+    window.setView(uiView);
 
     if (doClear)
         window.clear(Color(20, 100, 160));
@@ -8244,7 +8633,7 @@ bool ShowEndGameMenu()
             {
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
-                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
 
                     Sprite saveBtn(shortBtnNormalTex), quitBtn(longBtnNormalTex), cancelBtn(shortBtnNormalTex);
 
@@ -8275,7 +8664,7 @@ bool ShowEndGameMenu()
             }
         }
 
-        Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+        Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
 
         Sprite saveBtn(shortBtnNormalTex), quitBtn(longBtnNormalTex), cancelBtn(shortBtnNormalTex);
 
@@ -8309,7 +8698,7 @@ bool ShowEndGameMenu()
         window.clear(Color(20, 100, 160));
         Drawbglevel();                      // Draw the actual frozen level, not the uninitialized HUD
         window.setMouseCursorVisible(true); // Bring the mouse back so you can click buttons!
-        window.setView(window.getDefaultView());
+        window.setView(uiView);
 
         window.draw(screenDarkener);
 
@@ -8476,7 +8865,7 @@ void ShowPauseMenu()
             {
                 if (mouseEvent->button == Mouse::Button::Left)
                 {
-                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
 
                     Sprite resumeBtn(longBtnNormalTex), optionsBtn(shortBtnNormalTex), endBtn(longBtnNormalTex);
 
@@ -8509,7 +8898,7 @@ void ShowPauseMenu()
             }
         }
 
-        Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), window.getDefaultView());
+        Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
 
         Sprite resumeBtn(longBtnNormalTex), optionsBtn(shortBtnNormalTex), endBtn(longBtnNormalTex);
 
@@ -8543,7 +8932,7 @@ void ShowPauseMenu()
         window.clear(Color(20, 100, 160));
         Drawbglevel();                      // Draw the actual frozen level, not the uninitialized HUD
         window.setMouseCursorVisible(true); // Bring the mouse back so you can click buttons!
-        window.setView(window.getDefaultView());
+        window.setView(uiView);
 
         window.draw(screenDarkener);
 
@@ -8685,7 +9074,7 @@ void QuitLevelLoadingScreen()
         sprLevelLoadBar.setTextureRect(IntRect({0, 0}, {visibleWidth, (int)barSize.y}));
 
         // Draw
-        window.setView(window.getDefaultView()); // use the same 800×600 view as the game
+        window.setView(uiView); // use the same 800×600 view as the game
         window.clear();
         window.draw(sprLevelLoadingBg);
         window.draw(sprLevelLoadingLogo);
