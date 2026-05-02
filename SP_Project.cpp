@@ -2389,7 +2389,7 @@ void PlayingSound(bool isMainMenu)
         return;
     }
     Vector2i mouseLocalPos = Mouse::getPosition(window);
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, uiView);
     bool isHovering = false;
     if (isMainMenu)
     {
@@ -2425,7 +2425,8 @@ void PlayingSound(bool isMainMenu)
                      FullOKButton.getGlobalBounds().contains(mouseWorldPos) ||
                      DeletethisUser.getGlobalBounds().contains(mouseWorldPos);
     }
-    if (isHovering and gameScreenActive)
+
+    if (isHovering)
     {
         if (playsound)
         {
@@ -2433,7 +2434,7 @@ void PlayingSound(bool isMainMenu)
             playsound = 0;
         }
     }
-    else if (!gameScreenActive)
+    else
     {
         playsound = 1;
     }
