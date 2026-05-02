@@ -154,7 +154,7 @@ View uiView({400.f, 300.f}, {800.f, 600.f});
 const int SOUND_COUNT = 5;
 SoundBuffer soundBuffers[SOUND_COUNT];
 Sound *sounds[SOUND_COUNT];
-
+bool isgamescreenopen = false;
 // =================================== Loading Screen =================================
 Shader swayShader;
 Shader swayShaderPlants;
@@ -1935,6 +1935,7 @@ void MainMenu()
     StartMainMenu();
 
     FadeInFromBlack();
+    playsound = 1;
 
     Clock frameClock;
 
@@ -1964,6 +1965,7 @@ void MainMenu()
                         view.setSize({WindowWidth, WindowHeight});
                         view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
                         FadeInFromBlack();
+                        playsound = 1;
                     }
                     else if (timeattackbutton.getGlobalBounds().contains(mousePos))
                     {
@@ -1974,6 +1976,7 @@ void MainMenu()
                         view.setSize({WindowWidth, WindowHeight});
                         view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
                         FadeInFromBlack();
+                        playsound = 1;
                     }
 
                     if (switchuserbutton.getGlobalBounds().contains(mousePos))
@@ -1981,6 +1984,7 @@ void MainMenu()
                         FadeOutToBlack();
                         SwitchUser();
                         FadeInFromBlack();
+                        playsound = 1;
                         // 1. التحقق من المتغير CurUser وتحديث userName
                         if (!CurUser.empty())
                         {
@@ -2007,24 +2011,28 @@ void MainMenu()
                         FadeOutToBlack();
                         OptionsMenu();
                         FadeInFromBlack();
+                        playsound = 1;
                     }
                     if (quitbutton.getGlobalBounds().contains(mousePos))
                     {
                         FadeOutToBlack();
                         QuitGame();
                         FadeInFromBlack();
+                        playsound = 1;
                     }
                     if (highscorebutton.getGlobalBounds().contains(mousePos))
                     {
                         FadeOutToBlack();
                         Highscore();
                         FadeInFromBlack();
+                        playsound = 1;
                     }
                     if (creditsbutton.getGlobalBounds().contains(mousePos))
                     {
                         FadeOutToBlack();
                         Credits();
                         FadeInFromBlack();
+                        playsound = 1;
                     }
                 }
             }
@@ -2375,8 +2383,13 @@ void GreenfishAnimation(MenuFish &fish)
 
 void PlayingSound(bool isMainMenu)
 {
+    if (isLevelRunning)
+    {
+        playsound = 1;
+        return;
+    }
     Vector2i mouseLocalPos = Mouse::getPosition(window);
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
     bool isHovering = false;
     if (isMainMenu)
     {
@@ -2412,7 +2425,7 @@ void PlayingSound(bool isMainMenu)
                      FullOKButton.getGlobalBounds().contains(mouseWorldPos) ||
                      DeletethisUser.getGlobalBounds().contains(mouseWorldPos);
     }
-    if (isHovering)
+    if (isHovering and gameScreenActive)
     {
         if (playsound)
         {
@@ -2420,7 +2433,7 @@ void PlayingSound(bool isMainMenu)
             playsound = 0;
         }
     }
-    else
+    else if (!gameScreenActive)
     {
         playsound = 1;
     }
@@ -4969,6 +4982,7 @@ void DrawGameScreen()
 // main game screen loop
 void GameScreen(int level)
 {
+
     StartGameScreen(level);
     Clock clock;
     while (window.isOpen())
@@ -4988,7 +5002,10 @@ void GameScreen(int level)
             // ESC → exit
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
                 if (keyPressed->code == Keyboard::Key::Escape)
+                {
+                    gameScreenActive = false;
                     return;
+                }
 
             // left click → buttons / quit popup
             if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
@@ -5002,6 +5019,7 @@ void GameScreen(int level)
                         {
                             loadingmusic.stop();
                             showQuitPopup = false;
+                            gameScreenActive = false;
                             MainMenu();
                             return;
                         }
@@ -5009,6 +5027,7 @@ void GameScreen(int level)
                         {
                             loadingmusic.stop();
                             showQuitPopup = false;
+                            gameScreenActive = false;
                             MainMenu();
                             return;
                         }
@@ -5018,7 +5037,10 @@ void GameScreen(int level)
                     else
                     {
                         if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            gameScreenActive = false;
                             OptionsMenu();
+                        }
                         if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
                             showQuitPopup = true;
 
@@ -5047,7 +5069,7 @@ void GameScreen(int level)
                                 {
                                     bglevel();
                                 }
-
+                                gameScreenActive = false;
                                 return; // Return safely when the level finishes
                             }
                         }
@@ -5312,6 +5334,7 @@ void DrawPowerUps()
 
 void bglevel()
 {
+    gameScreenActive = false;
     gameLEVEL = selectedLevel;
     isLevelRunning = true;
     goToMainMenuFromLevel = false;
@@ -5404,6 +5427,7 @@ void bglevel()
 void Timeattacklevel()
 {
     currentGamemode = TIMEATTACK;
+    gameScreenActive = false;
     bool isGameWon = false;
     float finalTime = 0.f;
     isLevelRunning = true;
