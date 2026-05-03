@@ -2874,6 +2874,8 @@ void UpdateSwitchUser()
                     isCancelAddingUser = 1;
                     DupplicateName = 0;
                     CamefromDupplicate = 0;
+                    isUserSelected = 0;
+                    SelectedUser = -1;
                 }
                 for (int i = 0; i < NumberOfUsers; i++)
                 {
@@ -2884,7 +2886,7 @@ void UpdateSwitchUser()
                         SelectUserHL.setPosition({X, Y});
                     }
                 }
-                if (SelectButton.getGlobalBounds().contains(mousePos) && !NameEntry && !isCancelAddingUser && !isListFull && !DupplicateName && SelectedUser >= 0 && SelectedUser < NumberOfUsers)
+                if (SelectButton.getGlobalBounds().contains(mousePos) && !NameEntry && !isListFull && !DupplicateName && SelectedUser >= 0 && SelectedUser < NumberOfUsers)
                 {
                     CurUser = players[SelectedUser].name;
                     isUserSelected = 1;
