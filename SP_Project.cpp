@@ -9525,58 +9525,59 @@ bool EndLevel()
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
-                if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
-                    OptionsMenu();
+                    if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
+                        OptionsMenu();
 
-                if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
-                {
-                    showQuitPopup = true; 
-                }
+                    if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
+                    {
+                        showQuitPopup = true;
+                    }
 
-                if (gsBtns[2].sprite)
-                {
-                    bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
-                                mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
-                                mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
-                                mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
-                    if (hovered) {
-                        levelWonSuccessfully = true;
-                        mainmenumusic.play();
-                        mainmenumusic.setLooping(true);
-                        return true;
+                    if (gsBtns[2].sprite)
+                    {
+                        bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
+                            mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
+                            mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
+                            mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
+                        if (hovered) {
+                            levelWonSuccessfully = true;
+                            mainmenumusic.play();
+                            mainmenumusic.setLooping(true);
+                            return true;
+                        }
                     }
-                }
 
-                if (showQuitPopup)
-                {
-                    if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
+                    if (showQuitPopup)
                     {
-                        showQuitPopup = false;
-                        levelsound.stop(); 
-                        MainMenu();        
-                        return true;       
+                        if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false;
+                            levelsound.stop();
+                            MainMenu();
+                            return true;
+                        }
+
+                        if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false;
+                            levelsound.stop();
+                            MainMenu();
+                            return true;
+                        }
+
+                        if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false;
+                        }
                     }
-                  
-                    if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
-                    {
-                        showQuitPopup = false;
-                        levelsound.stop();
-                        MainMenu();
-                        return true;
-                    }
-                   
-                    if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
-                    {
-                        showQuitPopup = false; 
-                    }
+
                 }
-                
             }
-        }
 
-        window.setView(view);
-        UpdateEndLevel(window);
-        DrawEndLevel(window);
+            window.setView(view);
+            UpdateEndLevel(window);
+            DrawEndLevel(window);
+        }
+        return false;
     }
-    return false;
 }
