@@ -136,9 +136,9 @@ void StartPowerUps();
 void UpdatePowerUps(float dt);
 void DrawPowerUps();
 void loadSounds();
-void StartEndLevel(RenderWindow &window);
-void UpdateEndLevel(RenderWindow &window);
-void DrawEndLevel(RenderWindow &window);
+void StartEndLevel(RenderWindow& window);
+void UpdateEndLevel(RenderWindow& window);
+void DrawEndLevel(RenderWindow& window);
 bool EndLevel();
 
 float getRandom(float min, float max)
@@ -652,6 +652,9 @@ RectangleShape screenDarkener;
 Texture texBgMain, texBgPlank, texTitle, texCorals;
 optional<Sprite> sprBgMain, sprBgPlank, sprTitle, sprCorals;
 
+Texture texBgLarge;
+optional<Sprite> sprBgLarge;
+
 optional<Text> mouseLabel, detailLabel, versionLabel;
 
 Texture texUncheckedNormal, texUncheckedHover;
@@ -686,17 +689,14 @@ float loadProgress = 0.f;
 Texture texHudTop, texHudBottom, texHudGrowth, texHudGrowthMarker;
 Sprite sprHudTop(texHudTop), sprHudBottom(texHudBottom), sprHudGrowth(texHudGrowth);
 Sprite sprHudGrowthMarker1(texHudGrowthMarker), sprHudGrowthMarker2(texHudGrowthMarker);
-
-// --- NEW: THE FRENZY! METER LOGIC ---
-// SFML 3 strict rule: we must give all 7 array slots the texture immediately!
 Texture texHudFrenzy;
 Font frenzyFont;
-optional<Text> txtFrenzyLetters[7]; // <--- Wrap it in 'optional'
+optional<Text> txtFrenzyLetters[7]; 
 int frenzyProgress = 0;
 bool isLevelRunning = false;
 float timeAttackTimer = 0.f;
-float timeAttackLimit = 90.f;       // 1.5 دقائق
-float frenzyDecayAccumulator = 0.f; // accumulates time since last eat
+float timeAttackLimit = 90.f;      
+float frenzyDecayAccumulator = 0.f; 
 
 Texture texTimerBg;
 Sprite sprTimerBg(texTimerBg);
@@ -740,10 +740,6 @@ Clock fadeClock;
 bool isFadingOut = false;
 bool isFadingIn = false;
 float fadeAlpha = 0.f;
-int storyCarryScore = 0;
-int taCarryScore = 0;
-int lastWonStoryLevel = 0;
-int lastWonTALevel = 0;
 
 // highscore
 struct HighScoreEntry
@@ -910,10 +906,10 @@ Texture texBubblePop1("Assets/bouns/_bubblepop1.png");
 bool powerUpTexLoaded = false;
 
 // ==========================================
-// 1. المتغيرات الصح (Global Variables)
+// 1.       (Global Variables)
 // ==========================================
 
-// ترتيب الصفوف في الصورة: 0=Eat, 1=Idle, 2=Swim, 3=Turn
+
 enum PlayerState
 {
     EAT = 0,
@@ -922,37 +918,36 @@ enum PlayerState
     TURN = 3
 };
 
-// مصفوفة عدد الفريمات (عدد الأعمدة في كل صف)
+
 const int frameCounts[4] = {6, 12, 14, 8};
 
-// الحالة الحالية
+
 PlayerState currentState = IDLE;
 int currentFrame = 0;
 float timer = 0.f;
-// أضف هذا السطر مع المتغيرات العامة الخاصة باللاعب
+
 int playerIntroStep = 0;
-bool pendingEat = false; // <--- أضف هذا السطر هنا
+bool pendingEat = false; 
 
-// [1] مقاسات الشبكة (حسب صورتك: 4032 عرض ÷ 14 سمكة = 288)
+
 const int GRID_W = 288;
-const int GRID_H = 224; // 896 طول ÷ 4 صفوف = 224
+const int GRID_H = 224; 
 
-// [2] مقاس الرسم (القص)
 const int DRAW_W = 288;
 const int DRAW_H = 224;
 
-// الحجم
+
 const float FISH_SCALE = 0.275f;
 
-// متغيرات الحركة
+
 float lastMouseX = 0.0f;
 bool isFacingRight = false;
 
-// [هام] المتغيرات اللي كانت ناقصة
+
 sf::Vector2i lastScreenMousePos = {0, 0};
 sf::Vector2f targetPos = {400.f, 300.f};
 
-// متغيرات حجم الليفيل (عشان الكاميرا تتحرك)
+
 float LevelWidth = 950.0f;
 float LevelHeight = 750.0f;
 
@@ -1019,8 +1014,19 @@ void loadSounds()
 
         sounds[i] = new Sound(soundBuffers[i]);
     }
+    if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
+    { 
+        waterloop.emplace(WaterSound);
+        waterloop->setLooping(true);
+    }
+    (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg"); 
+    (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg"); 
+    (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");     
+    (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");    
+    nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
+
 }
-// الـ Array الثابتة
+
 SmallFish smallFishes[MAX_SMALL_FISH];
 
 // ==========================================
@@ -1047,7 +1053,7 @@ struct MediumFish
     int currentFrame = 0;
     float animTimer = 0.f;
     float verticalTimer = 0.f;
-    float turnTargetX = 0.f; // <--- أضف السطر ده
+    float turnTargetX = 0.f;
 
     bool isFleeing = false;
     int state = 1;
@@ -1085,7 +1091,7 @@ struct LargeFish
     int currentFrame = 0;
     float animTimer = 0.f;
     float verticalTimer = 0.f;
-    float turnTargetX = 0.f; // <--- أضف السطر ده
+    float turnTargetX = 0.f; 
     float timeToNextTurn = 0.f;
 
     int state = 1;
@@ -1112,85 +1118,83 @@ bool isPlayerDead = false;
 Clock respawnClock;
 bool isEscapeMode = false;
 
-// متغيرات لحساب السمك المأكول
+
 int smallFishEatenCount = 0;
 int mediumFishEatenCount = 0;
 int largeFishEatenCount = 0;
-int starsEatenCount = 0;
-// متغير لمنع توليد سمك جديد
+int starsEatenCount = 0; 
+
 bool stopSpawning = false;
 
-// متغيرات الـ Dash
+
 bool isDashing = false;
 Clock dashClock;
-float dashCooldown = 0.8f;  // الوقت اللي لازم يستنى قبل ما يعمل Dash تاني
-float dashDuration = 0.15f; // مدة الـ Dash نفسه (سرعة فورية)
-float dashSpeedMult = 4.0f; // مضاعف السرعة (4 أضعاف السرعة العادية)
+float dashCooldown = 0.8f; 
+float dashDuration = 0.15f; 
+float dashSpeedMult = 4.0f; 
 
 // ==========================================
-// Game Bubbles System (نظام الفقاعات الجديد)
+//        Game Bubbles System 
 // ==========================================
 struct GameBubble
 {
     float x, y, vx, vy;
     float alpha;
     bool active;
-    bool isAction; // true = لما تاكل أو Dash، false = عادية ماشية
+    bool isAction; 
 };
 const int MAX_GAME_BUBBLES = 20;
 GameBubble gameBubbles[MAX_GAME_BUBBLES];
 float gameBubbleSpawnTimer = 0.f;
 
-// متغير المضاعف
+
 int multiplier = 1;
 
-// هيكل خاص بنص السكور اللي بيظهر ويطير
+
 struct ScorePopup
 {
     sf::Text text;
-    float alpha = 255.f;  // شفافية
-    float ySpeed = -60.f; // سرعة الطيران لفوق
+    float alpha = 255.f;  
+    float ySpeed = -60.f; 
     bool active = false;
-    sf::Color baseColor = sf::Color::White; // <--- أضفنا السطر ده
+    sf::Color baseColor = sf::Color::White; 
 
-    // *** إضافة Constructor لتهيئة النص بالخط اللي عندك ***
+   
     ScorePopup() : text(font) {}
 };
 
-// مصفوفة لتخزين نصوص السكور الظاهرة على الشاشة
+
 const int MAX_POPUPS = 20;
 ScorePopup scorePopups[MAX_POPUPS];
 
-// متغيرات نظام الـ Combo
-float noEatTimer = 0.0f;              // تايمر الوقوف (لو وصل 3 ثواني بينقص)
-const float PROGRESS_PER_EAT = 0.35f; // قيمة الزيادة لكل سمكة (تقريباً 3 سمكات تزود 1)
-const float COMBO_DECAY_TIME = 3.0f;  // الوقت المطلوب عشان ينقص (3 ثواني)
-const int MAX_MULTIPLIER = 6;         // أقصى قيمة للمضاعف
 
-// --- نظام الـ Combo المتقدم ---
+float noEatTimer = 0.0f;              
+const float PROGRESS_PER_EAT = 0.35f; 
+const float COMBO_DECAY_TIME = 3.0f;  
+const int MAX_MULTIPLIER = 6;        
+
+
 enum ComboState
 {
-    FILLING,    // بيأكل وبيملّي
-    WAIT_DRAIN, // وقف، بيستنى 2 ثانية قبل ما يفرغ
-    DRAINING,   // بيفرغ البار
-    WAIT_DROP   // البار فضى، بيستنى 2 ثانية قبل ما ينقص الـ Multiplier
+    FILLING,    
+    WAIT_DRAIN, 
+    DRAINING,   
+    WAIT_DROP   
 };
 
 ComboState comboState = FILLING;
-float comboTimer = 0.0f;        // تايمر عشان نحسب الـ 2 ثانية
-float comboProgress = 0.0f;     // البار (0.0 إلى 1.0)
-const int FISH_TO_LEVEL_UP = 7; // عدد السمكات المطلوبة
-const float WAIT_TIME = 2.0f;   // وقت الانتظار (2 ثواني)
-const float DRAIN_SPEED = 0.5f; // سرعة التفريغ (1.0 يعني يفرغ في ثانية)
+float comboTimer = 0.0f;        
+float comboProgress = 0.0f;     
+const int FISH_TO_LEVEL_UP = 7; 
+const float WAIT_TIME = 2.0f;   
+const float DRAIN_SPEED = 0.5f; 
 
-// --- نظام الـ Lives والـ Game Over ---
-int lives = 3;           // عدد الحيوات
-int hitsRemaining = 3;   // عدد المرات المسموح فيها انك تتاكل قبل ما تخسر حياة
-bool isGameOver = false; // هل اللعبة خلصت
 
-// --- متغيرات أنيميشن SORRY ---
-// --- متغيرات أنيميشن SORRY ---
-// بنمرر الـ fontTexture للـ Sprite في الكونستركتور علطول
+int lives = 3;          
+int hitsRemaining = 3;   
+bool isGameOver = false; 
+
+
 Sprite s_Sorry_S(fontTexture);
 Sprite s_Sorry_O(fontTexture);
 Sprite s_Sorry_R(fontTexture);
@@ -1199,21 +1203,21 @@ Sprite s_Sorry_Y(fontTexture);
 bool showSorryAnimation = false;
 bool sorryExploded = false;
 float sorryTimer = 0.f;
-float sorryLetterScales[5] = {0.f, 0.f, 0.f, 0.f, 0.f}; // لتكبير الحروف
+float sorryLetterScales[5] = {0.f, 0.f, 0.f, 0.f, 0.f}; 
 
-// --- [جديد] متغيرات أنيميشن PERFECT ---
+
 bool showPerfectAnimation = false;
 bool perfectExploded = false;
 float perfectTimer = 0.f;
-float perfectLetterScales[7] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; // 7 حروف
+float perfectLetterScales[7] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; 
 
-// --- متغيرات نظام الـ Invincibility ---
+
 Clock hitCooldownClock;
 bool isInvincible = false;
-// ------------------------------------
+
 
 // ==========================================
-// Mermaid Event Variables (سمكة النجوم)
+//          Mermaid Event Variables 
 // ==========================================
 Texture mermaidTex("Assets/fish/mermaid/mermaid.png");
 Sprite mermaidSprite(mermaidTex);
@@ -1224,7 +1228,7 @@ Clock eventEndClock;
 
 struct Star
 {
-    Sprite *sprite = nullptr; // غيرناه لمؤشر عشان يشتغل في SFML 3
+    Sprite *sprite = nullptr; 
     Vector2f velocity;
     bool active = false;
 };
@@ -1236,18 +1240,17 @@ int mermaidFrame = 0;
 float mermaidAnimTimer = 0.0f;
 float starSpawnTimer = 0.0f;
 
-// هيكل إعدادات المرحلة
+
 struct LevelSettings
 {
-    int fishToGrowToLevel2 = 15; // عدد السمك المطلوب للنمو للمستوى 2
-    int fishToGrowToLevel3 = 40; // عدد السمك المطلوب للنمو للمستوى 3
+    int fishToGrowToLevel2 = 15; 
+    int fishToGrowToLevel3 = 40; 
     int fishToWin = 60;
 };
 
-// متغير عام ليحمل إعدادات المرحلة الحالية
+
 LevelSettings currentLevelSettings;
 
-// === [جديد] متغيرات Time Attack ===
 int gameLEVEL;
 
 enum Gamemode
@@ -1300,7 +1303,7 @@ Sound dieSound(dieBuffer);
 
 Music WaveSound("Assets/Music and Sounds/waterloop1.ogg");
 
-bool hasPlayedSpawnSound = false; // متغير لمنع تكرار الصوت
+bool hasPlayedSpawnSound = false;
 Clock spawnDelayClock;
 
 struct HighScoreSave
@@ -1314,7 +1317,7 @@ struct PlayerSave
     char name[50] = "";
     int id = 0;
     long long score = 0;
-    // ---> INDIVIDUAL PROGRESS <---
+   
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
 };
@@ -1322,25 +1325,88 @@ struct PlayerSave
 // The Master Save Struct
 struct GameSaveData
 {
-    // 1. Settings (Global)
+   
     float mouseSpeed = 1.0f;
     int graphicsIndex = 0;
     int soundVolume = 100;
     bool isFullscreen = true;
     bool isMusicEnabled = true;
 
-    // 2. User Info (Now contains the individual unlocks!)
+    
     int numberOfUsers = 0;
     PlayerSave players[7];
     char currentUser[50] = "";
 
-    // 3. High Scores (Global)
+    
     HighScoreSave storyScores[25];
     HighScoreSave timeAttackScores[25];
 };
 
-// Create a single global instance
+
 GameSaveData g_data;
+
+void ApplyAudioSettings()
+{
+    // 1. Set Music Volume (100% or 0%)
+    float musicVol = isMusicEnabled ? 100.f : 0.f;
+    mainmenumusic.setVolume(musicVol);
+    loadingmusic.setVolume(musicVol);
+    levelsound.setVolume(musicVol);
+    WaveSound.setVolume(musicVol); 
+
+    // 2. Set Sound Volume (100% or 0%)
+    float soundVol = isSoundEnabled ? 100.f : 0.f;
+    if (waterloop) waterloop->setVolume(soundVol);
+    buttonpressedsound.setVolume(soundVol);
+    Bubbledone.setVolume(soundVol);
+    eatSound.setVolume(soundVol);
+    PlayergotEaten.setVolume(soundVol);
+    gameover.setVolume(soundVol);
+    mermaidevent.setVolume(soundVol);
+    dashSound.setVolume(soundVol);
+    levelUpSound.setVolume(soundVol);
+    StageClearSound.setVolume(soundVol);
+    spawnSound.setVolume(soundVol);
+    dieSound.setVolume(soundVol);
+
+    // Update frenzy array sounds
+    for (int i = 0; i < SOUND_COUNT; i++) {
+        if (sounds[i]) sounds[i]->setVolume(soundVol);
+    }
+
+ 
+    for (int i = 0; i < NUM_SOUND_CHANNELS; i++) {
+        if (sfxChannels[i]) sfxChannels[i]->setVolume(isSoundEnabled ? 30.f : 0.f);
+    }
+}
+void UpdateAmbientSounds()
+{
+    // 1. Always keep the base loop playing 
+    if (waterloop && waterloop->getStatus() != sf::Sound::Status::Playing) {
+        waterloop->play();
+    }
+
+    // 2. The Randomizer Logic
+    if (sfxTimer.getElapsedTime().asSeconds() >= nextSfxDelay)
+    {
+        sfxTimer.restart();
+        nextSfxDelay = getRandom(2.0f, 6.0f); // Pick a new random delay between 2 and 6 seconds
+
+        // Find an empty audio channel so they can overlap naturally
+        for (int i = 0; i < NUM_SOUND_CHANNELS; i++)
+        {
+            if (!sfxChannels[i] || sfxChannels[i]->getStatus() != sf::Sound::Status::Playing)
+            {
+                int randomBuffer = rand() % NUM_SFX_BUFFERS; // Pick from 0 to 3
+                sfxChannels[i].emplace(sfxBuffers[randomBuffer]);
+                sfxChannels[i]->setVolume(isSoundEnabled ? 30.f : 0.f);
+                sfxChannels[i]->play();
+                break; 
+            }
+        }
+    }
+}
+
 
 void LoadGameData()
 {
@@ -1385,7 +1451,7 @@ void LoadGameData()
             }
         }
 
-        // Apply THIS user's progress to the game map!
+       
         level1Unlocked = players[activeIndex].level1Unlocked;
         level2Unlocked = players[activeIndex].level2Unlocked;
         level3Unlocked = players[activeIndex].level3Unlocked;
@@ -1425,6 +1491,7 @@ void LoadGameData()
             timeattack_scores[i] = {"", 0};
         }
     }
+    ApplyAudioSettings();
 }
 
 void SaveGameData()
@@ -1460,7 +1527,7 @@ void SaveGameData()
         g_data.players[i].name[49] = '\0';
         g_data.players[i].id = players[i].id;
         g_data.players[i].score = players[i].score;
-        // Save the individual unlocks down into the binary struct
+       
         g_data.players[i].level1Unlocked = players[i].level1Unlocked;
         g_data.players[i].level2Unlocked = players[i].level2Unlocked;
         g_data.players[i].level3Unlocked = players[i].level3Unlocked;
@@ -1493,42 +1560,44 @@ void SaveGameData()
     }
 }
 
+
 // ============================================================
-// END LEVEL - Textures & Sprites
+//           END LEVEL - Textures & Sprites
 // ============================================================
 
 Texture texEndBg("Assets/EndGameScreen/shell_stageinfo.jpg");
-Sprite sprEndBg(texEndBg);
+Sprite  sprEndBg(texEndBg);
 
 Texture texOptNormal("Assets/EndGameScreen/options_normal-1 (3).png");
 Texture texOptClicked("Assets/EndGameScreen/options_high-1 (2)-Photoroom.png");
-Sprite sprOpt(texOptNormal);
+Sprite  sprOpt(texOptNormal);
 
 Texture texContNormal("Assets/EndGameScreen/continue_normal-1 (1).png");
 Texture texContClicked("Assets/EndGameScreen/continue_high-1 (1).png");
-Sprite sprCont(texContNormal);
+Sprite  sprCont(texContNormal);
 
 Texture texQuitNormal("Assets/EndGameScreen/quit_normal-1 (1).png");
 Texture texQuitClicked("Assets/EndGameScreen/quit_high-1 (1).png");
-Sprite sprQuit(texQuitNormal);
+Sprite  sprQuit(texQuitNormal);
 
 Texture texHerring("Assets/EndGameScreen/menu_herring.png");
-Sprite sprHerring(texHerring);
+Sprite  sprHerring(texHerring);
 
 Texture texCod("Assets/EndGameScreen/menu_cod.png");
-Sprite sprCod(texCod);
+Sprite  sprCod(texCod);
 
 Texture texLionfish("Assets/EndGameScreen/menu_lionfish.png");
-Sprite sprLionfish(texLionfish);
+Sprite  sprLionfish(texLionfish);
 
 Texture texStarBubble("Assets/EndGameScreen/starbubble1.png");
-Sprite sprStarBubble(texStarBubble);
+Sprite  sprStarBubble(texStarBubble);
 
 Texture texCrunch("Assets/EndGameScreen/chompsplatsmall1.png");
-Sprite sprCrunch(texCrunch);
+Sprite  sprCrunch(texCrunch);
+
 
 // ============================================================
-// END LEVEL - Fonts & Score Globals
+//        END LEVEL - Fonts & Score Globals
 // ============================================================
 
 Font st_comp("Assets/Fonts/BernardMT.ttf");
@@ -1542,19 +1611,22 @@ int score_4 = 0;
 Text score_of_eaten_fish[5] = {
     Text(quit_option_font), Text(quit_option_font),
     Text(quit_option_font), Text(quit_option_font),
-    Text(quit_option_font)};
+    Text(quit_option_font)
+};
+
 
 // ==========================================
-// Player Movement State Globals (To fix reset issues)
+//       Player Movement State Globals 
 // ==========================================
-float currentVisualScale = 0.275f; // نفس قيمة FISH_SCALE
+float currentVisualScale = 0.275f;
 bool canDash = true;
 bool isDashingNow = false;
 bool wasMousePressed = false;
-sf::Vector2f dashDirection = {1.f, 0.f};
+sf::Vector2f dashDirection = { 1.f, 0.f };
 float currentRotation = 0.f;
 sf::Clock dashTimer;
 bool levelWonSuccessfully = false;
+
 
 int main()
 {
@@ -1775,12 +1847,12 @@ bool DrawLoadingScreen(float totalTime)
     for (int i = 0; i < 7; i++)
     {
         float startDelay = 1.5f;
-        float letterDelay = i * 0.4f; // سرعة ظهور الحروف ورا بعض (بطيئة)
+        float letterDelay = i * 0.4f; 
         float letterTime = totalTime - startDelay - letterDelay;
         float popScale = 0.0f;
         if (letterTime > 0)
         {
-            float popDuration = 1.0f; // مدة الفرقعة (بطيئة)
+            float popDuration = 1.0f; 
             popScale = (letterTime < popDuration) ? sin(letterTime * (3.14f / popDuration)) * 1.2f : 1.0f;
 
             if (popScale < 1.0f && letterTime > (popDuration / 2.0f))
@@ -1804,7 +1876,7 @@ bool DrawLoadingScreen(float totalTime)
 
     if (progress >= 1.0f && !exploded)
     {
-        Bubbledone.play(); // ← أضف هنا
+        Bubbledone.play(); 
         exploded = true;
         for (int i = 0; i < 35; i++)
         {
@@ -1812,25 +1884,25 @@ bool DrawLoadingScreen(float totalTime)
             float pX = startX + (idx * spacing);
             float pY = (WindowHeight / 2.0f - 40.f);
 
-            // --- شرارات (Particles) - انتشار أعرض ---
+            
             sparks[i].active = true;
             sparks[i].x = pX;
             sparks[i].y = pY;
 
-            // تعديل: زودنا النطاق (من 120 بدل 60) وقللنا القسمة لعمل انفجار عريض جداً
+           
             sparks[i].vx = (float)(rand() % 50 - 25) / 30.0f;
-            sparks[i].vy = -((float)(rand() % 50 + 20)) / 20.0f; // السرعة الرأسية كما هي أو أبطأ قليلاً عشان ينتشر أفقياً
+            sparks[i].vy = -((float)(rand() % 50 + 20)) / 20.0f; 
             sparks[i].alpha = 255.0f;
 
-            // --- فقاعات (Letter Bubbles) - طلوع أعلى وأسرع ---
+            
             letterBubbles[i].active = true;
             letterBubbles[i].x = pX;
             letterBubbles[i].y = pY;
 
-            // تعديل 1: زيادة الانتشار الأفقي قليلاً عشان متطلع راسية بس
+            
             letterBubbles[i].vx = (float)(rand() % 50 - 25) / 40.0f;
 
-            // تعديل 2: تقليل القسمة (من 40 إلى 20) لتسريع الطلوع بقوة للأعلى
+            
             letterBubbles[i].vy = -((float)(rand() % 30 + 10)) / 30.0f;
 
             letterBubbles[i].alpha = 200.0f;
@@ -1846,12 +1918,10 @@ bool DrawLoadingScreen(float totalTime)
             {
                 anyActive = true;
                 sparks[i].x += sparks[i].vx;
-                // === تعديل الجاذبية (مهم) ===
-                // قمنا بقسمة القسمة على 5 (من 0.2 إلى 0.04) لتصبح مناسبة لـ 120 FPS
+               
                 sparks[i].vy += 0.04f;
                 sparks[i].y += sparks[i].vy;
-                // === تعديل سرعة الاختفاء ===
-                // قمنا بقسمة القسمة على 4 (من 6 إلى 1.5) لتبقى فترة أطول
+                
                 sparks[i].alpha -= 1.5f;
 
                 if (sparks[i].alpha <= 0)
@@ -1872,8 +1942,7 @@ bool DrawLoadingScreen(float totalTime)
                 anyActive = true;
                 letterBubbles[i].x += letterBubbles[i].vx;
                 letterBubbles[i].y += letterBubbles[i].vy;
-                // === تعديل سرعة الاختفاء للفقاعات ===
-                // قمنا بقسمة القسمة على 4 (من 7 إلى 1.75) لتبقى فترة أطول
+                
                 letterBubbles[i].alpha -= 1.75f;
                 if (letterBubbles[i].alpha <= 0)
                 {
@@ -1909,7 +1978,7 @@ bool DrawLoadingScreen(float totalTime)
                 ventBubbles[i].alpha = 255.0f;
                 ventBubbles[i].x = ventPositions[ventIdx].x + (rand() % 12 - 6);
                 ventBubbles[i].y = ventPositions[ventIdx].y;
-                // فقاعات الـ Vent مضبوطة سابقاً لبطء
+               
                 ventBubbles[i].vx = (float)(rand() % 10 - 5) / 150.0f;
                 ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 50.0f;
                 return true;
@@ -2027,11 +2096,11 @@ void MainMenu()
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
-                    // === تعديل: فصل أزرار الكلاسيك والتايم اتاك ===
+           
                     if (startgamebutton.getGlobalBounds().contains(mousePos))
                     {
-                        currentGamemode = CLASSIC; // تحديد الوضع كلاسيك
-                        isTimeAttackMode = false;  // <--- أضف هذا السطر
+                        currentGamemode = CLASSIC; 
+                        isTimeAttackMode = false;  
                         FadeOutToBlack();
                         Select_level();
                         view.setSize({WindowWidth, WindowHeight});
@@ -2041,8 +2110,8 @@ void MainMenu()
                     }
                     else if (timeattackbutton.getGlobalBounds().contains(mousePos))
                     {
-                        currentGamemode = TIMEATTACK; // تحديد الوضع تايم اتاك
-                        isTimeAttackMode = true;      // <--- أضف هذا السطر
+                        currentGamemode = TIMEATTACK; 
+                        isTimeAttackMode = true;      
                         FadeOutToBlack();
                         Select_level();
                         view.setSize({WindowWidth, WindowHeight});
@@ -2061,18 +2130,18 @@ void MainMenu()
                         if (!CurUser.empty())
                         {
                             userName = CurUser;
-                            welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+                            welcomeLabel.setString("Welcome Back"); 
                         }
                         else
                         {
-                            userName = "Guest";                // اسم افتراضي في حالة لم يتم اختيار أحد
-                            welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+                            userName = "Guest";                
+                            welcomeLabel.setString("Welcome"); 
                         }
 
-                        // 2. تحديث نص الاسم المعروض على الشاشة
+                        
                         userNameText.setString(userName);
 
-                        // 3. إعادة حساب النقطة الوسطية للنص (Origin) لضبط المحاذاة في حال تغير طول الاسم
+                       
                         userNameText.setOrigin(userNameText.getLocalBounds().size / 2.0f);
                         FloatRect wBounds = welcomeLabel.getLocalBounds();
                         welcomeLabel.setOrigin({wBounds.size.x / 2.0f, wBounds.size.y / 2.0f});
@@ -2133,20 +2202,17 @@ void StartMainMenu()
         cout << "Error loading shader!" << endl;
     }
 
-    // ==========================================
-    // === التعديل المطلوب: تحديث النص واسم المستخدم ===
-    // ==========================================
     if (!CurUser.empty())
     {
-        // إذا تم اختيار مستخدم من شاشة Switch User (لست عاد)
+       
         userName = CurUser;
-        welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+        welcomeLabel.setString("Welcome Back"); 
     }
     else
     {
-        // إذا لم يتم اختيار مستخدم (أول مرة تدخل)
-        userName = "Guest";                // اسم افتراضي
-        welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+       
+        userName = "Guest";                
+        welcomeLabel.setString("Welcome"); 
     }
     // ==========================================
 
@@ -2249,7 +2315,6 @@ void StartMainMenu()
 
     // welcome text
     welcomeLabel.setFont(mainFont);
-    // تم تغيير النص بالأعلى، هنا نعيد تحديد الخصائص الأساسية فقط
     welcomeLabel.setCharacterSize(18);
     welcomeLabel.setFillColor(Color::White);
     welcomeLabel.setOutlineColor(Color::Black);
@@ -2273,6 +2338,8 @@ void StartMainMenu()
 
 void UpdateMainMenu()
 {
+    UpdateAmbientSounds();
+
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
     if (Barracuda.getScale().x == -1)
     {
@@ -2430,7 +2497,6 @@ void GreenfishAnimation(MenuFish &fish)
         GFswim = (GFswim + 1) % 13;
     }
 
-    // Eating interaction (unchanged)
     if (Greenfish.getGlobalBounds().findIntersection(Minowfish.getGlobalBounds()))
     {
         if (counter < 1)
@@ -2461,7 +2527,7 @@ void PlayingSound(bool isMainMenu)
         return;
     }
     Vector2i mouseLocalPos = Mouse::getPosition(window);
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, uiView);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
     bool isHovering = false;
     if (isMainMenu)
     {
@@ -2588,10 +2654,36 @@ void BarracudaFishanimation(MenuFish &fish)
                 *fish.velocityX = -*fish.velocityX;
             }
         }
-        else if (Barracudacollieder.getGlobalBounds().findIntersection(
-                     MFcollieder.getGlobalBounds()))
+        else if (Barracudacollieder.getGlobalBounds().findIntersection(MFcollieder.getGlobalBounds()))
         {
-            // … eating logic unchanged …
+            // Use a static counter to track how far along the eat animation is
+            static int bEatCounter = 0;
+
+            if (bEatCounter < 1)
+                BFcol = 0; // Start at the very first frame of the Eat animation
+
+            if (bEatCounter == 3)
+            {
+                // Right as the jaws snap shut, teleport the Minnow off-screen
+                Minowfish.setPosition({ 3000.f, 3000.f });
+                MFvisable = 0;
+            }
+
+            bEatCounter++;
+
+            if (bEatCounter <= 6) // Play 6 frames of the eating animation
+            {
+                // Row 0 is the Eat animation
+                Barracuda.setTextureRect(IntRect({ BFcol * 256, 0 }, { 256, 118 }));
+                BFcol++;
+            }
+            else
+            {
+                // Once eating is finished, immediately go back to the Swim animation (Row 1)
+                Barracuda.setTextureRect(IntRect({ BFcol * 256, 1 * 118 }, { 256, 118 }));
+                BFcol = (BFcol + 1) % 14;
+                bEatCounter = 0; // Reset the counter just in case it needs to eat again
+            }
         }
         else
         {
@@ -2603,7 +2695,7 @@ void BarracudaFishanimation(MenuFish &fish)
 
 void QueenTriggerFish(MenuFish &fish)
 {
-    // ---> CHANGED: Now uses velocityY so it floats up and down! <---
+    
     QueenTrigger.move({*fish.velocityX * deltaTime * 60.f, *fish.velocityY * deltaTime * 60.f});
 
     const float leftBound = -150.f;
@@ -2611,7 +2703,7 @@ void QueenTriggerFish(MenuFish &fish)
     float posX = QueenTrigger.getPosition().x;
     float posY = QueenTrigger.getPosition().y;
 
-    // ---> ADDED: Vertical bouncing so it stays on screen! <---
+    
     if (posY <= -100.f || posY >= WindowHeight + 100.f)
     {
         *fish.velocityY *= -1;
@@ -2630,7 +2722,7 @@ void QueenTriggerFish(MenuFish &fish)
         fish.turnFrame = 0;
     }
 
-    // ---> ADDED: Slow down the animation! <---
+    
     static float qAnimTimer = 0.f;
     qAnimTimer += deltaTime;
 
@@ -2834,7 +2926,7 @@ void UpdateSwitchUser()
                                 players[NumberOfUsers].name = InputString;
                                 players[NumberOfUsers].id = NumberOfUsers + 1;
 
-                                // ---> NEW USERS START FRESH! <---
+                               
                                 players[NumberOfUsers].level1Unlocked = true;
                                 players[NumberOfUsers].level2Unlocked = false;
                                 players[NumberOfUsers].level3Unlocked = false;
@@ -2847,7 +2939,7 @@ void UpdateSwitchUser()
                                 RefreshUsersList();
                                 CurUser = players[NumberOfUsers - 1].name;
 
-                                // ---> SYNC RUNTIME MAP <---
+                                
                                 level1Unlocked = true;
                                 level2Unlocked = false;
                                 level3Unlocked = false;
@@ -2889,7 +2981,7 @@ void UpdateSwitchUser()
                     CurUser = players[SelectedUser].name;
                     isUserSelected = 1;
 
-                    // ---> SYNC MAP TO THE SELECTED USER <---
+                    
                     level1Unlocked = players[SelectedUser].level1Unlocked;
                     level2Unlocked = players[SelectedUser].level2Unlocked;
                     level3Unlocked = players[SelectedUser].level3Unlocked;
@@ -3237,7 +3329,7 @@ void StartOptions()
     {
         srand(static_cast<unsigned int>(time(NULL)));
         if (!globalFont.openFromFile("Assets/Fonts/Barmeno.ttf"))
-            cout << "Failed to load font!" << endl; // [MODIFIED] Corrected path based on context
+            cout << "Failed to load font!" << endl; 
         globalFont.setSmooth(false);
         screenDarkener.setSize(Vector2f(WindowWidth, WindowHeight));
         screenDarkener.setFillColor(Color(0, 0, 0, 95));
@@ -3247,7 +3339,7 @@ void StartOptions()
         barmenoBoldFont.setSmooth(true);
 
         if (texBgPlank.loadFromFile("Assets/Options/plank.png"))
-        { // [MODIFIED] Corrected path
+        { 
             texBgPlank.setSmooth(true);
             sprBgPlank.emplace(texBgPlank);
             FloatRect b = sprBgPlank->getLocalBounds();
@@ -3255,7 +3347,7 @@ void StartOptions()
             sprBgPlank->setPosition({WindowWidth / 2.f, 280.f});
         }
         if (texCorals.loadFromFile("Assets/Options/corals.png"))
-        { // [MODIFIED] Corrected path
+        { 
             texCorals.setSmooth(true);
             sprCorals.emplace(texCorals);
             FloatRect b = sprCorals->getLocalBounds();
@@ -3264,7 +3356,7 @@ void StartOptions()
             sprCorals->setColor(Color(255, 255, 255, 175));
         }
         if (texTitle.loadFromFile("Assets/Options/options_title.png"))
-        { // [MODIFIED] Corrected path
+        { 
             texTitle.setSmooth(true);
             sprTitle.emplace(texTitle);
             FloatRect b = sprTitle->getLocalBounds();
@@ -3272,22 +3364,13 @@ void StartOptions()
             sprTitle->setPosition({WindowWidth / 2.f, 100.f});
             sprTitle->setScale({1.f, 1.f});
         }
-        if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
-        { // [MODIFIED] Corrected path
-            waterloop.emplace(WaterSound);
-            waterloop->setLooping(true);
-        }
-        (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg"); // [MODIFIED] Corrected path
-        (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg"); // [MODIFIED] Corrected path
-        (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");     // [MODIFIED] Corrected path
-        (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");     // [MODIFIED] Corrected path
-        nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
-        (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png");     // [MODIFIED] Corrected path
-        (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png");        // [MODIFIED] Corrected path
-        (void)texCheckedNormal.loadFromFile("Assets/Options/shell_checkbtnchecked_normal.png"); // [MODIFIED] Corrected path
-        (void)texCheckedHover.loadFromFile("Assets/Options/_shell_checkbtnchecked_high.png");   // [MODIFIED] Corrected path
-        (void)texDoneNormal.loadFromFile("Assets/Options/done_normal.png");                     // [MODIFIED] Corrected path
-        (void)texDoneHover.loadFromFile("Assets/Options/done_hover.png");                       // [MODIFIED] Corrected path
+
+        (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png");     
+        (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png");        
+        (void)texCheckedNormal.loadFromFile("Assets/Options/shell_checkbtnchecked_normal.png"); 
+        (void)texCheckedHover.loadFromFile("Assets/Options/_shell_checkbtnchecked_high.png");   
+        (void)texDoneNormal.loadFromFile("Assets/Options/done_normal.png");                     
+        (void)texDoneHover.loadFromFile("Assets/Options/done_hover.png");                      
         texUncheckedNormal.setSmooth(true);
         texUncheckedHover.setSmooth(true);
         texCheckedNormal.setSmooth(true);
@@ -3313,13 +3396,12 @@ void StartOptions()
         const char *labels[] = {"Sound:", "Music:", "Full Screen:", "Slow", "", "", "Fast", "Low", "", "High", "Done"};
         for (int i = 0; i < NumOptions; i++)
         {
-            // --- NEW FONT LOGIC ---
-            // Use Barmeno Bold for "Done" (index 10), and Regular for the rest
+           
             if (i == 10)
                 OptionButtons[i].text.emplace(barmenoBoldFont);
             else
                 OptionButtons[i].text.emplace(globalFont);
-            // ----------------------
+        
 
             OptionButtons[i].text->setString(labels[i]);
             OptionButtons[i].isCheckbox = true;
@@ -3366,7 +3448,7 @@ void StartOptions()
                 OptionButtons[i].checkbox->setOrigin({plankBounds.size.x / 2.f, plankBounds.size.y / 2.f});
                 OptionButtons[i].checkbox->setPosition({WindowWidth / 2.f, 450.f});
 
-                // BUMPED UP TEXT SIZE TO 36!
+                
                 OptionButtons[i].text->setCharacterSize(30);
 
                 OptionButtons[i].text->setFillColor(Color(160, 211, 74));
@@ -3423,7 +3505,7 @@ void UpdateOptions()
             {
                 if (i == 10)
                 {
-                    isFullscreen = OptionButtons[2].isChecked; // Update the global variable
+                    isFullscreen = OptionButtons[2].isChecked; 
                     shouldCloseOptions = true;
                     return;
                 }
@@ -3442,7 +3524,7 @@ void UpdateOptions()
                     GraphicsIndex = i - 7;
                 }
 
-                // [تعديل] عالجنا الـ Fullscreen لوحده عشان نضمن إنه بيملأ الشاشة
+                
                 else if (i == 2)
                 {
                     OptionButtons[i].isChecked = !OptionButtons[i].isChecked;
@@ -3452,15 +3534,14 @@ void UpdateOptions()
                     else
                         window.create(VideoMode({800, 600}), "Feeding Frenzy 2", State::Windowed);
 
-                    // ضبط الكاميرا للملء الكامل (مفيش كود نسب هنا)
+                    
                     view.setSize({800.f, 600.f});
                     view.setCenter({400.f, 300.f});
                     view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
 
                     window.setView(view);
-                    window.setFramerateLimit(60);
                 }
-                // [تعديل] باقي الأزرار (Sound و Music)
+                
                 else
                 {
                     OptionButtons[i].isChecked = !OptionButtons[i].isChecked;
@@ -3472,7 +3553,7 @@ void UpdateOptions()
             OptionButtons[i].isHovered = false;
         }
 
-        // تغيير لون التيكست
+        
         if (!OptionButtons[i].isCheckbox && OptionButtons[i].text)
         {
             if (OptionButtons[i].isHovered)
@@ -3482,87 +3563,11 @@ void UpdateOptions()
         }
     }
 
-    // تشغيل الصوت
-    // تحديث حالة الصوت العام (Update global sound state)
-    isSoundEnabled = OptionButtons[0].isChecked;
-
-    // تشغيل الصوت (Play/Stop Sounds)
-    if (isSoundEnabled)
-    {
-        if (waterloop && waterloop->getStatus() != Sound::Status::Playing)
-            waterloop->play();
-        // ... (كود الـ SFX لو عايز تضيفه) ...
-    }
-    else
-    {
-        if (waterloop)
-            waterloop->stop();
-        for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
-            if (sfxChannels[c])
-                sfxChannels[c]->stop();
-    }
-
-    // ==========================================
-    // === [FIX] منطق التحكم في الموسيقى ===
-    // ==========================================
-
-    isMusicEnabled = OptionButtons[1].isChecked;
-
-    // التحقق هل نحن قادمين من شاشة Game Screen؟
-    // (بشوف هل موسيقى التحميل شغالة ولا لا)
-    bool isFromGameScreen = (loadingmusic.getStatus() == SoundSource::Status::Playing);
-
-    if (isMusicEnabled)
-    {
-        if (g_optionsFromPause)
-        {
-            // حالة: داخل المستوى (Pause Menu)
-            // نمنع تشغيل موسيقى القائمة الرئيسية حتى لا تتداخل مع موسيقى المستوى
-            if (mainmenumusic.getStatus() == Music::Status::Playing)
-                mainmenumusic.stop();
-        }
-        else
-        {
-            // حالة: القوائم (MainMenu أو GameScreen)
-            if (isFromGameScreen)
-            {
-                // إذا كنا من Game Screen، نريد تشغيل موسيقى التحميل فقط
-                // لذا نتأكد من إيقاف موسيقى القائمة الرئيسية تماماً
-                if (mainmenumusic.getStatus() == Music::Status::Playing)
-                    mainmenumusic.stop();
-
-                // نتأكد أن موسيقى التحميل شغالة
-                if (loadingmusic.getStatus() != SoundSource::Status::Playing)
-                    loadingmusic.play();
-            }
-            else
-            {
-                // إذا كنا من MainMenu، نريد تشغيل موسيقى القائمة الرئيسية فقط
-                // نتأكد من إيقاف موسيقى التحميل (تنظيف)
-                if (loadingmusic.getStatus() == SoundSource::Status::Playing)
-                    loadingmusic.stop();
-
-                // تشغيل موسيقى القائمة الرئيسية
-                if (mainmenumusic.getStatus() != Music::Status::Playing)
-                    mainmenumusic.play();
-            }
-        }
-    }
-    else
-    {
-        // إذا كان الصوت (الموسيقى) معطل
-        if (mainmenumusic.getStatus() == Music::Status::Playing)
-            mainmenumusic.pause();
-
-        // أيضاً إيقاف موسيقى التحميل إذا كانت شغالة
-        if (isFromGameScreen && loadingmusic.getStatus() == SoundSource::Status::Playing)
-            loadingmusic.pause();
-    }
-    // ==========================================
-
     isSoundEnabled = OptionButtons[0].isChecked;
     isMusicEnabled = OptionButtons[1].isChecked;
     isFullscreen = OptionButtons[2].isChecked;
+
+    ApplyAudioSettings();
 
     prevMousePressed = currentMousePressed;
 }
@@ -3584,27 +3589,8 @@ void DrawOptions()
     }
 
     window.draw(screenDarkener);
-    // --- UPDATED: The Bulletproof 4-Way Outline Trick ---
-    if (sprBgPlank)
-    {
-        Sprite plankOutline = *sprBgPlank;
-        // --- ALPHA LOWERED TO 90 for a softer, more transparent shadow! ---
-        plankOutline.setColor(Color(0, 0, 0, 90));
-        Vector2f pos = sprBgPlank->getPosition();
-        float outlineThickness = 3.f; // The thickness of the shadow edge
-        // Draw the soft shadow shifted in 4 directions
-        plankOutline.setPosition({pos.x - outlineThickness, pos.y});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x + outlineThickness, pos.y});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x, pos.y - outlineThickness});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x, pos.y + outlineThickness});
-        window.draw(plankOutline);
-        // Restore original position and draw the colorful plank on top
-        sprBgPlank->setPosition(pos);
+    if (sprBgPlank)           
         window.draw(*sprBgPlank);
-    }
     if (sprCorals)
         window.draw(*sprCorals);
     if (sprTitle)
@@ -4417,8 +4403,7 @@ void centerText(Text &text)
 }
 
 // update pearl states, button hover, load bar progress
-// update pearl states, button hover, load bar progress
-// update pearl states, button hover, load bar progress
+
 void UpdateSelectLevel(float dt)
 {
     PearlData *activePearls = isTimeAttackMode ? ta_pearls : pearls;
@@ -4434,13 +4419,10 @@ void UpdateSelectLevel(float dt)
     {
         auto &p = activePearls[i];
 
-        // === التعديل: استخدام موقع وحجم موحدد للكل الحالات ===
-        // سنستخدم دائماً الموقع والحجم الخاص بـ "اللؤلؤة المفتوحة" (unlockedPos / unlockedScale)
-        // هذا سيجعل اللؤلؤة البيضاء (المقفولة) في نفس المكان تماماً مثل الذهبية (المفتوحة)
         p.sprite->setPosition(p.unlockedPos);
         p.sprite->setScale(p.unlockedScale);
 
-        // تغيير التكستشر (الصورة) فقط بناءً على حالة الفتح
+        
         if (*p.unlocked)
         {
             p.sprite->setTexture(pearlUnlockedTexture);
@@ -4449,7 +4431,7 @@ void UpdateSelectLevel(float dt)
         {
             p.sprite->setTexture(pearlTexture);
         }
-        // =============================================================
+        
 
         FloatRect bounds = p.sprite->getGlobalBounds();
         Vector2f center = {bounds.position.x + bounds.size.x / 2.f, bounds.position.y + bounds.size.y / 2.f};
@@ -4478,15 +4460,12 @@ void UpdateSelectLevel(float dt)
     // advance load bar; on complete → transition to game
     if (isLoading)
     {
-        // === التعديل 1: التحكم في الموسيقى أثناء التحميل ===
-
-        // 1. إيقاف موسيقى القائمة الرئيسية
+        
         if (mainmenumusic.getStatus() == SoundSource::Status::Playing)
         {
             mainmenumusic.stop();
         }
 
-        // 2. تشغيل موسيقى التحميل
         if (loadingmusic.getStatus() != SoundSource::Status::Playing)
         {
             loadingmusic.play();
@@ -4512,38 +4491,36 @@ void UpdateSelectLevel(float dt)
                 window.display();
             }
 
-            // تفعيل حالة التحميل المكتملة
             loadingdone = true;
 
             int clickedPearlIndex = selectedLevel - 1;
 
             if (loadingdone && clickedPearlIndex != -1)
             {
-                // === تحديد الإعدادات بناءً على المرحلة المختارة ===
+               
                 switch (clickedPearlIndex)
                 {
                 case 0: // Level 1
                     currentLevelSettings.fishToGrowToLevel2 = 20;
                     currentLevelSettings.fishToGrowToLevel3 = 40;
-                    currentLevelSettings.fishToWin = 60; // <--- ADD THIS
-                    timeAttackDuration = 60.0f;          // دقيقة واحدة
+                    currentLevelSettings.fishToWin = 60; 
+                    timeAttackDuration = 60.0f;          
                     break;
                 case 1: // Level 2
                     currentLevelSettings.fishToGrowToLevel2 = 25;
                     currentLevelSettings.fishToGrowToLevel3 = 50;
-                    currentLevelSettings.fishToWin = 75; // <--- ADD THIS
-                    timeAttackDuration = 45.0f;          // 45 ثانية
+                    currentLevelSettings.fishToWin = 75; 
+                    timeAttackDuration = 45.0f;          
                     break;
                 case 2: // Level 3
                     currentLevelSettings.fishToGrowToLevel2 = 35;
                     currentLevelSettings.fishToGrowToLevel3 = 70;
-                    currentLevelSettings.fishToWin = 105; // <--- ADD THIS
-                    timeAttackDuration = 30.0f;           // 30 ثانية
+                    currentLevelSettings.fishToWin = 105; 
+                    timeAttackDuration = 30.0f;           
                     break;
                 }
 
-                // بدء اللعبة
-                // التحقق من المصفوفة المناسبة (عادية أو تايم أتاك)
+                
                 PearlData *targetPearls = isTimeAttackMode ? ta_pearls : pearls;
 
                 if (*targetPearls[clickedPearlIndex].unlocked)
@@ -4555,19 +4532,19 @@ void UpdateSelectLevel(float dt)
 
                     isLoading = false;
                     loadingdone = false;
-                    mySprite.setPosition({350.f, 565.f});
-                    menuTxt.setPosition({390.f, 570.f});
+                    mySprite.setPosition({ 350.f, 565.f });
+                    menuTxt.setPosition({ 390.f, 570.f }); 
 
-                    // ---> ADD THIS so the Map buttons appear again when you return! <---
+                    
                     pearlClicked = false;
 
                     if (goToMainMenuFromLevel)
                     {
-                        return; // Instantly pop out of the map back to Main Menu!
+                        return;
                     }
                 }
             }
-            // FadeInFromBlack();
+           
             isLoading = false;
             loadProgress = 0.f;
             pearlClicked = false;
@@ -4664,17 +4641,6 @@ void Select_level()
                                 loadProgress = 0.f;
                                 selectedLevel = i + 1;
                                 pearlClicked = true;
-                                if (!isTimeAttackMode)
-                                {
-
-                                    if (selectedLevel != lastWonStoryLevel + 1)
-                                        storyCarryScore = 0;
-                                }
-                                else
-                                {
-                                    if (selectedLevel != lastWonTALevel + 1)
-                                        taCarryScore = 0;
-                                }
                             }
                         }
                     }
@@ -4685,14 +4651,14 @@ void Select_level()
         if (goToMainMenuFromLevel)
         {
             goToMainMenuFromLevel = false; // Reset flag for next time
-            return;                        // Boom! Back to the Main Menu!
+            return;                        
         }
         DrawSelectLevel();
     }
 }
 
 // ==========================================
-// ===== Game Screen =====
+//          ===== Game Screen =====
 // ==========================================
 
 // load bg, buttons, quit popup & level-specific assets
@@ -5129,7 +5095,7 @@ void GameScreen(int level)
                 window.setView(view);
             }
 
-            // ESC → exit
+           
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
                 if (keyPressed->code == Keyboard::Key::Escape)
                 {
@@ -5174,7 +5140,7 @@ void GameScreen(int level)
                         if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
                             showQuitPopup = true;
 
-                        // زرار continue
+                        
                         if (gsBtns[2].sprite)
                         {
                             bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
@@ -5190,7 +5156,7 @@ void GameScreen(int level)
                                 levelsound.play();
                                 levelsound.setLooping(true);
 
-                                // ---> ADDED THIS: Launch the correct game mode! <---
+                               
                                 if (currentGamemode == TIMEATTACK)
                                 {
                                     Timeattacklevel();
@@ -5213,7 +5179,7 @@ void GameScreen(int level)
 }
 
 // ==========================================
-// Power-Up System
+//          Power-Up System
 // ==========================================
 
 void StartPowerUps()
@@ -5277,12 +5243,23 @@ void UpdatePowerUps(float dt)
                     powerUps[i].vy = getRandom(70.f, 130.f); // fall speed
 
                     // Pick type: in classic mode skip type 0 (time bonus)
-                    if (gameLEVEL == 1)
-                        powerUps[i].type = rand() % 2; // time, star
+                    if (currentGamemode == TIMEATTACK)
+                    {
+                        powerUps[i].type = rand() % 3;
+                    }
+                    else if (gameLEVEL == 1)
+                    {
+                        powerUps[i].type = 1;
+                    }
                     else if (gameLEVEL == 2)
-                        powerUps[i].type = rand() % 3; // time, star, speed
+                    {
+                        powerUps[i].type = 1 + rand() % 2;
+                    }
                     else if (gameLEVEL == 3)
-                        powerUps[i].type = rand() % 4;
+                    {
+                        int roll = rand() % 2;
+                        powerUps[i].type = (roll == 0) ? 2 : 3;
+                    }
 
                     break;
                 }
@@ -5353,8 +5330,8 @@ void UpdatePowerUps(float dt)
                     int pts = 100 * multiplier;
                     score += pts;
                     eatSound.play();
-                    createScorePopup(p.x, p.y - 20.f, pts);
-                    starsEatenCount++;
+                    createScorePopup(p.x, p.y - 20.f, "100");
+                    starsEatenCount++; 
                     // Eat animation on player
                     if (currentState == TURN)
                         pendingEat = true;
@@ -5371,7 +5348,7 @@ void UpdatePowerUps(float dt)
                     speedBoostActive = true;
                     speedBoostTimer = 0.f;
                     eatSound.play();
-                    createScorePopup(p.x, p.y - 20.f, 0);
+                    createScorePopup(p.x, p.y - 20.f, "Speed");
                 }
                 else if (p.type == 3)
                 {
@@ -5406,7 +5383,7 @@ void UpdatePowerUps(float dt)
                         }
 
                     eatSound.play();
-                    createScorePopup(p.x, p.y - 20.f, 0);
+                    createScorePopup(p.x, p.y - 20.f, "Shrink");
                 }
 
                 // Burst bubbles at collection point
@@ -5460,24 +5437,18 @@ void bglevel()
     Startbglevel();
     StartLevelHud();
     Startmovingplayer();
-
-    // 1. إرجاع حجم الكاميرا للقيمة الأصلية
+    
     view.setSize({800.f, 600.f});
 
-    // 2. توسيط الكاميرا في المنتصف
     view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
 
-    // 3. تأكد إن الدوران (Rotation) صفر (مش لفوت)
     view.setRotation(sf::degrees(0.f));
 
-    // 4. تطبيق التعديلات
     window.setView(view);
 
-    // 5. إعادة ضبط الماوس للنص تماماً
     sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
     sf::Mouse::setPosition(windowCenter, window);
 
-    // 6. تحديد مكان الهدف (Target) بالنص
     targetPos = {LevelWidth / 2.f, LevelHeight / 2.f};
 
     Clock clock;
@@ -5497,7 +5468,7 @@ void bglevel()
             {
                 if (keyPressed->code == Keyboard::Key::Escape)
                 {
-                    ShowPauseMenu(); // Opens the new pause menu instead of crashing out
+                    ShowPauseMenu(); 
                 }
             }
         }
@@ -5515,10 +5486,9 @@ void bglevel()
         {
             QuitLevelLoadingScreen();
             break;
-            // Here you would typically transition back to MainMenu() or Select_level()
+           
         }
-        // لو الـ Game Over مفعلة بس اللاعب لسه "ميت" (بيشتغل أنيميشن)، استنى.
-        // لو الـ Game Over مفعلة واللاعب مش ميت (خلص الكلام ده)، اقفل.
+     
         if (isGameOver && !isPlayerDead)
         {
             isLevelRunning = false;
@@ -5560,7 +5530,7 @@ void Timeattacklevel()
     timerText.setFillColor(sf::Color::White);
     timerText.setPosition({300.f, 250.f});
 
-    // 1 minute and 30 seconds = 90 seconds
+    
     const sf::Time totalDuration = sf::seconds(90.f);
     sf::Clock countdownClock;
     view.setCenter({WindowWidth / 2.f, WindowHeight / 2.f});
@@ -5583,7 +5553,7 @@ void Timeattacklevel()
             {
                 if (keyPressed->code == Keyboard::Key::Escape)
                 {
-                    ShowPauseMenu(); // Opens the new pause menu instead of crashing out
+                    ShowPauseMenu(); 
                 }
             }
         }
@@ -5601,11 +5571,10 @@ void Timeattacklevel()
         {
             QuitLevelLoadingScreen();
             break;
-            // Here you would typically transition back to MainMenu() or Select_level()
+            
         }
 
-        // لو الـ Game Over مفعلة بس اللاعب لسه "ميت" (بيشتغل أنيميشن)، استنى.
-        // لو الـ Game Over مفعلة واللاعب مش ميت (خلص الكلام ده)، اقفل.
+       
         if (isGameOver && !isPlayerDead)
         {
             isLevelRunning = false;
@@ -5835,7 +5804,7 @@ void Drawbglevel()
     window.draw(sprreefsgrass, &swayShaderPlants);
     window.draw(sprreefsplants23, &swayShaderPlants);
 
-    // --- رسم أنيميشن SORRY ---
+    
     if (showSorryAnimation && !sorryExploded)
     {
         float centerX = view.getCenter().x;
@@ -5850,15 +5819,15 @@ void Drawbglevel()
             if (sorryLetterScales[i] > 0.01f)
             {
                 float curX = startX + (i * spacing);
-                float offsetY = sin(totaltime * 3.0f + i) * 5.f; // حركة بطيئة للفقاعات
+                float offsetY = sin(totaltime * 3.0f + i) * 5.f; 
 
-                // 1. رسم الفقاعة
+               
                 bubbleSprite.setScale({0.9f * sorryLetterScales[i], 0.9f * sorryLetterScales[i]});
                 bubbleSprite.setOrigin(bubbleSprite.getLocalBounds().size / 2.f);
                 bubbleSprite.setPosition({curX, centerY + offsetY});
                 window.draw(bubbleSprite);
 
-                // 2. إعداد الحرف
+               
                 static sf::Text letterText(font);
                 letterText.setString(std::string(1, sorryStr[i]));
                 letterText.setCharacterSize(35);
@@ -5866,13 +5835,11 @@ void Drawbglevel()
                 letterText.setOutlineColor(sf::Color::Black);
                 letterText.setOutlineThickness(2.f);
 
-                // 3. [إصلاح] وضع الحرف تماماً في النص
-                // benستیخدم الـ Bounds لتوسط النص نفسه، وبنضيف الـ Offset بتاع الفقاعة
+                
                 sf::FloatRect b = letterText.getLocalBounds();
                 letterText.setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
                 letterText.setScale({sorryLetterScales[i], sorryLetterScales[i]});
 
-                // بنحط الحرف في نفس مكان الفقاعة بالظبط
                 letterText.setPosition({curX, centerY + offsetY});
 
                 window.draw(letterText);
@@ -5880,7 +5847,7 @@ void Drawbglevel()
         }
     }
 
-    // --- [جديد] رسم أنيميشن PERFECT ---
+   
     if (showPerfectAnimation && !perfectExploded)
     {
         float centerX = view.getCenter().x;
@@ -5888,7 +5855,7 @@ void Drawbglevel()
 
         std::string perfectStr = "PERFECT";
         float spacing = 60.f;
-        float startX = centerX - (3.f * spacing); // تعديل لوسطنة 7 حروف
+        float startX = centerX - (3.f * spacing);
 
         for (int i = 0; i < 7; i++)
         {
@@ -5897,18 +5864,18 @@ void Drawbglevel()
                 float curX = startX + (i * spacing);
                 float offsetY = sin(totaltime * 3.0f + i) * 5.f;
 
-                // 1. رسم الفقاعة
+        
                 bubbleSprite.setScale({0.9f * perfectLetterScales[i], 0.9f * perfectLetterScales[i]});
                 bubbleSprite.setOrigin(bubbleSprite.getLocalBounds().size / 2.f);
                 bubbleSprite.setPosition({curX, centerY + offsetY});
                 window.draw(bubbleSprite);
 
-                // 2. إعداد الحرف
+            
                 static sf::Text letterText(font);
                 letterText.setString(std::string(1, perfectStr[i]));
                 letterText.setCharacterSize(35);
 
-                // لون أخضر فاتح
+               
                 letterText.setFillColor(sf::Color(160, 211, 74));
                 letterText.setOutlineColor(sf::Color::Black);
                 letterText.setOutlineThickness(2.f);
@@ -5924,7 +5891,7 @@ void Drawbglevel()
         }
     }
 
-    // رسم الانفجارات (النجوم) - حركة بطيئة جداً
+   
     for (int i = 0; i < 35; i++)
     {
         if (sparks[i].alpha <= 0)
@@ -5934,17 +5901,15 @@ void Drawbglevel()
 
         if (sparks[i].active)
         {
-            // تحريك النجوم بالسرعات البطيئة اللي عرفناها فوق
+         
             sparks[i].x += sparks[i].vx;
             sparks[i].y += sparks[i].vy;
 
-            // [هام] إزالة الجاذبية أو جعلها صفرية عشان النجوم ماتوقعش بسرعة
-            // sparks[i].vy += 0.02f;  // ممكن نلغي السطر ده لو عايزينها تطير مستقيمة
+          
 
-            // إضافة حركة عشوائية بسيطة (Optional) عشان تبقى natural
             sparks[i].vy += (float)(rand() % 10 - 5) / 500.0f;
 
-            // [هام] تبطئة الاختفاء (1.0f رقم صغير جداً)
+            
             sparks[i].alpha -= 1.0f;
 
             sparkSprite.setPosition({sparks[i].x, sparks[i].y});
@@ -5957,7 +5922,7 @@ void Drawbglevel()
     DrawLevelHud(false);
 }
 
-void createScorePopup(float x, float y, int points)
+void createScorePopup(float x, float y, string power)
 {
     for (int i = 0; i < MAX_POPUPS; i++)
     {
@@ -5967,11 +5932,11 @@ void createScorePopup(float x, float y, int points)
             scorePopups[i].alpha = 255.f;
 
             scorePopups[i].text.setFont(font);
-            scorePopups[i].text.setString("+" + std::to_string(points));
+            scorePopups[i].text.setString("+" + power);
             scorePopups[i].text.setCharacterSize(30);
 
-            // === تحديد اللون بناءً على الـ Multiplier ===
-            sf::Color textColor = sf::Color::White;
+           
+            sf::Color textColor = sf::Color::Yellow;
 
             switch (multiplier)
             {
@@ -5979,24 +5944,24 @@ void createScorePopup(float x, float y, int points)
                 textColor = sf::Color::White;
                 break;
             case 2:
-                textColor = sf::Color(0, 255, 0); // أخضر
+                textColor = sf::Color(0, 255, 0); 
                 break;
             case 3:
-                textColor = sf::Color(255, 165, 0); // برتقالي
+                textColor = sf::Color(255, 165, 0);
                 break;
             case 4:
-                textColor = sf::Color(21, 145, 234); // لبني
+                textColor = sf::Color(21, 145, 234);
                 break;
             case 5:
-                textColor = sf::Color::Yellow; // أصفر
+                textColor = sf::Color::Yellow; 
                 break;
             case 6:
-                textColor = sf::Color::Red; // أحمر
+                textColor = sf::Color::Red; 
                 break;
             }
 
             scorePopups[i].text.setFillColor(textColor);
-            scorePopups[i].baseColor = textColor; // <--- حفظ اللون عشان نستخدمه بعدين
+            scorePopups[i].baseColor = textColor;
 
             scorePopups[i].text.setOutlineThickness(2);
             scorePopups[i].text.setOutlineColor(sf::Color::Black);
@@ -6036,8 +6001,6 @@ void Movingplayer()
 void Startmovingplayer()
 {
 
-    // أضف دول في الأول
-
     static float *pCurrentVisualScale = nullptr;
     static bool *pCanDash = nullptr;
     static bool *pIsDashingNow = nullptr;
@@ -6047,7 +6010,6 @@ void Startmovingplayer()
     playerIntroStep = 0;
     playerIntroY = -150.f;
 
-    // إعادة تصفير كل المتغيرات
     isPlayerDead = false;
     isGameOver = false;
     isEscapeMode = false;
@@ -6067,8 +6029,8 @@ void Startmovingplayer()
     hasPlayedExitSound = false;
     anyFishLeft = false;
     lives = 3;
-    score = (currentGamemode == CLASSIC) ? storyCarryScore : taCarryScore;
-    starsEatenCount = 0;
+    score = 0;
+    starsEatenCount = 0; 
     largeFishEatenCount = 0;
     mediumFishEatenCount = 0;
     smallFishEatenCount = 0;
@@ -6076,9 +6038,8 @@ void Startmovingplayer()
     comboProgress = 0.f;
     comboState = FILLING;
     playerLevel = 1;
-    fishEatenCount = 0; // تصفير عداد الأسماك المأكولة
+    fishEatenCount = 0; 
 
-    // تصفير السمك
     for (int i = 0; i < MAX_SMALL_FISH; i++)
     {
         if (smallFishes[i].sprite)
@@ -6139,11 +6100,11 @@ void Startmovingplayer()
     sprPlayerall.setScale({FISH_SCALE, FISH_SCALE});
     lastMouseX = window.mapPixelToCoords(sf::Mouse::getPosition(window), view).x;
 
-    fishEatenCount = 0; // تصفير العداد عشان يبدأ عداد السمك من الصفر في المرحلة الجديدة
-    playerLevel = 1;    // تصفير ليفل اللاعب
+    fishEatenCount = 0; 
+    playerLevel = 1;    
     if (currentGamemode == TIMEATTACK)
     {
-        remainingTime = timeAttackDuration; // إعادة تعيين الوقت المتبقي لوضع Time Attack
+        remainingTime = timeAttackDuration; 
         timerText.setFont(font);
         timerText.setCharacterSize(40);
         timerText.setFillColor(sf::Color::White);
@@ -6153,9 +6114,8 @@ void Startmovingplayer()
     else
     {
         remainingTime = 0;
-    } // تصفير الوقت المتبقي لوضع Classic
+    } 
 
-    // في آخر دالة Startmovingplayer، تأكد من ده:
     targetPos = {LevelWidth / 2.f, LevelHeight / 2.f};
     sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
     sf::Mouse::setPosition(windowCenter, window);
@@ -6165,21 +6125,17 @@ void Updatemovingplayer(float dt)
 {
     timer += dt;
 
-    // ==========================================
-    // === تصحيح منطق التايمر (Time Attack) ===
-    // ==========================================
     if (currentGamemode == TIMEATTACK && !isPlayerDead)
     {
-        // 1. تنقيص الوقت فقط إذا لم تنتهِ اللعبة وبقي وقت
+  
         if (!isGameWon && remainingTime > 0)
         {
             remainingTime -= dt;
 
-            // منع الوقت من أن يصبح سالباً
+
             if (remainingTime < 0.f)
                 remainingTime = 0.f;
 
-            // 2. تحديث نص التايمر (MM:SS)
             std::stringstream ss;
             int minutes = static_cast<int>(remainingTime) / 60;
             int seconds = static_cast<int>(remainingTime) % 60;
@@ -6187,14 +6143,12 @@ void Updatemovingplayer(float dt)
                << std::setfill('0') << std::setw(2) << seconds;
             timerText.setString("Time: " + ss.str());
 
-            // تغيير اللون للأحمر إذا بقي أقل من 10 ثواني
             if (remainingTime <= 10)
             {
                 timerText.setFillColor(sf::Color::Red);
             }
         }
 
-        // 3. التحقق من انتهاء الوقت (Game Over)
         if (remainingTime <= 0.f && !isGameOver)
         {
             isGameOver = true;
@@ -6204,7 +6158,6 @@ void Updatemovingplayer(float dt)
             stopSpawning = true;
             gameover.play();
 
-            // تفعيل أنيميشن الخسارة
             showSorryAnimation = true;
             sorryExploded = false;
             sorryTimer = 0.f;
@@ -6215,29 +6168,25 @@ void Updatemovingplayer(float dt)
             respawnClock.restart();
         }
 
-        // 4. التحقق من الفوز (Win Condition)
+
         if (!isGameWon && fishEatenCount >= currentLevelSettings.fishToWin)
         {
             isGameWon = true;
-            // حساب الوقت المستغرق: (الوقت الكلي - المتبقي)
             finalTime = timeAttackDuration - remainingTime;
-            stopSpawning = true; // إيقاف ظهور الأسماك الجديدة
-
-            // تفعيل حدث الفوز (Mermaid Event) عندما لا يبقى سمك
+            stopSpawning = true; 
+			isEscapeMode = true; 
             if (!mermaidStarted && !anyFishLeft)
             {
                 StartMermaidEvent();
-
-                mermaidStarted = true; // تأكيد بدء الحدث
+                showPerfectAnimation = true;
+                mermaidStarted = true; 
             }
         }
     }
     // ==========================================
 
-    // المتغيرات الثابتة للحفاظ على الحالة
     static float currentVisualScale = FISH_SCALE;
 
-    // === تصفير الـ Invincibility ===
     if (isInvincible && hitCooldownClock.getElapsedTime().asSeconds() > 5.0f)
     {
         isInvincible = false;
@@ -6281,7 +6230,6 @@ void Updatemovingplayer(float dt)
         }
         break;
     case WAIT_DROP:
-        // We no longer need this state because DRAINING handles the tier drops smoothly!
         break;
     }
 
@@ -6383,7 +6331,6 @@ void Updatemovingplayer(float dt)
             }
         }
 
-        // تحديث الـ Score Popups
         for (int i = 0; i < MAX_POPUPS; i++)
         {
             if (scorePopups[i].active)
@@ -6544,8 +6491,7 @@ void Updatemovingplayer(float dt)
 
     float margin = 30.0f;
 
-    // ---> CALCULATE THE DYNAMIC HUD CEILING <---
-    // view.getCenter().y - 300.f gives us the exact top of the camera. Add 90 for HUD height!
+
     float hudCeiling = view.getCenter().y - 300.f + 90.f;
 
     if (targetPos.x < margin)
@@ -6553,7 +6499,7 @@ void Updatemovingplayer(float dt)
     if (targetPos.x > LevelWidth - margin)
         targetPos.x = LevelWidth - margin;
     if (targetPos.y < hudCeiling + margin)
-        targetPos.y = hudCeiling + margin; // Stops mouse going up!
+        targetPos.y = hudCeiling + margin;
     if (targetPos.y > LevelHeight - margin)
         targetPos.y = LevelHeight - margin;
 
@@ -6801,7 +6747,7 @@ void Updatemovingplayer(float dt)
             if (dist < dynamicEatRadius + 10.f)
             {
                 bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
-                if (playerLevel >= 2 or mediumShrunk)
+                if (playerLevel >= 2 || mediumShrunk)
                 {
                     eatSound.play();
                     mediumFishes[i].active = false;
@@ -6824,7 +6770,7 @@ void Updatemovingplayer(float dt)
                         }
                         else
                         {
-                            comboProgress = 1.0f; // Clamp perfectly at Max!
+                            comboProgress = 1.0f; 
                         }
                     }
 
@@ -6858,7 +6804,7 @@ void Updatemovingplayer(float dt)
             if (dist < dynamicEatRadius + 20.f)
             {
                 bool largeShrunk = abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
-                if (playerLevel >= 3 or largeShrunk)
+                if (playerLevel >= 3 || largeShrunk)
                 {
                     eatSound.play();
                     largeFishes[i].active = false;
@@ -6881,14 +6827,13 @@ void Updatemovingplayer(float dt)
                         }
                         else
                         {
-                            comboProgress = 1.0f; // Clamp perfectly at Max!
+                            comboProgress = 1.0f; 
                         }
                     }
 
                     fishEatenCount += 5; // Count the 5 points!
                     largeFishEatenCount++;
 
-                    // WE COMPLETELY DELETED THE isEscapeMode = true BUG FROM HERE!
 
                     for (int k = 0; k < 5; k++)
                         StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
@@ -6918,7 +6863,6 @@ void Updatemovingplayer(float dt)
         levelUpSound.play();
     }
 
-    // ---> ADD THIS: THE TRUE WIN CONDITION FOR ALL MODES <---
     if (fishEatenCount >= currentLevelSettings.fishToWin && !isEscapeMode)
     {
         isEscapeMode = true;
@@ -6940,7 +6884,7 @@ void Updatemovingplayer(float dt)
             if (currentState == EAT)
             {
                 currentState = IDLE;
-                pendingEat = false; // تصفير العلم بعد الأكل
+                pendingEat = false;
             }
             else if (currentState == TURN)
             {
@@ -6989,10 +6933,10 @@ void Updatemovingplayer(float dt)
             }
         }
     }
-    // تفعيل حدسمكة النجوم لما السمك يخلص
+
     if (isEscapeMode && !isMermaidEventActive)
     {
-        bool anyFishLeft = false;
+         anyFishLeft = false;
         for (int i = 0; i < MAX_SMALL_FISH; i++)
             if (smallFishes[i].active)
                 anyFishLeft = true;
@@ -7003,19 +6947,17 @@ void Updatemovingplayer(float dt)
             if (largeFishes[i].active)
                 anyFishLeft = true;
 
-        // لو مفيش سمك تاني، ابدأ الحدث
         if (!anyFishLeft)
         {
             StartMermaidEvent();
         }
     }
 
-    // --- [جديد] تحديث أنيميشن PERFECT ---
+
     if (showPerfectAnimation)
     {
         perfectTimer += dt;
 
-        // 1. تحجيم الحروف (نفس سرعة SORRY تماماً)
         if (!perfectExploded)
         {
             float delay = 0.25f;
@@ -7031,13 +6973,12 @@ void Updatemovingplayer(float dt)
             }
         }
 
-        // 2. الانفجار (Sparks) - نفس توقيت وسرعة SORRY
+
         if (perfectTimer >= 4.0f && !perfectExploded)
         {
             perfectExploded = true;
-            Bubbledone.play(); // ← أضف هنا
+            Bubbledone.play();
 
-            // تنظيف أي شرارات قديمة
             for (int i = 0; i < 35; i++)
                 sparks[i].active = false;
 
@@ -7045,11 +6986,11 @@ void Updatemovingplayer(float dt)
             {
                 int idx = i / 5;
 
-                // حساب المركز لـ 7 حروف
+
                 float centerX = view.getCenter().x;
                 float centerY = view.getCenter().y - 100.f;
                 float spacing = 60.f;
-                float startX = centerX - (3.f * spacing); // تعديل الوسطنة لـ 7 حروف
+                float startX = centerX - (3.f * spacing); 
 
                 float pX = startX + (idx * spacing);
                 float pY = centerY;
@@ -7058,7 +6999,7 @@ void Updatemovingplayer(float dt)
                 sparks[i].x = pX;
                 sparks[i].y = pY;
 
-                // [هام] نسخ نفس السرعات والانتشار من SORRY بالضبط
+
                 sparks[i].vx = (float)(rand() % 20 - 5) / 10.0f;
                 sparks[i].vy = -((float)(rand() % 20 - 10)) / 10.0f;
 
@@ -7066,11 +7007,9 @@ void Updatemovingplayer(float dt)
             }
         }
 
-        // 3. إغلاق اللعبة (الانفجار يحصل عند 4 ثواني، ننتظر 3 ثواني بعدها = 7 ثواني إجمالي)
         if (perfectTimer >= 6.0f)
         {
-            isLevelRunning = false;
-            goToMainMenuFromLevel = true;
+            window.close();
         }
     }
 }
@@ -7079,25 +7018,23 @@ void Drawmovingplayer()
 {
     if (!isPlayerDead)
     {
-        // [تعديل] تأثير الـ Force Shield (Fading Fish)
+
         if (isInvincible)
         {
-            // معادلة الفيدنج: بتستخدم sin عشان تعمل موجات ظهور واختفاء
-            // الرقم 10.0f بيحدد سرعة الذبذبة (كل ما زاد لزمت سرعة التذبذب)
-            float fadeValue = (std::sin(totaltime * 10.0f) + 1.0f) * 0.75f; // النتيجة بتكون من 0.0 لـ 1.0
-            int alpha = static_cast<int>(fadeValue * 255);                  // تحويلها لشفافية من 0 ل 255
+
+            float fadeValue = (std::sin(totaltime * 10.0f) + 1.0f) * 0.75f; 
+            int alpha = static_cast<int>(fadeValue * 255);                 
 
             sprPlayerall.setColor(sf::Color(255, 255, 255, alpha));
         }
         else
         {
-            // لو مش محمي، يرجع لونه طبيعي (مجمد)
             sprPlayerall.setColor(sf::Color::White);
         }
 
         window.draw(sprPlayerall);
 
-        // هنفضل نرجع اللون أبيض في كل الحالات عشان أي رسم تاني متتأثرش
+
         sprPlayerall.setColor(sf::Color::White);
     }
 }
@@ -7143,7 +7080,7 @@ void StartSmallFish()
     float minY = hudCeiling + 20.f; // Extra 20 for their body size
     float maxY = LevelHeight - 50.0f;
     if (maxY <= minY)
-        maxY = minY + 10.f; // Safety check
+        maxY = minY + 10.f;
     float randomY = minY + (rand() % (int)(maxY - minY));
 
     int side = rand() % 2;
@@ -7174,7 +7111,7 @@ void StartSmallFish()
 
 void UpdateSmallFishes(float dt)
 {
-    // لا تولد سمك جديد لو التوليد توقف
+
     if (!stopSpawning)
     {
         spawnTimer += dt;
@@ -7470,7 +7407,6 @@ void UpdateMediumFishes(float dt)
         {
             sf::Vector2f pos = fish.sprite->getPosition();
 
-            // [تعديل] غيرت المسافة من 50 لـ 250 عشان تلف من بعيد ومتخبطش في الحيطة
             float turnDistance = 250.f;
 
             bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
@@ -7540,7 +7476,7 @@ void UpdateMediumFishes(float dt)
 
                     if (dist < 40.f)
                     { // Eating Range
-                        // Remove Small Fish
+                      
 
                         smallFishes[j].active = false;
                         delete smallFishes[j].sprite;
@@ -7577,24 +7513,23 @@ void UpdateMediumFishes(float dt)
                     fish.animTimer = 0.f;
                     lives--;
 
-                    // === التعديل: التحقق من عدد القلوب ===
                     if (lives > 0)
                     {
-                        levelsound.stop();     // إيقاف موسيقى الليفل
-                        PlayergotEaten.play(); // صوت العض
-                        dieSound.play();       // <--- ضع هذا السطر هنا (صوت الظهور)
+                        levelsound.stop();    
+                        PlayergotEaten.play(); 
+                        dieSound.play();       
                     }
                     else
                     {
-                        levelsound.stop(); // إيقاف موسيقى الليفل
-                        gameover.play();   // صوت الخسارة فقط
-                        isGameOver = true; // تفعيل الخسارة
-                        dieSound.play();   // <--- ضع هذا السطر هنا فوراً بعد الموت
+                        levelsound.stop(); 
+                        gameover.play();  
+                        isGameOver = true; 
+                        dieSound.play();   
                     }
 
                     isPlayerDead = true;
                     respawnClock.restart();
-                    dieSound.play(); // <--- ضع هذا السطر هنا فوراً بعد الموت
+                    dieSound.play(); 
                     showSorryAnimation = true;
                     sorryExploded = false;
                     sorryTimer = 0.f;
@@ -7767,7 +7702,7 @@ void UpdateLargeFishes(float dt)
         {
             sf::Vector2f pos = fish.sprite->getPosition();
 
-            // [تعديل] غيرت المسافة من 50 لـ 250 عشان تلف من بعيد ومتخبطش في الحيطة
+
             float turnDistance = 325.f;
 
             bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
@@ -7894,22 +7829,22 @@ void UpdateLargeFishes(float dt)
                     fish.animTimer = 0.f;
                     lives--;
 
-                    // === التعديل: التحقق من عدد القلوب ===
+
                     if (lives > 0)
                     {
-                        levelsound.stop();     // إيقاف موسيقى الليفل
-                        PlayergotEaten.play(); // صوت العض
+                        levelsound.stop();   
+                        PlayergotEaten.play(); 
                     }
                     else
                     {
-                        levelsound.stop(); // إيقاف موسيقى الليفل
-                        gameover.play();   // صوت الخسارة فقط
-                        isGameOver = true; // تفعيل الخسارة
+                        levelsound.stop();
+                        gameover.play();  
+                        isGameOver = true; 
                     }
 
                     isPlayerDead = true;
                     respawnClock.restart();
-                    dieSound.play(); // <--- ضع هذا السطر هنا فوراً بعد الموت
+                    dieSound.play(); 
                     showSorryAnimation = true;
                     sorryExploded = false;
                     sorryTimer = 0.f;
@@ -7949,7 +7884,7 @@ void DrawLargeFishes(sf::RenderWindow &window)
     }
 }
 
-// دالة لتوليد فقاعة جديدة
+
 void StartGameBubble(float x, float y, bool isAction)
 {
     for (int i = 0; i < MAX_GAME_BUBBLES; i++)
@@ -7964,13 +7899,13 @@ void StartGameBubble(float x, float y, bool isAction)
 
             if (isAction)
             {
-                // فقاعات الأكل: أكبر انتشار وأعلى
-                gameBubbles[i].vx = getRandom(-60.f, 60.f);   // انتشار أعرض
-                gameBubbles[i].vy = getRandom(-100.f, -40.f); // تطلع لفوق أكتر
+                
+                gameBubbles[i].vx = getRandom(-60.f, 60.f);   
+                gameBubbles[i].vy = getRandom(-100.f, -40.f); 
             }
             else
             {
-                // فقاعات الخلفية: ماشية بالعرض
+               
                 gameBubbles[i].vx = getRandom(-120.f, -60.f);
                 gameBubbles[i].vy = getRandom(-10.f, 10.f);
             }
@@ -7979,24 +7914,24 @@ void StartGameBubble(float x, float y, bool isAction)
     }
 }
 
-// تحديث الفقاعات
+
 void UpdateGameBubbles(float dt)
 {
-    // === تعديل توليد فقاعات الخلفية ===
+
     gameBubbleSpawnTimer += dt;
 
-    // غيرنا الشرط من 0.8f إلى 3.0f عشان يتولد فقاعة كل 3 ثواني بدل ما يخنق المكان
+
     if (gameBubbleSpawnTimer > 3.0f)
     {
         gameBubbleSpawnTimer = 0.f;
 
-        // أزلنا الـ loop (for) عشان يولد فقاعة واحدة بس بدل 3
+
         float spawnX = view.getCenter().x + view.getSize().x / 2.f + 50.f;
         float spawnY = getRandom(50.f, LevelHeight - 50.f);
         StartGameBubble(spawnX, spawnY, false);
     }
 
-    // === تحريك الفقاعات (نفس الكود القديم) ===
+
     for (int i = 0; i < MAX_GAME_BUBBLES; i++)
     {
         if (gameBubbles[i].active)
@@ -8012,7 +7947,7 @@ void UpdateGameBubbles(float dt)
             }
             else
             {
-                // لو خرجت من الشمال
+
                 if (gameBubbles[i].x < view.getCenter().x - view.getSize().x / 2.f - 100.f)
                 {
                     gameBubbles[i].active = false;
@@ -8022,7 +7957,7 @@ void UpdateGameBubbles(float dt)
     }
 }
 
-// رسم الفقاعات
+
 void DrawGameBubbles()
 {
     for (int i = 0; i < MAX_GAME_BUBBLES; i++)
@@ -8032,7 +7967,7 @@ void DrawGameBubbles()
             bubbleSmallSprite.setPosition({gameBubbles[i].x, gameBubbles[i].y});
             bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)gameBubbles[i].alpha));
 
-            // تعديل الحجم: فقاعات الأكل بقى حجمها 0.5 بدل 0.3
+
             float s = gameBubbles[i].isAction ? 0.5f : 0.6f;
 
             bubbleSmallSprite.setScale({s, s});
@@ -8042,17 +7977,16 @@ void DrawGameBubbles()
 }
 
 // ==========================================
-// Mermaid Event Logic
+//           Mermaid Event Logic
 // ==========================================
 
 void StartMermaidEvent()
 {
-    // تحميل صورة السمكة (6000x200)
+
     if (!mermaidTex.loadFromFile("Assets/fish/mermaid/mermaid.png"))
     {
         cout << "Error loading mermaid.png" << endl;
     }
-    // تحميل صورة النجمة (52x51)
     if (!starTexture.loadFromFile("Assets/bouns/starbubble1.png"))
     {
         cout << "Error loading starbubble1.png" << endl;
@@ -8064,12 +7998,10 @@ void StartMermaidEvent()
     starTexture.setSmooth(true);
 
     mermaidSprite.setTexture(mermaidTex);
-    // حساب عرض الفريم: 6000 \ 20 = 300
     mermaidSprite.setTextureRect(IntRect({0, 0}, {299, 88}));
     mermaidSprite.setScale({1.0f, 1.0f});
-    mermaidSprite.setOrigin({149.5f, 44.f}); // منتصف الفريم
+    mermaidSprite.setOrigin({149.5f, 44.f});
 
-    // تظهر من نص الـ Y axis ومن يمين الشاشة
     float startX = view.getCenter().x + (view.getSize().x / 2.f) + 150.f;
     float startY = LevelHeight / 2.0f;
 
@@ -8080,9 +8012,8 @@ void StartMermaidEvent()
     starSpawnTimer = 0.0f;
     isMermaidEventActive = true;
     mermaidFinished = false;
-    levelsound.stop(); // إيقاف موسيقى المرحلة
+    levelsound.stop(); 
     mermaidevent.play();
-    // تنظيف النجوم القديمة
     for (int i = 0; i < MAX_STARS; i++)
         stars[i].active = false;
 }
@@ -8092,11 +8023,9 @@ void UpdateMermaidEvent(float dt)
     if (!isMermaidEventActive)
         return;
 
-    // 1. حركة السمكة
     float moveSpeed = 250.0f;
     mermaidSprite.move({-moveSpeed * dt, 0});
 
-    // 2. أنيميشن السباحة
     mermaidAnimTimer += dt;
     if (mermaidAnimTimer >= 0.08f)
     {
@@ -8114,7 +8043,6 @@ void UpdateMermaidEvent(float dt)
 
     mermaidSprite.setOrigin({149.5f, 44.f});
 
-    // 3. إنزال النجوم
     starSpawnTimer += dt;
     if (starSpawnTimer >= 0.5f)
     {
@@ -8143,7 +8071,6 @@ void UpdateMermaidEvent(float dt)
         }
     }
 
-    // 4. تحديث النجوم والتصادم مع اللاعب
     for (int i = 0; i < MAX_STARS; i++)
     {
         if (stars[i].active && stars[i].sprite != nullptr)
@@ -8157,11 +8084,11 @@ void UpdateMermaidEvent(float dt)
             if (dist < 50.f)
             {
                 stars[i].active = false;
-                starsEatenCount++;
+                starsEatenCount++; 
                 score += 100 * multiplier;
                 createScorePopup(sPos.x, sPos.y, 100 * multiplier);
 
-                eatSound.play(); // صوت الأكل العادي
+                eatSound.play();
 
                 if (currentState == TURN)
                 {
@@ -8182,8 +8109,6 @@ void UpdateMermaidEvent(float dt)
         }
     }
 
-    // ... (كود التحديث السابق للسمكة والنجوم) ...
-    // 5. الخروج وتفعيل أنيميشن PERFECT
     float camLeft = view.getCenter().x - (view.getSize().x / 2.f);
     if (mermaidSprite.getPosition().x < camLeft - 200.f)
     {
@@ -8198,7 +8123,7 @@ void UpdateMermaidEvent(float dt)
     {
         float elapsed = eventEndClock.getElapsedTime().asSeconds();
 
-        // === تشغيل أنيميشن PERFECT ===
+
         if (elapsed >= 1.0f && !showPerfectAnimation && !perfectExploded)
         {
             showPerfectAnimation = true;
@@ -8207,16 +8132,16 @@ void UpdateMermaidEvent(float dt)
                 perfectLetterScales[k] = 0.f;
         }
 
-        // === تشغيل صوت الخروج ===
         if (elapsed >= 2.0f && !hasPlayedExitSound)
         {
             StageClearSound.play();
             hasPlayedExitSound = true;
         }
 
-        // === كود إغلاق اللعبة + فتح المرحلة التالية ===
         if (elapsed >= 6.0f)
         {
+
+            addNewHighScore(userName, score, currentGamemode == CLASSIC);
             for (int i = 0; i < NumberOfUsers; i++)
             {
                 if (players[i].name == CurUser)
@@ -8225,48 +8150,33 @@ void UpdateMermaidEvent(float dt)
                     break;
                 }
             }
+            SaveGameData();
+
             if (currentGamemode == CLASSIC)
             {
-                storyCarryScore = score;
-                lastWonStoryLevel = selectedLevel;
-            }
-            else // TIMEATTACK
-            {
-                taCarryScore = score;
-                lastWonTALevel = selectedLevel;
-
-                for (int i = 0; i < NumberOfUsers; i++)
+                if (selectedLevel == 1)
                 {
-                    if (players[i].name == CurUser)
-                    {
-                        players[i].score += score;
-                        break;
-                    }
+                    level2Unlocked = true; 
+                }
+                else if (selectedLevel == 2)
+                {
+                    level3Unlocked = true; 
                 }
             }
 
-            addNewHighScore(userName, score, currentGamemode == CLASSIC);
-
-            // [1] منطق القصة (Classic)
-            if (currentGamemode == CLASSIC)
-            {
-                if (selectedLevel == 1)
-                    level2Unlocked = true;
-                else if (selectedLevel == 2)
-                    level3Unlocked = true;
-            }
             else if (currentGamemode == TIMEATTACK)
             {
                 if (selectedLevel == 1)
-                    ta_level2Unlocked = true;
+                {
+                    ta_level2Unlocked = true; 
+                }
                 else if (selectedLevel == 2)
-                    ta_level3Unlocked = true;
+                {
+                    ta_level3Unlocked = true; 
+                }
             }
-            SaveGameData();
 
-            EndLevel(); // <--- أضف هذا السطر لعرض شاشة End Level
-
-            // حفظ التغييرات في ملف واحد (لكل الوضعين)
+            EndLevel(); 
 
             isLevelRunning = false;
             goToMainMenuFromLevel = true;
@@ -8279,16 +8189,13 @@ void DrawMermaidEvent()
     if (!isMermaidEventActive)
         return;
 
-    // رسم السمكة
     window.draw(mermaidSprite);
 
-    // رسم النجوم
     for (int i = 0; i < MAX_STARS; i++)
     {
-        // في جزء رسم النجوم
         if (stars[i].active && stars[i].sprite != nullptr)
         {
-            window.draw(*stars[i].sprite); // لاحظ النجمة *
+            window.draw(*stars[i].sprite); 
         }
     }
 }
@@ -8333,8 +8240,8 @@ void StartLevelHud()
         cout << "Could not load Barmeno font for multiplier!" << endl;
     }
     txtScore.setFont(multiplierFont);
-    txtScore.setCharacterSize(30);               // Slightly smaller than the multiplier
-    txtScore.setFillColor(Color(255, 230, 131)); // The exact gold color you requested
+    txtScore.setCharacterSize(30);               
+    txtScore.setFillColor(Color(255, 230, 131)); 
     txtScore.setOutlineThickness(1.5f);
     txtScore.setOutlineColor(Color(60, 40, 0, 200));
 
@@ -8357,7 +8264,6 @@ void StartLevelHud()
         cout << "Missing menu_danger.png\n";
 
     static bool frenzyFontLoaded = false;
-    // Load the assets (Make sure to put them in an "Assets/HUD" folder, or adjust the paths!)
     if (!texHudTop.loadFromFile("Assets/HUD/hud_bgtop.jpg"))
         cout << "Missing hud_bgtop.jpg\n";
     if (!texHudBottom.loadFromFile("Assets/HUD/hud_bgbottom.png"))
@@ -8386,7 +8292,7 @@ void StartLevelHud()
 
     float topScale = WindowWidth / texHudTop.getSize().x;
 
-    int currentSliceX = 0; // Where we start cutting the texture
+    int currentSliceX = 0; 
     float currentDrawX = WindowWidth / 2.f - 80.f;
     float frenzyStartY = 5.f;
 
@@ -8406,8 +8312,8 @@ void StartLevelHud()
         currentDrawX += (letterWidth - 4.f);
     }
 
-    float multX = currentDrawX + 283.f; // 10 pixels to the right of the last letter
-    float multY = frenzyStartY + 3;     // Slightly lower than FRENZY letters for better alignment
+    float multX = currentDrawX + 283.f; 
+    float multY = frenzyStartY + 3;    
     txtMultiplier.setPosition({multX, multY});
 
     for (int i = 0; i < 3; i++)
@@ -8433,24 +8339,23 @@ void StartLevelHud()
     sprHudGrowthMarker2.setTexture(texHudGrowthMarker, true);
 
     sprHudTop.setScale({topScale, topScale});
-    sprHudTop.setPosition({0.f, 0.f}); // Top of screen
+    sprHudTop.setPosition({0.f, 0.f});
 
-    // Scale the Bottom Banner to fit the screen width exactly
+
     float botScale = WindowWidth / texHudBottom.getSize().x;
     sprHudBottom.setScale({botScale, botScale});
-    // Position it at the very bottom of the screen
+ 
     sprHudBottom.setPosition({0.f, texHudTop.getSize().y * topScale});
 
-    // Place the "GROWTH" text roughly over the empty slot on the right side
     sprHudGrowth.setScale({topScale, topScale});
     sprHudGrowth.setPosition({10.f, 45.f});
 
     sprHudGrowthMarker1.setScale({topScale, topScale});
     sprHudGrowthMarker2.setScale({topScale, topScale});
 
-    float barStartX = 165.f;     // How far right the slot starts
-    float barY = 48.f;           // How far down the slot is
-    float barTotalWidth = 245.f; // The physical width of the empty bar
+    float barStartX = 165.f;    
+    float barY = 48.f;           
+    float barTotalWidth = 207.f; 
 
     // Calculate exactly what percentage of the total bar Marker 1 and Marker 2 should sit at
     float m1Ratio = static_cast<float>(currentLevelSettings.fishToGrowToLevel2) / currentLevelSettings.fishToWin;
@@ -8459,12 +8364,11 @@ void StartLevelHud()
     sprHudGrowthMarker1.setPosition({barStartX + (barTotalWidth * m1Ratio), barY});
     sprHudGrowthMarker2.setPosition({barStartX + (barTotalWidth * m2Ratio), barY});
 
-    growthBarFill.setFillColor(Color(229, 229, 25)); // Yellow color
+    growthBarFill.setFillColor(Color(229, 229, 25)); 
     growthBarFill.setPosition({barStartX - 56, barY + 5});
 
     sprHudAbility.setTexture(texHudAbility, true);
     sprHudAbility.setScale({topScale, topScale});
-    // Position it below the growth label (e.g., 35 pixels lower)
     sprHudAbility.setPosition({500.f, 45.f});
 }
 
@@ -8488,10 +8392,10 @@ void UpdateLevelHud()
         {
             if (mouseEvent->button == Mouse::Button::Left)
             {
-                // If they click the word "MENU" on the top left of the wood board
+
                 if (mousePos.x < 130.f && mousePos.y < 70.f)
                 {
-                    isLevelRunning = false; // This breaks the loop and returns to Level Select!
+                    isLevelRunning = false;
                 }
             }
         }
@@ -8521,25 +8425,20 @@ void UpdateLevelHud()
     if (growthPercentage < 0.f)
         growthPercentage = 0.f;
 
-    // The true physical measurements of the empty wood slot on the screen
-    float barStartX = 109.f;
+ 
+    float barStartX = 108.f;
     float barY = 48.f;
 
-    // IF THE BAR OR MARKERS ARE TOO FAR RIGHT, LOWER THIS NUMBER (e.g., to 242.f).
-    // Because everything uses this variable, changing it will shift the yellow bar
-    // AND the markers together automatically!
-    float barTotalWidth = 202.f;
+    float barTotalWidth = 207.f;
 
-    // 2. Size and position the yellow fill
+
     float currentFillWidth = barTotalWidth * (growthPercentage / 100.f);
     growthBarFill.setSize({currentFillWidth, 12.f});
     growthBarFill.setPosition({barStartX, barY + 5.f});
 
-    // 3. Center the marker's origin so its exact middle sits on the threshold
     sprHudGrowthMarker1.setOrigin({sprHudGrowthMarker1.getLocalBounds().size.x / 2.f, 0.f});
     sprHudGrowthMarker2.setOrigin({sprHudGrowthMarker2.getLocalBounds().size.x / 2.f, 0.f});
 
-    // 4. Anchor the markers mathematically (NO - 40.f needed anymore!)
     float m1Ratio = static_cast<float>(currentLevelSettings.fishToGrowToLevel2) / currentLevelSettings.fishToWin;
     float m2Ratio = static_cast<float>(currentLevelSettings.fishToGrowToLevel3) / currentLevelSettings.fishToWin;
 
@@ -8551,7 +8450,7 @@ void UpdateLevelHud()
 
     int tierIndex = frenzyProgress / 7;
 
-    // 2. Define your tier colors (matching your letters)
+
     Color tierColors[] = {
         Color(47, 199, 36),  // 2: Green
         Color(247, 148, 28), // 3: Orange
@@ -8566,11 +8465,10 @@ void UpdateLevelHud()
     }
     else
     {
-        // Construct the string explicitly to avoid encoding glitches
+
         std::stringstream ss;
         ss << (tierIndex + 1) << "x";
         txtMultiplier.setString(ss.str());
-        // Safety check for color array bounds
 
         int colorIdx = (tierIndex - 1);
         if (colorIdx > 4)
@@ -8585,7 +8483,6 @@ void UpdateLevelHud()
     FloatRect scoreBounds = txtScore.getLocalBounds();
     // Set origin to the Top-Right corner of the text
     txtScore.setOrigin({scoreBounds.position.x + scoreBounds.size.x, 0.f});
-    // Pin it 20 pixels away from the right edge, and 15 pixels down
     txtScore.setPosition({WindowWidth - 65.f, 2.f});
 }
 
@@ -8611,6 +8508,12 @@ void DrawLevelHud(bool doClear)
     }
 
     window.draw(txtScore);
+    Text txtLives(multiplierFont,to_string(lives), 22);
+    txtLives.setFillColor(Color(255, 255, 255));
+    txtLives.setOutlineThickness(1.75f);
+    txtLives.setOutlineColor(Color(0, 0, 0, 200));
+    txtLives.setPosition({ 760.f, 44.f });
+    window.draw(txtLives);
 
     for (int i = 0; i < 3; i++)
     {
@@ -8657,7 +8560,6 @@ void DrawLevelHud(bool doClear)
                 txtFrenzyLetters[i]->setFillColor(tierColors[tierIndex]);
             }
 
-            // بيحسب اللون الأغمق أوتوماتيكي
             Color c = txtFrenzyLetters[i]->getFillColor();
             txtFrenzyLetters[i]->setOutlineThickness(1.5f), txtFrenzyLetters[i]->setOutlineColor(Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f));
 
@@ -8669,14 +8571,12 @@ void DrawLevelHud(bool doClear)
     {
         window.draw(sprTimerBg);
 
-        // ---> USE THE REAL GAME TIMER <---
         int minutes = static_cast<int>(remainingTime) / 60;
         int seconds = static_cast<int>(remainingTime) % 60;
 
         string timeStr = to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + to_string(seconds);
         txtTimer.setString(timeStr);
 
-        // Turn red if 10 seconds or less!
         if (remainingTime <= 10.f)
             txtTimer.setFillColor(Color::Red);
         else
@@ -8684,7 +8584,6 @@ void DrawLevelHud(bool doClear)
 
         FloatRect b = txtTimer.getLocalBounds();
         txtTimer.setOrigin({b.position.x + b.size.x / 2.f, b.position.y + b.size.y / 2.f});
-        // Placed slightly higher so it sits perfectly in the wood texture
         txtTimer.setPosition({sprTimerBg.getPosition().x, sprTimerBg.getPosition().y - 3.f});
 
         window.draw(txtTimer);
@@ -8805,6 +8704,10 @@ bool ShowEndGameMenu()
 
                     if (saveBtn.getGlobalBounds().contains(mousePos))
                     {
+                        levelsound.stop();        
+                        WaveSound.stop();         
+                        mainmenumusic.play();    
+                        mainmenumusic.setLooping(true); 
                         SaveGameData();
                         goToMainMenuFromLevel = true;
                         isLevelRunning = false;
@@ -8813,6 +8716,10 @@ bool ShowEndGameMenu()
 
                     if (quitBtn.getGlobalBounds().contains(mousePos))
                     {
+                        levelsound.stop();       
+                        WaveSound.stop();         
+                        mainmenumusic.play();    
+                        mainmenumusic.setLooping(true);
                         isLevelRunning = false;
                         goToMainMenuFromLevel = true;
                         return true;
@@ -8838,7 +8745,6 @@ bool ShowEndGameMenu()
         bool quitHover = quitBtn.getGlobalBounds().contains(mousePos);
         bool cancelHover = cancelBtn.getGlobalBounds().contains(mousePos);
 
-        // ✅ تشغيل صوت الـ hover
         static bool wasSaveHover = false, wasQuitHover = false, wasCancelHover = false;
         if ((saveHover && !wasSaveHover) || (quitHover && !wasQuitHover) || (cancelHover && !wasCancelHover))
         {
@@ -8856,10 +8762,9 @@ bool ShowEndGameMenu()
         if (cancelHover)
             setupSprite(cancelBtn, shortBtnHoverTex, cancelPos, shortScale);
 
-        // ✅ إصلاح الـ Ghosting - نتأكد إننا بنرسم الـ HUD الأصلي أولاً
         window.clear(Color(20, 100, 160));
-        Drawbglevel();                      // Draw the actual frozen level, not the uninitialized HUD
-        window.setMouseCursorVisible(true); // Bring the mouse back so you can click buttons!
+        Drawbglevel();                      
+        window.setMouseCursorVisible(true); 
         window.setView(uiView);
 
         window.draw(screenDarkener);
@@ -8890,7 +8795,6 @@ bool ShowEndGameMenu()
         window.draw(quitBtn);
         window.draw(cancelBtn);
 
-        // ✅ النصوص مع Outline وتغيير اللون عند الـ hover
         Text saveTxt(endFont, "Save and Quit", 28);
         saveTxt.setFillColor(saveHover ? yellowHover : greenText);
         saveTxt.setOutlineThickness(2.f);
@@ -9072,7 +8976,6 @@ void ShowPauseMenu()
         bool optionsHover = optionsBtn.getGlobalBounds().contains(mousePos);
         bool endHover = endBtn.getGlobalBounds().contains(mousePos);
 
-        // ✅ تشغيل صوت الـ hover
         static bool wasResumeHover = false, wasOptionsHover = false, wasEndHover = false;
         if ((resumeHover && !wasResumeHover) || (optionsHover && !wasOptionsHover) || (endHover && !wasEndHover))
         {
@@ -9090,10 +8993,9 @@ void ShowPauseMenu()
         if (endHover)
             setupSprite(endBtn, longBtnHoverTex, endPos, longScale);
 
-        // ✅ إصلاح الـ Ghosting
         window.clear(Color(20, 100, 160));
-        Drawbglevel();                      // Draw the actual frozen level, not the uninitialized HUD
-        window.setMouseCursorVisible(true); // Bring the mouse back so you can click buttons!
+        Drawbglevel();                      
+        window.setMouseCursorVisible(true);
         window.setView(uiView);
 
         window.draw(screenDarkener);
@@ -9113,7 +9015,6 @@ void ShowPauseMenu()
         window.draw(optionsBtn);
         window.draw(endBtn);
 
-        // ✅ النصوص مع Outline وتغيير اللون
         Text resumeTxt(pauseFont, "Resume Game", 36);
         resumeTxt.setFillColor(resumeHover ? yellowHover : greenText);
         resumeTxt.setOutlineThickness(2.f);
@@ -9141,7 +9042,6 @@ void ShowPauseMenu()
 
 void QuitLevelLoadingScreen()
 {
-    // 1. Load assets (static – only once)
     static bool assetsLoaded = false;
     if (!assetsLoaded)
     {
@@ -9161,8 +9061,6 @@ void QuitLevelLoadingScreen()
         texLevelLoadBar.setSmooth(true);
         texLevelLoadBarCap.setSmooth(true);
 
-        // Setup sprites that don’t change
-        // Background – stretch to fill the window
         float bgScaleX = WindowWidth / texLevelLoadingBg.getSize().x;
         float bgScaleY = WindowHeight / texLevelLoadingBg.getSize().y;
         sprLevelLoadingBg.setTexture(texLevelLoadingBg, true);
@@ -9179,7 +9077,7 @@ void QuitLevelLoadingScreen()
         sprLevelLoadingLogo.setTexture(texLevelLoadingLogo, true);
         sprLevelLoadingLogo.setOrigin({texLevelLoadingLogo.getSize().x / 2.f,
                                        texLevelLoadingLogo.getSize().y / 2.f});
-        sprLevelLoadingLogo.setPosition({WindowWidth / 2.f, 100.f}); // adjust Y as needed
+        sprLevelLoadingLogo.setPosition({WindowWidth / 2.f, 100.f}); 
 
         // Loading bar cap – centered at bottom
         sprLevelLoadBarCap.setTexture(texLevelLoadBarCap, true);
@@ -9196,8 +9094,8 @@ void QuitLevelLoadingScreen()
         sprLevelLoadBar.setScale({barScaleX, barScaleY});
 
         txtQuitLevel.setFillColor(Color(255, 255, 255));
-        txtQuitLevel.setOutlineColor(Color(21, 88, 114));
-        txtQuitLevel.setOutlineThickness(1.f);
+        txtQuitLevel.setOutlineColor(Color(0, 0, 0));
+        txtQuitLevel.setOutlineThickness(1.5f);
         txtQuitLevel.setPosition({(WindowWidth / 2.f) - 45.f, 250.f});
 
         assetsLoaded = true;
@@ -9215,7 +9113,7 @@ void QuitLevelLoadingScreen()
 
         float elapsed = totalClock.getElapsedTime().asSeconds();
 
-        // Poll events so the window doesn’t freeze
+
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
@@ -9236,7 +9134,7 @@ void QuitLevelLoadingScreen()
         sprLevelLoadBar.setTextureRect(IntRect({0, 0}, {visibleWidth, (int)barSize.y}));
 
         // Draw
-        window.setView(uiView); // use the same 800×600 view as the game
+        window.setView(uiView); 
         window.clear();
         window.draw(sprLevelLoadingBg);
         window.draw(sprLevelLoadingLogo);
@@ -9271,7 +9169,7 @@ void LevelHud()
             timeAttackTimer += dt;
             if (timeAttackTimer >= timeAttackLimit)
             {
-                // انتهى الوقت!
+
                 isLevelRunning = false;
             }
         }
@@ -9286,23 +9184,21 @@ void LevelHud()
 }
 
 // ============================================================
-// END LEVEL - Textures & Sprites
+//        END LEVEL - Textures & Sprites
 // ============================================================
 
-void StartEndLevel(RenderWindow &window)
+void StartEndLevel(RenderWindow& window)
 {
-    // تحديث السكورات
     score_1 = smallFishEatenCount;
     score_2 = mediumFishEatenCount;
     score_3 = largeFishEatenCount;
     score_4 = score;
 
-    // تجهيز الخلفية
+
     Vector2f winSize(WindowWidth, WindowHeight);
     Vector2f texSize = Vector2f(texEndBg.getSize());
-    sprEndBg.setScale({winSize.x / texSize.x, winSize.y / texSize.y});
+    sprEndBg.setScale({ winSize.x / texSize.x, winSize.y / texSize.y });
 
-    // تحضير النصوص
     score_of_eaten_fish[0].setString(to_string(score_1));
     score_of_eaten_fish[1].setString(to_string(score_2));
     score_of_eaten_fish[2].setString(to_string(score_3));
@@ -9311,26 +9207,22 @@ void StartEndLevel(RenderWindow &window)
     string formattedTotal = "";
     int temp = score_4;
     int cnt = 0;
-    while (temp > 0)
-    {
-        if (cnt == 3)
-            formattedTotal = "," + formattedTotal;
+    while (temp > 0) {
+        if (cnt == 3) formattedTotal = "," + formattedTotal;
         formattedTotal = to_string(temp % 10) + formattedTotal;
         temp /= 10;
         cnt++;
     }
-    if (formattedTotal.empty())
-        formattedTotal = "0";
+    if (formattedTotal.empty()) formattedTotal = "0";
     score_of_eaten_fish[4].setString(formattedTotal);
 
-    for (int i = 0; i < 5; i++)
-    {
+    for (int i = 0; i < 5; i++) {
         score_of_eaten_fish[i].setFont(quit_option_font);
         score_of_eaten_fish[i].setFillColor(Color::White);
         score_of_eaten_fish[i].setOutlineColor(Color::Black);
         score_of_eaten_fish[i].setOutlineThickness(2);
         FloatRect bounds = score_of_eaten_fish[i].getLocalBounds();
-        score_of_eaten_fish[i].setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
+        score_of_eaten_fish[i].setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
     }
 
     score_of_eaten_fish[0].setCharacterSize(20);
@@ -9339,72 +9231,61 @@ void StartEndLevel(RenderWindow &window)
     score_of_eaten_fish[3].setCharacterSize(20);
     score_of_eaten_fish[4].setCharacterSize(26);
 
-    // ==========================================
-    // نفس gsBtns بس بصور مختلفة
-    // ==========================================
-    struct BtnInfo
-    {
-        const char *n;
-        const char *h;
-        float x, y, sc, hsc, hw, hh;
-    };
+    struct BtnInfo { const char* n; const char* h; float x, y, sc, hsc, hw, hh; };
     BtnInfo btnInfos[3] = {
-        // Options (نفس GameScreen)
+
         {"Assets/GameScreen/option1.png",
          "Assets/GameScreen/option2.png",
-         180.f, 560.f, 1 / 10.f, 1 / 10.f, 0.f, 0.f},
-        // Quit (نفس GameScreen)
+         180.f, 560.f, 1/10.f, 1/10.f, 0.f, 0.f},
+
         {"Assets/GameScreen/quit1.png",
          "Assets/GameScreen/quit2.png",
-         630.f, 560.f, 2 / 10.f, 2 / 10.f, 0.f, 0.f},
-        // Continue - غير الصور لصور EndLevel
+         630.f, 560.f, 2/10.f, 2/10.f, 0.f, 0.f},
+
         {"Assets/EndGameScreen/continue_normal-1 (1).png",
          "Assets/EndGameScreen/continue_high-1 (1).png",
-         400.f, 540.f, 5.f / 10.f, 5.f / 10.f, 80.f, 30.f}, // scale و hoverScale نفس القيمة
+        400.f, 540.f, 5.f/10.f, 5.f/10.f, 80.f, 30.f},  
     };
 
     for (int i = 0; i < 3; i++)
     {
-        if (!gsBtns[i].normalTex.loadFromFile(btnInfos[i].n))
-            cout << "Error btn normal " << i << "\n";
-        if (!gsBtns[i].hoverTex.loadFromFile(btnInfos[i].h))
-            cout << "Error btn hover " << i << "\n";
+        if (!gsBtns[i].normalTex.loadFromFile(btnInfos[i].n)) cout << "Error btn normal " << i << "\n";
+        if (!gsBtns[i].hoverTex.loadFromFile(btnInfos[i].h))  cout << "Error btn hover "  << i << "\n";
         gsBtns[i].normalTex.setSmooth(true);
         gsBtns[i].hoverTex.setSmooth(true);
-        gsBtns[i].x = btnInfos[i].x;
-        gsBtns[i].y = btnInfos[i].y;
-        gsBtns[i].scale = btnInfos[i].sc;
+        gsBtns[i].x          = btnInfos[i].x;
+        gsBtns[i].y          = btnInfos[i].y;
+        gsBtns[i].scale      = btnInfos[i].sc;
         gsBtns[i].hoverScale = btnInfos[i].hsc;
         gsBtns[i].hoverHalfW = btnInfos[i].hw;
         gsBtns[i].hoverHalfH = btnInfos[i].hh;
-        gsBtns[i].sprite = sf::Sprite(gsBtns[i].normalTex);
-        gsBtns[i].sprite->setOrigin({gsBtns[i].normalTex.getSize().x / 2.f,
-                                     gsBtns[i].normalTex.getSize().y / 2.f});
-        gsBtns[i].sprite->setPosition({gsBtns[i].x, gsBtns[i].y});
-        gsBtns[i].sprite->setScale({gsBtns[i].scale, gsBtns[i].scale});
+        gsBtns[i].sprite     = sf::Sprite(gsBtns[i].normalTex);
+        gsBtns[i].sprite->setOrigin({ gsBtns[i].normalTex.getSize().x / 2.f,
+                                       gsBtns[i].normalTex.getSize().y / 2.f });
+        gsBtns[i].sprite->setPosition({ gsBtns[i].x, gsBtns[i].y });
+        gsBtns[i].sprite->setScale({ gsBtns[i].scale, gsBtns[i].scale });
     }
 }
 
-void UpdateEndLevel(RenderWindow &window)
+void UpdateEndLevel(RenderWindow& window)
 {
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
     // options & quit hover
     for (int i = 0; i < 2; i++)
     {
-        if (!gsBtns[i].sprite)
-            continue;
+        if (!gsBtns[i].sprite) continue;
         if (gsBtns[i].sprite->getGlobalBounds().contains(mousePos))
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].hoverTex);
-            gsBtns[i].sprite->setOrigin({gsBtns[i].hoverTex.getSize().x / 2.f,
-                                         gsBtns[i].hoverTex.getSize().y / 2.f});
+            gsBtns[i].sprite->setOrigin({ gsBtns[i].hoverTex.getSize().x / 2.f,
+                                           gsBtns[i].hoverTex.getSize().y / 2.f });
         }
         else
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].normalTex);
-            gsBtns[i].sprite->setOrigin({gsBtns[i].normalTex.getSize().x / 2.f,
-                                         gsBtns[i].normalTex.getSize().y / 2.f});
+            gsBtns[i].sprite->setOrigin({ gsBtns[i].normalTex.getSize().x / 2.f,
+                                           gsBtns[i].normalTex.getSize().y / 2.f });
         }
     }
 
@@ -9418,46 +9299,41 @@ void UpdateEndLevel(RenderWindow &window)
         if (hovered)
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].hoverTex);
-            gsBtns[2].sprite->setOrigin({gsBtns[2].hoverTex.getSize().x / 2.f,
-                                         gsBtns[2].hoverTex.getSize().y / 2.f});
-            gsBtns[2].sprite->setScale({gsBtns[2].hoverScale, gsBtns[2].hoverScale});
+            gsBtns[2].sprite->setOrigin({ gsBtns[2].hoverTex.getSize().x / 2.f,
+                                           gsBtns[2].hoverTex.getSize().y / 2.f });
+            gsBtns[2].sprite->setScale({ gsBtns[2].hoverScale, gsBtns[2].hoverScale });
         }
         else
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].normalTex);
-            gsBtns[2].sprite->setOrigin({gsBtns[2].normalTex.getSize().x / 2.f,
-                                         gsBtns[2].normalTex.getSize().y / 2.f});
-            gsBtns[2].sprite->setScale({gsBtns[2].scale, gsBtns[2].scale});
+            gsBtns[2].sprite->setOrigin({ gsBtns[2].normalTex.getSize().x / 2.f,
+                                           gsBtns[2].normalTex.getSize().y / 2.f });
+            gsBtns[2].sprite->setScale({ gsBtns[2].scale, gsBtns[2].scale });
         }
     }
-    // ================= تعديل داخل دالة UpdateEndLevel =================
 
-    // ... (كود الأزرار الأساسية اللي عندك فوق) ...
-
-    // إضافة كود Hover للبوب أب
     if (showQuitPopup)
     {
         for (int i = 0; i < 3; i++)
         {
-            auto &btn = quitPopup.btns[i];
-            if (!btn.sprite)
-                continue;
+            auto& btn = quitPopup.btns[i];
+            if (!btn.sprite) continue;
 
             if (btn.sprite->getGlobalBounds().contains(mousePos))
             {
                 btn.sprite->setTexture(btn.hoverTex);
-                btn.sprite->setOrigin({btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f});
+                btn.sprite->setOrigin({ btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f });
             }
             else
             {
                 btn.sprite->setTexture(btn.normalTex);
-                btn.sprite->setOrigin({btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f});
+                btn.sprite->setOrigin({ btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f });
             }
         }
     }
 }
 
-void DrawEndLevel(RenderWindow &window)
+void DrawEndLevel(RenderWindow& window)
 {
     window.clear();
     window.setView(view);
@@ -9465,37 +9341,28 @@ void DrawEndLevel(RenderWindow &window)
 
     Vector2f winSize(WindowWidth, WindowHeight); // 800x600
 
-    // ==========================================
-    // 1. STAGE COMPLETE! (العنوان)
-    // ==========================================
     {
         string content = "STAGE COMPLETE!";
         Text shadow(st_comp, content, 48);
         shadow.setStyle(Text::Bold | Text::Italic);
         shadow.setFillColor(Color::Black);
-
+        
         Text main(st_comp, content, 48);
         main.setStyle(Text::Bold | Text::Italic);
-        main.setFillColor(Color(255, 215, 0)); // لون ذهبي
+        main.setFillColor(Color(255, 215, 0)); 
         main.setOutlineColor(Color(50, 50, 0));
         main.setOutlineThickness(2);
 
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-
-        Vector2f pos = {400.f, 65.f};
-        shadow.setPosition({pos.x + 3.f, pos.y + 3.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        
+        Vector2f pos = { 400.f, 65.f };
+        shadow.setPosition({ pos.x + 3.f, pos.y + 3.f });
         main.setPosition(pos);
-        window.draw(shadow);
-        window.draw(main);
+        window.draw(shadow); window.draw(main);
     }
 
-    // ==========================================
-    // 2. Lunch Report (لوحة التقرير)
-    // ==========================================
-
-    // عنوان التقرير
     {
         string content = "Lunch Report";
         Text main(quit_option_font, content, 22);
@@ -9504,31 +9371,28 @@ void DrawEndLevel(RenderWindow &window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(2);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        main.setPosition({400.f, 135.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        main.setPosition({ 400.f, 135.f });
         window.draw(main);
     }
 
-    // Food Bank Bonus (نص وصفى في اليسار أو منتصف اليسار)
     {
         string content = "Food Bank Bonus:";
         Text shadow(quit_option_font, content, 18);
         shadow.setFillColor(Color::Black);
         Text main(quit_option_font, content, 18);
-        main.setFillColor(Color(200, 255, 200)); // لون أخضر فاتح
+        main.setFillColor(Color(200, 255, 200)); 
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        Vector2f pos = {250.f, 165.f}; // يميل قليلاً لليسار حسب التصميم
-        shadow.setPosition({pos.x + 1.f, pos.y + 1.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        Vector2f pos = { 250.f, 165.f }; 
+        shadow.setPosition({ pos.x + 1.f, pos.y + 1.f });
         main.setPosition(pos);
-        window.draw(shadow);
-        window.draw(main);
+        window.draw(shadow); window.draw(main);
     }
 
-    // Food Bank: (السكور الكلي كبير)
     {
         string content = "Food Bank:";
         Text shadow(quit_option_font, content, 18);
@@ -9538,66 +9402,52 @@ void DrawEndLevel(RenderWindow &window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        Vector2f pos = {250.f, 190.f};
-        shadow.setPosition({pos.x + 1.f, pos.y + 1.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        Vector2f pos = { 250.f, 190.f };
+        shadow.setPosition({ pos.x + 1.f, pos.y + 1.f });
         main.setPosition(pos);
-        window.draw(shadow);
-        window.draw(main);
-
-        // الرقم الكلي
-        score_of_eaten_fish[4].setPosition({400.f, 170.f}); // في المنتصف
+        window.draw(shadow); window.draw(main);
+        
+        score_of_eaten_fish[4].setPosition({ 400.f, 170.f }); 
         window.draw(score_of_eaten_fish[4]);
     }
 
-    // صف الأسماك والعدادات (60, 27, 7, 4)
-    // توزيع أفقي متناسق
+
     float fishY = 220.f;
     float fishSpacing = 90.f;
-    float startX = 280.f; // مكان بداية السمكة الأولى
+    float startX = 280.f; 
 
     sprHerring.setPosition({startX - 32.f, fishY - 20.f});
     window.draw(sprHerring);
     sprCod.setPosition({startX - 29.f + fishSpacing, fishY - 20.f});
     window.draw(sprCod);
-    sprLionfish.setPosition({startX - 27.f + fishSpacing * 2, fishY - 20.f});
+    sprLionfish.setPosition({startX - 27.f + fishSpacing*2, fishY - 20.f});
     window.draw(sprLionfish);
-    sprStarBubble.setPosition({startX - 35.f + fishSpacing * 3, fishY - 35.f});
+    sprStarBubble.setPosition({startX - 35.f + fishSpacing*3, fishY - 35.f});
     window.draw(sprStarBubble);
 
-    // الأرقام تحت الأسماك
     {
         static Clock timer;
         float elapsed = timer.getElapsedTime().asSeconds();
-        float stageDuration = 0.3f; // سرعة ظهور الأرقام
-
-        for (int i = 0; i < 4; i++)
-        {
+        float stageDuration = 0.3f; 
+        
+        for (int i = 0; i < 4; i++) {
             float startTime = i * stageDuration;
-            float endTime = startTime + (stageDuration / 2.f);
-
-            if (elapsed >= startTime)
-            {
-                if (elapsed < endTime)
-                {
-                    // رسم Crunch effect
-                    sprCrunch.setPosition({startX + (i * fishSpacing), fishY + 25.f});
+            float endTime   = startTime + (stageDuration / 2.f);
+            
+            if (elapsed >= startTime) {
+                if (elapsed < endTime) {
+                    sprCrunch.setPosition({ startX + (i * fishSpacing), fishY + 25.f });
                     window.draw(sprCrunch);
-                }
-                else
-                {
-                    // رسم الرقم
-                    score_of_eaten_fish[i].setPosition({startX + (i * fishSpacing), fishY + 35.f});
+                } else {
+                    score_of_eaten_fish[i].setPosition({ startX + (i * fishSpacing), fishY + 35.f });
                     window.draw(score_of_eaten_fish[i]);
                 }
             }
         }
     }
 
-    // ==========================================
-    // 3. Rank (الرتبة)
-    // ==========================================
     {
         string content = "You've earned rank of:";
         Text main(quit_option_font, content, 18);
@@ -9605,83 +9455,65 @@ void DrawEndLevel(RenderWindow &window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        main.setPosition({400.f, 310.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        main.setPosition({ 400.f, 310.f });
         window.draw(main);
 
-        // اسم الرتبة (أكبر حجماً ولون مميز)
         Text rank(quit_option_font);
-        // هنا تحديد اسم الرتبة حسب السكور
-        int total = score_1 + score_2 + score_3;
-        if (total < 100)
-            rank.setString("Guppie Guzzler");
-        else
-            rank.setString("Barracuda Bully"); // مثال
 
+        int total = score_1 + score_2 + score_3;
+        if (total < 100) rank.setString("Guppie Guzzler");
+        else rank.setString("Barracuda Bully"); 
+        
         rank.setCharacterSize(24);
-        rank.setFillColor(Color(100, 255, 100)); // أخضر فاتح
+        rank.setFillColor(Color(100, 255, 100)); 
         rank.setOutlineColor(Color::Black);
         rank.setOutlineThickness(2);
         FloatRect rb = rank.getLocalBounds();
-        rank.setOrigin({rb.size.x / 2.f, rb.size.y / 2.f});
-        rank.setPosition({400.f, 345.f});
+        rank.setOrigin({ rb.size.x / 2.f, rb.size.y / 2.f });
+        rank.setPosition({ 400.f, 345.f });
         window.draw(rank);
     }
 
-    // ==========================================
-    // 4. Fun Fact (الحقيقة الممتعة)
-    // ==========================================
     {
         string content = "Fun Fact";
         Text shadow(quit_option_font, content, 22);
         shadow.setFillColor(Color::Black);
         Text main(quit_option_font, content, 22);
         main.setStyle(Text::Underlined);
-        main.setFillColor(Color(255, 200, 100)); // برتقالي
+        main.setFillColor(Color(255, 200, 100)); 
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(2);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        Vector2f pos = {400.f, 385.f};
-        shadow.setPosition({pos.x + 2.f, pos.y + 2.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        Vector2f pos = { 400.f, 385.f };
+        shadow.setPosition({ pos.x + 2.f, pos.y + 2.f });
         main.setPosition(pos);
-        window.draw(shadow);
-        window.draw(main);
+        window.draw(shadow); window.draw(main);
     }
 
     {
-        string content = "Herrings communicate with each other by producing high-"
-                         "\n frequency sounds from their bottoms "
-                         "\n (basically, they communicate through farts!) It"
-                         "\n helps them stay together in schools at night";
+        string content = "Herrings communicate with each other by producing high-""\n frequency sounds from their bottoms ""\n (basically, they communicate through farts!) It""\n helps them stay together in schools at night";
         Text main(quit_option_font, content, 16);
         main.setFillColor(Color::White);
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
-        main.setPosition({420.f, 450.f});
+        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
+        main.setPosition({ 420.f, 450.f });
         window.draw(main);
     }
 
-    // ==========================================
-    // 5. Buttons (الأزرار)
-    // ==========================================
-
     for (int i = 0; i < 3; i++)
-        if (gsBtns[i].sprite)
-            window.draw(*gsBtns[i].sprite);
+        if (gsBtns[i].sprite) window.draw(*gsBtns[i].sprite);
 
     if (showQuitPopup)
     {
-        if (quitPopup.bgSprite)
-            window.draw(*quitPopup.bgSprite);
-        if (quitPopup.titleSprite)
-            window.draw(*quitPopup.titleSprite);
+        if (quitPopup.bgSprite)    window.draw(*quitPopup.bgSprite);
+        if (quitPopup.titleSprite) window.draw(*quitPopup.titleSprite);
         for (int i = 0; i < 3; i++)
-            if (quitPopup.btns[i].sprite)
-                window.draw(*quitPopup.btns[i].sprite);
+            if (quitPopup.btns[i].sprite) window.draw(*quitPopup.btns[i].sprite);
         window.draw(quitPopupLine1);
         window.draw(quitPopupLine2);
     }
@@ -9689,11 +9521,10 @@ void DrawEndLevel(RenderWindow &window)
     window.display();
 }
 
-// غيّر void EndLevel() إلى:
-bool EndLevel() // <--- التغيير هنا
+bool EndLevel() 
 {
-    view.setSize({800.f, 600.f});
-    view.setCenter({400.f, 300.f});
+    view.setSize({ 800.f, 600.f });
+    view.setCenter({ 400.f, 300.f });
     window.setView(view);
     window.setMouseCursorVisible(true);
 
@@ -9703,56 +9534,46 @@ bool EndLevel() // <--- التغيير هنا
     {
         while (const optional event = window.pollEvent())
         {
-            if (event->is<Event::Closed>())
-                window.close();
+            if (event->is<Event::Closed>()) window.close();
 
-            if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
+            if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
             {
                 if (mouseBtn->button == Mouse::Button::Left)
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
-                    // ================= تعديل داخل دالة EndLevel =================
-
-                    // 1. زرار Options (مثل ما هو)
                     if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
                         OptionsMenu();
 
-                    // 2. زرار Quit (بدل ما يخرج، يظهر البوب أب)
                     if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
                     {
-                        showQuitPopup = true; // <--- التعديل هنا: نظهر البوب أب
+                        showQuitPopup = true;
                     }
 
-                    // 3. زرار Continue (مثل ما هو)
                     if (gsBtns[2].sprite)
                     {
                         bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
-                                       mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
-                                       mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
-                                       mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
-                        if (hovered)
-                        {
+                            mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
+                            mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
+                            mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
+                        if (hovered) {
                             levelWonSuccessfully = true;
-                            SaveGameData();
                             mainmenumusic.play();
                             mainmenumusic.setLooping(true);
                             return true;
                         }
                     }
 
-                    // 4. التعامل مع أزرار البوب أب (Popup Buttons) لو كان مفتوح
                     if (showQuitPopup)
                     {
-                        // الزرار الأول: Quit (خروج)
                         if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
                         {
                             showQuitPopup = false;
-                            levelsound.stop(); // إيقاف الموسيقى
-                            MainMenu();        // الرجوع للقائمة الرئيسية
-                            return true;       // الخروج من حلقة EndLevel
+                            levelsound.stop();
+                            MainMenu();
+                            return true;
                         }
-                        // الزرار الثاني: Quit to Menu (خروج للقائمة)
+
                         if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
                         {
                             showQuitPopup = false;
@@ -9760,19 +9581,21 @@ bool EndLevel() // <--- التغيير هنا
                             MainMenu();
                             return true;
                         }
-                        // الزرار الثالث: No (إلغاء)
+
                         if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
                         {
-                            showQuitPopup = false; // إغلاق البوب أب والبقاء في الشاشة
+                            showQuitPopup = false;
                         }
                     }
+
                 }
             }
-        }
 
-        window.setView(view);
-        UpdateEndLevel(window);
-        DrawEndLevel(window);
+            window.setView(view);
+            UpdateEndLevel(window);
+            DrawEndLevel(window);
+        }
+        return false;
     }
     return false;
 }
