@@ -136,9 +136,9 @@ void StartPowerUps();
 void UpdatePowerUps(float dt);
 void DrawPowerUps();
 void loadSounds();
-void StartEndLevel(RenderWindow& window);
-void UpdateEndLevel(RenderWindow& window);
-void DrawEndLevel(RenderWindow& window);
+void StartEndLevel(RenderWindow &window);
+void UpdateEndLevel(RenderWindow &window);
+void DrawEndLevel(RenderWindow &window);
 bool EndLevel();
 
 float getRandom(float min, float max)
@@ -740,6 +740,10 @@ Clock fadeClock;
 bool isFadingOut = false;
 bool isFadingIn = false;
 float fadeAlpha = 0.f;
+int storyCarryScore = 0;
+int taCarryScore = 0;
+int lastWonStoryLevel = 0;
+int lastWonTALevel = 0;
 
 // highscore
 struct HighScoreEntry
@@ -1112,7 +1116,7 @@ bool isEscapeMode = false;
 int smallFishEatenCount = 0;
 int mediumFishEatenCount = 0;
 int largeFishEatenCount = 0;
-int starsEatenCount = 0; 
+int starsEatenCount = 0;
 // متغير لمنع توليد سمك جديد
 bool stopSpawning = false;
 
@@ -1489,41 +1493,39 @@ void SaveGameData()
     }
 }
 
-
 // ============================================================
 // END LEVEL - Textures & Sprites
 // ============================================================
 
 Texture texEndBg("Assets/EndGameScreen/shell_stageinfo.jpg");
-Sprite  sprEndBg(texEndBg);
+Sprite sprEndBg(texEndBg);
 
 Texture texOptNormal("Assets/EndGameScreen/options_normal-1 (3).png");
 Texture texOptClicked("Assets/EndGameScreen/options_high-1 (2)-Photoroom.png");
-Sprite  sprOpt(texOptNormal);
+Sprite sprOpt(texOptNormal);
 
 Texture texContNormal("Assets/EndGameScreen/continue_normal-1 (1).png");
 Texture texContClicked("Assets/EndGameScreen/continue_high-1 (1).png");
-Sprite  sprCont(texContNormal);
+Sprite sprCont(texContNormal);
 
 Texture texQuitNormal("Assets/EndGameScreen/quit_normal-1 (1).png");
 Texture texQuitClicked("Assets/EndGameScreen/quit_high-1 (1).png");
-Sprite  sprQuit(texQuitNormal);
+Sprite sprQuit(texQuitNormal);
 
 Texture texHerring("Assets/EndGameScreen/menu_herring.png");
-Sprite  sprHerring(texHerring);
+Sprite sprHerring(texHerring);
 
 Texture texCod("Assets/EndGameScreen/menu_cod.png");
-Sprite  sprCod(texCod);
+Sprite sprCod(texCod);
 
 Texture texLionfish("Assets/EndGameScreen/menu_lionfish.png");
-Sprite  sprLionfish(texLionfish);
+Sprite sprLionfish(texLionfish);
 
 Texture texStarBubble("Assets/EndGameScreen/starbubble1.png");
-Sprite  sprStarBubble(texStarBubble);
+Sprite sprStarBubble(texStarBubble);
 
 Texture texCrunch("Assets/EndGameScreen/chompsplatsmall1.png");
-Sprite  sprCrunch(texCrunch);
-
+Sprite sprCrunch(texCrunch);
 
 // ============================================================
 // END LEVEL - Fonts & Score Globals
@@ -1540,9 +1542,7 @@ int score_4 = 0;
 Text score_of_eaten_fish[5] = {
     Text(quit_option_font), Text(quit_option_font),
     Text(quit_option_font), Text(quit_option_font),
-    Text(quit_option_font)
-};
-
+    Text(quit_option_font)};
 
 // ==========================================
 // Player Movement State Globals (To fix reset issues)
@@ -1551,7 +1551,7 @@ float currentVisualScale = 0.275f; // نفس قيمة FISH_SCALE
 bool canDash = true;
 bool isDashingNow = false;
 bool wasMousePressed = false;
-sf::Vector2f dashDirection = { 1.f, 0.f };
+sf::Vector2f dashDirection = {1.f, 0.f};
 float currentRotation = 0.f;
 sf::Clock dashTimer;
 bool levelWonSuccessfully = false;
@@ -2461,7 +2461,7 @@ void PlayingSound(bool isMainMenu)
         return;
     }
     Vector2i mouseLocalPos = Mouse::getPosition(window);
-    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
+    Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, uiView);
     bool isHovering = false;
     if (isMainMenu)
     {
@@ -4555,8 +4555,8 @@ void UpdateSelectLevel(float dt)
 
                     isLoading = false;
                     loadingdone = false;
-                    mySprite.setPosition({ 350.f, 565.f });
-                    menuTxt.setPosition({ 390.f, 570.f }); 
+                    mySprite.setPosition({350.f, 565.f});
+                    menuTxt.setPosition({390.f, 570.f});
 
                     // ---> ADD THIS so the Map buttons appear again when you return! <---
                     pearlClicked = false;
@@ -4664,6 +4664,17 @@ void Select_level()
                                 loadProgress = 0.f;
                                 selectedLevel = i + 1;
                                 pearlClicked = true;
+                                if (!isTimeAttackMode)
+                                {
+
+                                    if (selectedLevel != lastWonStoryLevel + 1)
+                                        storyCarryScore = 0;
+                                }
+                                else
+                                {
+                                    if (selectedLevel != lastWonTALevel + 1)
+                                        taCarryScore = 0;
+                                }
                             }
                         }
                     }
@@ -5266,23 +5277,12 @@ void UpdatePowerUps(float dt)
                     powerUps[i].vy = getRandom(70.f, 130.f); // fall speed
 
                     // Pick type: in classic mode skip type 0 (time bonus)
-                    if (currentGamemode == TIMEATTACK)
-                    {
-                        powerUps[i].type = rand() % 3;
-                    }
-                    else if (gameLEVEL == 1)
-                    {
-                        powerUps[i].type = 1;
-                    }
+                    if (gameLEVEL == 1)
+                        powerUps[i].type = rand() % 2; // time, star
                     else if (gameLEVEL == 2)
-                    {
-                        powerUps[i].type = 1 + rand() % 2;
-                    }
+                        powerUps[i].type = rand() % 3; // time, star, speed
                     else if (gameLEVEL == 3)
-                    {
-                        int roll = rand() % 2;
-                        powerUps[i].type = (roll == 0) ? 2 : 3;
-                    }
+                        powerUps[i].type = rand() % 4;
 
                     break;
                 }
@@ -5354,7 +5354,7 @@ void UpdatePowerUps(float dt)
                     score += pts;
                     eatSound.play();
                     createScorePopup(p.x, p.y - 20.f, pts);
-                    starsEatenCount++; 
+                    starsEatenCount++;
                     // Eat animation on player
                     if (currentState == TURN)
                         pendingEat = true;
@@ -6067,8 +6067,8 @@ void Startmovingplayer()
     hasPlayedExitSound = false;
     anyFishLeft = false;
     lives = 3;
-    score = 0;
-    starsEatenCount = 0; 
+    score = (currentGamemode == CLASSIC) ? storyCarryScore : taCarryScore;
+    starsEatenCount = 0;
     largeFishEatenCount = 0;
     mediumFishEatenCount = 0;
     smallFishEatenCount = 0;
@@ -6227,7 +6227,7 @@ void Updatemovingplayer(float dt)
             if (!mermaidStarted && !anyFishLeft)
             {
                 StartMermaidEvent();
-                showPerfectAnimation = true;
+
                 mermaidStarted = true; // تأكيد بدء الحدث
             }
         }
@@ -7069,7 +7069,8 @@ void Updatemovingplayer(float dt)
         // 3. إغلاق اللعبة (الانفجار يحصل عند 4 ثواني، ننتظر 3 ثواني بعدها = 7 ثواني إجمالي)
         if (perfectTimer >= 6.0f)
         {
-            window.close();
+            isLevelRunning = false;
+            goToMainMenuFromLevel = true;
         }
     }
 }
@@ -8156,7 +8157,7 @@ void UpdateMermaidEvent(float dt)
             if (dist < 50.f)
             {
                 stars[i].active = false;
-                starsEatenCount++; 
+                starsEatenCount++;
                 score += 100 * multiplier;
                 createScorePopup(sPos.x, sPos.y, 100 * multiplier);
 
@@ -8216,8 +8217,6 @@ void UpdateMermaidEvent(float dt)
         // === كود إغلاق اللعبة + فتح المرحلة التالية ===
         if (elapsed >= 6.0f)
         {
-
-            addNewHighScore(userName, score, currentGamemode == CLASSIC);
             for (int i = 0; i < NumberOfUsers; i++)
             {
                 if (players[i].name == CurUser)
@@ -8226,31 +8225,44 @@ void UpdateMermaidEvent(float dt)
                     break;
                 }
             }
-            SaveGameData();
+            if (currentGamemode == CLASSIC)
+            {
+                storyCarryScore = score;
+                lastWonStoryLevel = selectedLevel;
+            }
+            else // TIMEATTACK
+            {
+                taCarryScore = score;
+                lastWonTALevel = selectedLevel;
+
+                for (int i = 0; i < NumberOfUsers; i++)
+                {
+                    if (players[i].name == CurUser)
+                    {
+                        players[i].score += score;
+                        break;
+                    }
+                }
+            }
+
+            addNewHighScore(userName, score, currentGamemode == CLASSIC);
+
             // [1] منطق القصة (Classic)
             if (currentGamemode == CLASSIC)
             {
                 if (selectedLevel == 1)
-                {
-                    level2Unlocked = true; // فتح الليفل 2 في القصة فقط
-                }
+                    level2Unlocked = true;
                 else if (selectedLevel == 2)
-                {
-                    level3Unlocked = true; // فتح الليفل 3 في القصة فقط
-                }
+                    level3Unlocked = true;
             }
-            // [2] منطق التايم أتاك (Time Attack)
             else if (currentGamemode == TIMEATTACK)
             {
                 if (selectedLevel == 1)
-                {
-                    ta_level2Unlocked = true; // فتح الليفل 2 في التايم أتاك فقط
-                }
+                    ta_level2Unlocked = true;
                 else if (selectedLevel == 2)
-                {
-                    ta_level3Unlocked = true; // فتح الليفل 3 في التايم أتاك فقط
-                }
+                    ta_level3Unlocked = true;
             }
+            SaveGameData();
 
             EndLevel(); // <--- أضف هذا السطر لعرض شاشة End Level
 
@@ -9277,7 +9289,7 @@ void LevelHud()
 // END LEVEL - Textures & Sprites
 // ============================================================
 
-void StartEndLevel(RenderWindow& window)
+void StartEndLevel(RenderWindow &window)
 {
     // تحديث السكورات
     score_1 = smallFishEatenCount;
@@ -9288,7 +9300,7 @@ void StartEndLevel(RenderWindow& window)
     // تجهيز الخلفية
     Vector2f winSize(WindowWidth, WindowHeight);
     Vector2f texSize = Vector2f(texEndBg.getSize());
-    sprEndBg.setScale({ winSize.x / texSize.x, winSize.y / texSize.y });
+    sprEndBg.setScale({winSize.x / texSize.x, winSize.y / texSize.y});
 
     // تحضير النصوص
     score_of_eaten_fish[0].setString(to_string(score_1));
@@ -9299,22 +9311,26 @@ void StartEndLevel(RenderWindow& window)
     string formattedTotal = "";
     int temp = score_4;
     int cnt = 0;
-    while (temp > 0) {
-        if (cnt == 3) formattedTotal = "," + formattedTotal;
+    while (temp > 0)
+    {
+        if (cnt == 3)
+            formattedTotal = "," + formattedTotal;
         formattedTotal = to_string(temp % 10) + formattedTotal;
         temp /= 10;
         cnt++;
     }
-    if (formattedTotal.empty()) formattedTotal = "0";
+    if (formattedTotal.empty())
+        formattedTotal = "0";
     score_of_eaten_fish[4].setString(formattedTotal);
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++)
+    {
         score_of_eaten_fish[i].setFont(quit_option_font);
         score_of_eaten_fish[i].setFillColor(Color::White);
         score_of_eaten_fish[i].setOutlineColor(Color::Black);
         score_of_eaten_fish[i].setOutlineThickness(2);
         FloatRect bounds = score_of_eaten_fish[i].getLocalBounds();
-        score_of_eaten_fish[i].setOrigin({ bounds.size.x / 2.f, bounds.size.y / 2.f });
+        score_of_eaten_fish[i].setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
     }
 
     score_of_eaten_fish[0].setCharacterSize(20);
@@ -9326,61 +9342,69 @@ void StartEndLevel(RenderWindow& window)
     // ==========================================
     // نفس gsBtns بس بصور مختلفة
     // ==========================================
-    struct BtnInfo { const char* n; const char* h; float x, y, sc, hsc, hw, hh; };
+    struct BtnInfo
+    {
+        const char *n;
+        const char *h;
+        float x, y, sc, hsc, hw, hh;
+    };
     BtnInfo btnInfos[3] = {
         // Options (نفس GameScreen)
         {"Assets/GameScreen/option1.png",
          "Assets/GameScreen/option2.png",
-         180.f, 560.f, 1/10.f, 1/10.f, 0.f, 0.f},
+         180.f, 560.f, 1 / 10.f, 1 / 10.f, 0.f, 0.f},
         // Quit (نفس GameScreen)
         {"Assets/GameScreen/quit1.png",
          "Assets/GameScreen/quit2.png",
-         630.f, 560.f, 2/10.f, 2/10.f, 0.f, 0.f},
+         630.f, 560.f, 2 / 10.f, 2 / 10.f, 0.f, 0.f},
         // Continue - غير الصور لصور EndLevel
         {"Assets/EndGameScreen/continue_normal-1 (1).png",
          "Assets/EndGameScreen/continue_high-1 (1).png",
-        400.f, 540.f, 5.f/10.f, 5.f/10.f, 80.f, 30.f},  // scale و hoverScale نفس القيمة
+         400.f, 540.f, 5.f / 10.f, 5.f / 10.f, 80.f, 30.f}, // scale و hoverScale نفس القيمة
     };
 
     for (int i = 0; i < 3; i++)
     {
-        if (!gsBtns[i].normalTex.loadFromFile(btnInfos[i].n)) cout << "Error btn normal " << i << "\n";
-        if (!gsBtns[i].hoverTex.loadFromFile(btnInfos[i].h))  cout << "Error btn hover "  << i << "\n";
+        if (!gsBtns[i].normalTex.loadFromFile(btnInfos[i].n))
+            cout << "Error btn normal " << i << "\n";
+        if (!gsBtns[i].hoverTex.loadFromFile(btnInfos[i].h))
+            cout << "Error btn hover " << i << "\n";
         gsBtns[i].normalTex.setSmooth(true);
         gsBtns[i].hoverTex.setSmooth(true);
-        gsBtns[i].x          = btnInfos[i].x;
-        gsBtns[i].y          = btnInfos[i].y;
-        gsBtns[i].scale      = btnInfos[i].sc;
+        gsBtns[i].x = btnInfos[i].x;
+        gsBtns[i].y = btnInfos[i].y;
+        gsBtns[i].scale = btnInfos[i].sc;
         gsBtns[i].hoverScale = btnInfos[i].hsc;
         gsBtns[i].hoverHalfW = btnInfos[i].hw;
         gsBtns[i].hoverHalfH = btnInfos[i].hh;
-        gsBtns[i].sprite     = sf::Sprite(gsBtns[i].normalTex);
-        gsBtns[i].sprite->setOrigin({ gsBtns[i].normalTex.getSize().x / 2.f,
-                                       gsBtns[i].normalTex.getSize().y / 2.f });
-        gsBtns[i].sprite->setPosition({ gsBtns[i].x, gsBtns[i].y });
-        gsBtns[i].sprite->setScale({ gsBtns[i].scale, gsBtns[i].scale });
+        gsBtns[i].sprite = sf::Sprite(gsBtns[i].normalTex);
+        gsBtns[i].sprite->setOrigin({gsBtns[i].normalTex.getSize().x / 2.f,
+                                     gsBtns[i].normalTex.getSize().y / 2.f});
+        gsBtns[i].sprite->setPosition({gsBtns[i].x, gsBtns[i].y});
+        gsBtns[i].sprite->setScale({gsBtns[i].scale, gsBtns[i].scale});
     }
 }
 
-void UpdateEndLevel(RenderWindow& window)
+void UpdateEndLevel(RenderWindow &window)
 {
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
     // options & quit hover
     for (int i = 0; i < 2; i++)
     {
-        if (!gsBtns[i].sprite) continue;
+        if (!gsBtns[i].sprite)
+            continue;
         if (gsBtns[i].sprite->getGlobalBounds().contains(mousePos))
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].hoverTex);
-            gsBtns[i].sprite->setOrigin({ gsBtns[i].hoverTex.getSize().x / 2.f,
-                                           gsBtns[i].hoverTex.getSize().y / 2.f });
+            gsBtns[i].sprite->setOrigin({gsBtns[i].hoverTex.getSize().x / 2.f,
+                                         gsBtns[i].hoverTex.getSize().y / 2.f});
         }
         else
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].normalTex);
-            gsBtns[i].sprite->setOrigin({ gsBtns[i].normalTex.getSize().x / 2.f,
-                                           gsBtns[i].normalTex.getSize().y / 2.f });
+            gsBtns[i].sprite->setOrigin({gsBtns[i].normalTex.getSize().x / 2.f,
+                                         gsBtns[i].normalTex.getSize().y / 2.f});
         }
     }
 
@@ -9394,16 +9418,16 @@ void UpdateEndLevel(RenderWindow& window)
         if (hovered)
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].hoverTex);
-            gsBtns[2].sprite->setOrigin({ gsBtns[2].hoverTex.getSize().x / 2.f,
-                                           gsBtns[2].hoverTex.getSize().y / 2.f });
-            gsBtns[2].sprite->setScale({ gsBtns[2].hoverScale, gsBtns[2].hoverScale });
+            gsBtns[2].sprite->setOrigin({gsBtns[2].hoverTex.getSize().x / 2.f,
+                                         gsBtns[2].hoverTex.getSize().y / 2.f});
+            gsBtns[2].sprite->setScale({gsBtns[2].hoverScale, gsBtns[2].hoverScale});
         }
         else
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].normalTex);
-            gsBtns[2].sprite->setOrigin({ gsBtns[2].normalTex.getSize().x / 2.f,
-                                           gsBtns[2].normalTex.getSize().y / 2.f });
-            gsBtns[2].sprite->setScale({ gsBtns[2].scale, gsBtns[2].scale });
+            gsBtns[2].sprite->setOrigin({gsBtns[2].normalTex.getSize().x / 2.f,
+                                         gsBtns[2].normalTex.getSize().y / 2.f});
+            gsBtns[2].sprite->setScale({gsBtns[2].scale, gsBtns[2].scale});
         }
     }
     // ================= تعديل داخل دالة UpdateEndLevel =================
@@ -9415,24 +9439,25 @@ void UpdateEndLevel(RenderWindow& window)
     {
         for (int i = 0; i < 3; i++)
         {
-            auto& btn = quitPopup.btns[i];
-            if (!btn.sprite) continue;
+            auto &btn = quitPopup.btns[i];
+            if (!btn.sprite)
+                continue;
 
             if (btn.sprite->getGlobalBounds().contains(mousePos))
             {
                 btn.sprite->setTexture(btn.hoverTex);
-                btn.sprite->setOrigin({ btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f });
+                btn.sprite->setOrigin({btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f});
             }
             else
             {
                 btn.sprite->setTexture(btn.normalTex);
-                btn.sprite->setOrigin({ btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f });
+                btn.sprite->setOrigin({btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f});
             }
         }
     }
 }
 
-void DrawEndLevel(RenderWindow& window)
+void DrawEndLevel(RenderWindow &window)
 {
     window.clear();
     window.setView(view);
@@ -9448,7 +9473,7 @@ void DrawEndLevel(RenderWindow& window)
         Text shadow(st_comp, content, 48);
         shadow.setStyle(Text::Bold | Text::Italic);
         shadow.setFillColor(Color::Black);
-        
+
         Text main(st_comp, content, 48);
         main.setStyle(Text::Bold | Text::Italic);
         main.setFillColor(Color(255, 215, 0)); // لون ذهبي
@@ -9456,19 +9481,20 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineThickness(2);
 
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        
-        Vector2f pos = { 400.f, 65.f };
-        shadow.setPosition({ pos.x + 3.f, pos.y + 3.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+
+        Vector2f pos = {400.f, 65.f};
+        shadow.setPosition({pos.x + 3.f, pos.y + 3.f});
         main.setPosition(pos);
-        window.draw(shadow); window.draw(main);
+        window.draw(shadow);
+        window.draw(main);
     }
 
     // ==========================================
     // 2. Lunch Report (لوحة التقرير)
     // ==========================================
-    
+
     // عنوان التقرير
     {
         string content = "Lunch Report";
@@ -9478,8 +9504,8 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(2);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        main.setPosition({ 400.f, 135.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        main.setPosition({400.f, 135.f});
         window.draw(main);
     }
 
@@ -9493,12 +9519,13 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        Vector2f pos = { 250.f, 165.f }; // يميل قليلاً لليسار حسب التصميم
-        shadow.setPosition({ pos.x + 1.f, pos.y + 1.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        Vector2f pos = {250.f, 165.f}; // يميل قليلاً لليسار حسب التصميم
+        shadow.setPosition({pos.x + 1.f, pos.y + 1.f});
         main.setPosition(pos);
-        window.draw(shadow); window.draw(main);
+        window.draw(shadow);
+        window.draw(main);
     }
 
     // Food Bank: (السكور الكلي كبير)
@@ -9511,15 +9538,16 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        Vector2f pos = { 250.f, 190.f };
-        shadow.setPosition({ pos.x + 1.f, pos.y + 1.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        Vector2f pos = {250.f, 190.f};
+        shadow.setPosition({pos.x + 1.f, pos.y + 1.f});
         main.setPosition(pos);
-        window.draw(shadow); window.draw(main);
-        
+        window.draw(shadow);
+        window.draw(main);
+
         // الرقم الكلي
-        score_of_eaten_fish[4].setPosition({ 400.f, 170.f }); // في المنتصف
+        score_of_eaten_fish[4].setPosition({400.f, 170.f}); // في المنتصف
         window.draw(score_of_eaten_fish[4]);
     }
 
@@ -9533,9 +9561,9 @@ void DrawEndLevel(RenderWindow& window)
     window.draw(sprHerring);
     sprCod.setPosition({startX - 29.f + fishSpacing, fishY - 20.f});
     window.draw(sprCod);
-    sprLionfish.setPosition({startX - 27.f + fishSpacing*2, fishY - 20.f});
+    sprLionfish.setPosition({startX - 27.f + fishSpacing * 2, fishY - 20.f});
     window.draw(sprLionfish);
-    sprStarBubble.setPosition({startX - 35.f + fishSpacing*3, fishY - 35.f});
+    sprStarBubble.setPosition({startX - 35.f + fishSpacing * 3, fishY - 35.f});
     window.draw(sprStarBubble);
 
     // الأرقام تحت الأسماك
@@ -9543,19 +9571,24 @@ void DrawEndLevel(RenderWindow& window)
         static Clock timer;
         float elapsed = timer.getElapsedTime().asSeconds();
         float stageDuration = 0.3f; // سرعة ظهور الأرقام
-        
-        for (int i = 0; i < 4; i++) {
+
+        for (int i = 0; i < 4; i++)
+        {
             float startTime = i * stageDuration;
-            float endTime   = startTime + (stageDuration / 2.f);
-            
-            if (elapsed >= startTime) {
-                if (elapsed < endTime) {
+            float endTime = startTime + (stageDuration / 2.f);
+
+            if (elapsed >= startTime)
+            {
+                if (elapsed < endTime)
+                {
                     // رسم Crunch effect
-                    sprCrunch.setPosition({ startX + (i * fishSpacing), fishY + 25.f });
+                    sprCrunch.setPosition({startX + (i * fishSpacing), fishY + 25.f});
                     window.draw(sprCrunch);
-                } else {
+                }
+                else
+                {
                     // رسم الرقم
-                    score_of_eaten_fish[i].setPosition({ startX + (i * fishSpacing), fishY + 35.f });
+                    score_of_eaten_fish[i].setPosition({startX + (i * fishSpacing), fishY + 35.f});
                     window.draw(score_of_eaten_fish[i]);
                 }
             }
@@ -9572,24 +9605,26 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        main.setPosition({ 400.f, 310.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        main.setPosition({400.f, 310.f});
         window.draw(main);
 
         // اسم الرتبة (أكبر حجماً ولون مميز)
         Text rank(quit_option_font);
         // هنا تحديد اسم الرتبة حسب السكور
         int total = score_1 + score_2 + score_3;
-        if (total < 100) rank.setString("Guppie Guzzler");
-        else rank.setString("Barracuda Bully"); // مثال
-        
+        if (total < 100)
+            rank.setString("Guppie Guzzler");
+        else
+            rank.setString("Barracuda Bully"); // مثال
+
         rank.setCharacterSize(24);
         rank.setFillColor(Color(100, 255, 100)); // أخضر فاتح
         rank.setOutlineColor(Color::Black);
         rank.setOutlineThickness(2);
         FloatRect rb = rank.getLocalBounds();
-        rank.setOrigin({ rb.size.x / 2.f, rb.size.y / 2.f });
-        rank.setPosition({ 400.f, 345.f });
+        rank.setOrigin({rb.size.x / 2.f, rb.size.y / 2.f});
+        rank.setPosition({400.f, 345.f});
         window.draw(rank);
     }
 
@@ -9606,23 +9641,27 @@ void DrawEndLevel(RenderWindow& window)
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(2);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        shadow.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        Vector2f pos = { 400.f, 385.f };
-        shadow.setPosition({ pos.x + 2.f, pos.y + 2.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        shadow.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        Vector2f pos = {400.f, 385.f};
+        shadow.setPosition({pos.x + 2.f, pos.y + 2.f});
         main.setPosition(pos);
-        window.draw(shadow); window.draw(main);
+        window.draw(shadow);
+        window.draw(main);
     }
 
     {
-        string content = "Herrings communicate with each other by producing high-""\n frequency sounds from their bottoms ""\n (basically, they communicate through farts!) It""\n helps them stay together in schools at night";
+        string content = "Herrings communicate with each other by producing high-"
+                         "\n frequency sounds from their bottoms "
+                         "\n (basically, they communicate through farts!) It"
+                         "\n helps them stay together in schools at night";
         Text main(quit_option_font, content, 16);
         main.setFillColor(Color::White);
         main.setOutlineColor(Color::Black);
         main.setOutlineThickness(1);
         FloatRect b = main.getLocalBounds();
-        main.setOrigin({ b.size.x / 2.f, b.size.y / 2.f });
-        main.setPosition({ 420.f, 450.f });
+        main.setOrigin({b.size.x / 2.f, b.size.y / 2.f});
+        main.setPosition({420.f, 450.f});
         window.draw(main);
     }
 
@@ -9631,14 +9670,18 @@ void DrawEndLevel(RenderWindow& window)
     // ==========================================
 
     for (int i = 0; i < 3; i++)
-        if (gsBtns[i].sprite) window.draw(*gsBtns[i].sprite);
+        if (gsBtns[i].sprite)
+            window.draw(*gsBtns[i].sprite);
 
     if (showQuitPopup)
     {
-        if (quitPopup.bgSprite)    window.draw(*quitPopup.bgSprite);
-        if (quitPopup.titleSprite) window.draw(*quitPopup.titleSprite);
+        if (quitPopup.bgSprite)
+            window.draw(*quitPopup.bgSprite);
+        if (quitPopup.titleSprite)
+            window.draw(*quitPopup.titleSprite);
         for (int i = 0; i < 3; i++)
-            if (quitPopup.btns[i].sprite) window.draw(*quitPopup.btns[i].sprite);
+            if (quitPopup.btns[i].sprite)
+                window.draw(*quitPopup.btns[i].sprite);
         window.draw(quitPopupLine1);
         window.draw(quitPopupLine2);
     }
@@ -9649,8 +9692,8 @@ void DrawEndLevel(RenderWindow& window)
 // غيّر void EndLevel() إلى:
 bool EndLevel() // <--- التغيير هنا
 {
-    view.setSize({ 800.f, 600.f });
-    view.setCenter({ 400.f, 300.f });
+    view.setSize({800.f, 600.f});
+    view.setCenter({400.f, 300.f});
     window.setView(view);
     window.setMouseCursorVisible(true);
 
@@ -9660,66 +9703,69 @@ bool EndLevel() // <--- التغيير هنا
     {
         while (const optional event = window.pollEvent())
         {
-            if (event->is<Event::Closed>()) window.close();
+            if (event->is<Event::Closed>())
+                window.close();
 
-            if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
+            if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
             {
                 if (mouseBtn->button == Mouse::Button::Left)
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
-// ================= تعديل داخل دالة EndLevel =================
+                    // ================= تعديل داخل دالة EndLevel =================
 
-                // 1. زرار Options (مثل ما هو)
-                if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
-                    OptionsMenu();
+                    // 1. زرار Options (مثل ما هو)
+                    if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
+                        OptionsMenu();
 
-                // 2. زرار Quit (بدل ما يخرج، يظهر البوب أب)
-                if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
-                {
-                    showQuitPopup = true; // <--- التعديل هنا: نظهر البوب أب
-                }
-
-                // 3. زرار Continue (مثل ما هو)
-                if (gsBtns[2].sprite)
-                {
-                    bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
-                                mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
-                                mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
-                                mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
-                    if (hovered) {
-                        levelWonSuccessfully = true;
-                        mainmenumusic.play();
-                        mainmenumusic.setLooping(true);
-                        return true;
-                    }
-                }
-
-                // 4. التعامل مع أزرار البوب أب (Popup Buttons) لو كان مفتوح
-                if (showQuitPopup)
-                {
-                    // الزرار الأول: Quit (خروج)
-                    if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
+                    // 2. زرار Quit (بدل ما يخرج، يظهر البوب أب)
+                    if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
                     {
-                        showQuitPopup = false;
-                        levelsound.stop(); // إيقاف الموسيقى
-                        MainMenu();        // الرجوع للقائمة الرئيسية
-                        return true;       // الخروج من حلقة EndLevel
+                        showQuitPopup = true; // <--- التعديل هنا: نظهر البوب أب
                     }
-                    // الزرار الثاني: Quit to Menu (خروج للقائمة)
-                    if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
+
+                    // 3. زرار Continue (مثل ما هو)
+                    if (gsBtns[2].sprite)
                     {
-                        showQuitPopup = false;
-                        levelsound.stop();
-                        MainMenu();
-                        return true;
+                        bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
+                                       mousePos.x <= gsBtns[2].x + gsBtns[2].hoverHalfW &&
+                                       mousePos.y >= gsBtns[2].y - gsBtns[2].hoverHalfH &&
+                                       mousePos.y <= gsBtns[2].y + gsBtns[2].hoverHalfH;
+                        if (hovered)
+                        {
+                            levelWonSuccessfully = true;
+                            SaveGameData();
+                            mainmenumusic.play();
+                            mainmenumusic.setLooping(true);
+                            return true;
+                        }
                     }
-                    // الزرار الثالث: No (إلغاء)
-                    if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
+
+                    // 4. التعامل مع أزرار البوب أب (Popup Buttons) لو كان مفتوح
+                    if (showQuitPopup)
                     {
-                        showQuitPopup = false; // إغلاق البوب أب والبقاء في الشاشة
+                        // الزرار الأول: Quit (خروج)
+                        if (quitPopup.btns[0].sprite && quitPopup.btns[0].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false;
+                            levelsound.stop(); // إيقاف الموسيقى
+                            MainMenu();        // الرجوع للقائمة الرئيسية
+                            return true;       // الخروج من حلقة EndLevel
+                        }
+                        // الزرار الثاني: Quit to Menu (خروج للقائمة)
+                        if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false;
+                            levelsound.stop();
+                            MainMenu();
+                            return true;
+                        }
+                        // الزرار الثالث: No (إلغاء)
+                        if (quitPopup.btns[2].sprite && quitPopup.btns[2].sprite->getGlobalBounds().contains(mousePos))
+                        {
+                            showQuitPopup = false; // إغلاق البوب أب والبقاء في الشاشة
+                        }
                     }
-                }
                 }
             }
         }
