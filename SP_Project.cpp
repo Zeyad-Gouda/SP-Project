@@ -686,17 +686,14 @@ float loadProgress = 0.f;
 Texture texHudTop, texHudBottom, texHudGrowth, texHudGrowthMarker;
 Sprite sprHudTop(texHudTop), sprHudBottom(texHudBottom), sprHudGrowth(texHudGrowth);
 Sprite sprHudGrowthMarker1(texHudGrowthMarker), sprHudGrowthMarker2(texHudGrowthMarker);
-
-// --- NEW: THE FRENZY! METER LOGIC ---
-// SFML 3 strict rule: we must give all 7 array slots the texture immediately!
 Texture texHudFrenzy;
 Font frenzyFont;
-optional<Text> txtFrenzyLetters[7]; // <--- Wrap it in 'optional'
+optional<Text> txtFrenzyLetters[7]; 
 int frenzyProgress = 0;
 bool isLevelRunning = false;
 float timeAttackTimer = 0.f;
-float timeAttackLimit = 90.f;       // 1.5 دقائق
-float frenzyDecayAccumulator = 0.f; // accumulates time since last eat
+float timeAttackLimit = 90.f;      
+float frenzyDecayAccumulator = 0.f; 
 
 Texture texTimerBg;
 Sprite sprTimerBg(texTimerBg);
@@ -906,10 +903,10 @@ Texture texBubblePop1("Assets/bouns/_bubblepop1.png");
 bool powerUpTexLoaded = false;
 
 // ==========================================
-// 1. المتغيرات الصح (Global Variables)
+// 1.       (Global Variables)
 // ==========================================
 
-// ترتيب الصفوف في الصورة: 0=Eat, 1=Idle, 2=Swim, 3=Turn
+
 enum PlayerState
 {
     EAT = 0,
@@ -918,37 +915,36 @@ enum PlayerState
     TURN = 3
 };
 
-// مصفوفة عدد الفريمات (عدد الأعمدة في كل صف)
+
 const int frameCounts[4] = {6, 12, 14, 8};
 
-// الحالة الحالية
+
 PlayerState currentState = IDLE;
 int currentFrame = 0;
 float timer = 0.f;
-// أضف هذا السطر مع المتغيرات العامة الخاصة باللاعب
+
 int playerIntroStep = 0;
-bool pendingEat = false; // <--- أضف هذا السطر هنا
+bool pendingEat = false; 
 
-// [1] مقاسات الشبكة (حسب صورتك: 4032 عرض ÷ 14 سمكة = 288)
+
 const int GRID_W = 288;
-const int GRID_H = 224; // 896 طول ÷ 4 صفوف = 224
+const int GRID_H = 224; 
 
-// [2] مقاس الرسم (القص)
 const int DRAW_W = 288;
 const int DRAW_H = 224;
 
-// الحجم
+
 const float FISH_SCALE = 0.275f;
 
-// متغيرات الحركة
+
 float lastMouseX = 0.0f;
 bool isFacingRight = false;
 
-// [هام] المتغيرات اللي كانت ناقصة
+
 sf::Vector2i lastScreenMousePos = {0, 0};
 sf::Vector2f targetPos = {400.f, 300.f};
 
-// متغيرات حجم الليفيل (عشان الكاميرا تتحرك)
+
 float LevelWidth = 950.0f;
 float LevelHeight = 750.0f;
 
@@ -1015,8 +1011,19 @@ void loadSounds()
 
         sounds[i] = new Sound(soundBuffers[i]);
     }
+    if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
+    { 
+        waterloop.emplace(WaterSound);
+        waterloop->setLooping(true);
+    }
+    (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg"); 
+    (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg"); 
+    (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");     
+    (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");    
+    nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
+
 }
-// الـ Array الثابتة
+
 SmallFish smallFishes[MAX_SMALL_FISH];
 
 // ==========================================
@@ -1043,7 +1050,7 @@ struct MediumFish
     int currentFrame = 0;
     float animTimer = 0.f;
     float verticalTimer = 0.f;
-    float turnTargetX = 0.f; // <--- أضف السطر ده
+    float turnTargetX = 0.f;
 
     bool isFleeing = false;
     int state = 1;
@@ -1081,7 +1088,7 @@ struct LargeFish
     int currentFrame = 0;
     float animTimer = 0.f;
     float verticalTimer = 0.f;
-    float turnTargetX = 0.f; // <--- أضف السطر ده
+    float turnTargetX = 0.f; 
     float timeToNextTurn = 0.f;
 
     int state = 1;
@@ -1108,85 +1115,83 @@ bool isPlayerDead = false;
 Clock respawnClock;
 bool isEscapeMode = false;
 
-// متغيرات لحساب السمك المأكول
+
 int smallFishEatenCount = 0;
 int mediumFishEatenCount = 0;
 int largeFishEatenCount = 0;
 int starsEatenCount = 0; 
-// متغير لمنع توليد سمك جديد
+
 bool stopSpawning = false;
 
-// متغيرات الـ Dash
+
 bool isDashing = false;
 Clock dashClock;
-float dashCooldown = 0.8f;  // الوقت اللي لازم يستنى قبل ما يعمل Dash تاني
-float dashDuration = 0.15f; // مدة الـ Dash نفسه (سرعة فورية)
-float dashSpeedMult = 4.0f; // مضاعف السرعة (4 أضعاف السرعة العادية)
+float dashCooldown = 0.8f; 
+float dashDuration = 0.15f; 
+float dashSpeedMult = 4.0f; 
 
 // ==========================================
-// Game Bubbles System (نظام الفقاعات الجديد)
+//        Game Bubbles System 
 // ==========================================
 struct GameBubble
 {
     float x, y, vx, vy;
     float alpha;
     bool active;
-    bool isAction; // true = لما تاكل أو Dash، false = عادية ماشية
+    bool isAction; 
 };
 const int MAX_GAME_BUBBLES = 20;
 GameBubble gameBubbles[MAX_GAME_BUBBLES];
 float gameBubbleSpawnTimer = 0.f;
 
-// متغير المضاعف
+
 int multiplier = 1;
 
-// هيكل خاص بنص السكور اللي بيظهر ويطير
+
 struct ScorePopup
 {
     sf::Text text;
-    float alpha = 255.f;  // شفافية
-    float ySpeed = -60.f; // سرعة الطيران لفوق
+    float alpha = 255.f;  
+    float ySpeed = -60.f; 
     bool active = false;
-    sf::Color baseColor = sf::Color::White; // <--- أضفنا السطر ده
+    sf::Color baseColor = sf::Color::White; 
 
-    // *** إضافة Constructor لتهيئة النص بالخط اللي عندك ***
+   
     ScorePopup() : text(font) {}
 };
 
-// مصفوفة لتخزين نصوص السكور الظاهرة على الشاشة
+
 const int MAX_POPUPS = 20;
 ScorePopup scorePopups[MAX_POPUPS];
 
-// متغيرات نظام الـ Combo
-float noEatTimer = 0.0f;              // تايمر الوقوف (لو وصل 3 ثواني بينقص)
-const float PROGRESS_PER_EAT = 0.35f; // قيمة الزيادة لكل سمكة (تقريباً 3 سمكات تزود 1)
-const float COMBO_DECAY_TIME = 3.0f;  // الوقت المطلوب عشان ينقص (3 ثواني)
-const int MAX_MULTIPLIER = 6;         // أقصى قيمة للمضاعف
 
-// --- نظام الـ Combo المتقدم ---
+float noEatTimer = 0.0f;              
+const float PROGRESS_PER_EAT = 0.35f; 
+const float COMBO_DECAY_TIME = 3.0f;  
+const int MAX_MULTIPLIER = 6;        
+
+
 enum ComboState
 {
-    FILLING,    // بيأكل وبيملّي
-    WAIT_DRAIN, // وقف، بيستنى 2 ثانية قبل ما يفرغ
-    DRAINING,   // بيفرغ البار
-    WAIT_DROP   // البار فضى، بيستنى 2 ثانية قبل ما ينقص الـ Multiplier
+    FILLING,    
+    WAIT_DRAIN, 
+    DRAINING,   
+    WAIT_DROP   
 };
 
 ComboState comboState = FILLING;
-float comboTimer = 0.0f;        // تايمر عشان نحسب الـ 2 ثانية
-float comboProgress = 0.0f;     // البار (0.0 إلى 1.0)
-const int FISH_TO_LEVEL_UP = 7; // عدد السمكات المطلوبة
-const float WAIT_TIME = 2.0f;   // وقت الانتظار (2 ثواني)
-const float DRAIN_SPEED = 0.5f; // سرعة التفريغ (1.0 يعني يفرغ في ثانية)
+float comboTimer = 0.0f;        
+float comboProgress = 0.0f;     
+const int FISH_TO_LEVEL_UP = 7; 
+const float WAIT_TIME = 2.0f;   
+const float DRAIN_SPEED = 0.5f; 
 
-// --- نظام الـ Lives والـ Game Over ---
-int lives = 3;           // عدد الحيوات
-int hitsRemaining = 3;   // عدد المرات المسموح فيها انك تتاكل قبل ما تخسر حياة
-bool isGameOver = false; // هل اللعبة خلصت
 
-// --- متغيرات أنيميشن SORRY ---
-// --- متغيرات أنيميشن SORRY ---
-// بنمرر الـ fontTexture للـ Sprite في الكونستركتور علطول
+int lives = 3;          
+int hitsRemaining = 3;   
+bool isGameOver = false; 
+
+
 Sprite s_Sorry_S(fontTexture);
 Sprite s_Sorry_O(fontTexture);
 Sprite s_Sorry_R(fontTexture);
@@ -1195,21 +1200,21 @@ Sprite s_Sorry_Y(fontTexture);
 bool showSorryAnimation = false;
 bool sorryExploded = false;
 float sorryTimer = 0.f;
-float sorryLetterScales[5] = {0.f, 0.f, 0.f, 0.f, 0.f}; // لتكبير الحروف
+float sorryLetterScales[5] = {0.f, 0.f, 0.f, 0.f, 0.f}; 
 
-// --- [جديد] متغيرات أنيميشن PERFECT ---
+
 bool showPerfectAnimation = false;
 bool perfectExploded = false;
 float perfectTimer = 0.f;
-float perfectLetterScales[7] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; // 7 حروف
+float perfectLetterScales[7] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; 
 
-// --- متغيرات نظام الـ Invincibility ---
+
 Clock hitCooldownClock;
 bool isInvincible = false;
-// ------------------------------------
+
 
 // ==========================================
-// Mermaid Event Variables (سمكة النجوم)
+//          Mermaid Event Variables 
 // ==========================================
 Texture mermaidTex("Assets/fish/mermaid/mermaid.png");
 Sprite mermaidSprite(mermaidTex);
@@ -1220,7 +1225,7 @@ Clock eventEndClock;
 
 struct Star
 {
-    Sprite *sprite = nullptr; // غيرناه لمؤشر عشان يشتغل في SFML 3
+    Sprite *sprite = nullptr; 
     Vector2f velocity;
     bool active = false;
 };
@@ -1232,18 +1237,17 @@ int mermaidFrame = 0;
 float mermaidAnimTimer = 0.0f;
 float starSpawnTimer = 0.0f;
 
-// هيكل إعدادات المرحلة
+
 struct LevelSettings
 {
-    int fishToGrowToLevel2 = 15; // عدد السمك المطلوب للنمو للمستوى 2
-    int fishToGrowToLevel3 = 40; // عدد السمك المطلوب للنمو للمستوى 3
+    int fishToGrowToLevel2 = 15; 
+    int fishToGrowToLevel3 = 40; 
     int fishToWin = 60;
 };
 
-// متغير عام ليحمل إعدادات المرحلة الحالية
+
 LevelSettings currentLevelSettings;
 
-// === [جديد] متغيرات Time Attack ===
 int gameLEVEL;
 
 enum Gamemode
@@ -1296,7 +1300,7 @@ Sound dieSound(dieBuffer);
 
 Music WaveSound("Assets/Music and Sounds/waterloop1.ogg");
 
-bool hasPlayedSpawnSound = false; // متغير لمنع تكرار الصوت
+bool hasPlayedSpawnSound = false;
 Clock spawnDelayClock;
 
 struct HighScoreSave
@@ -1310,7 +1314,7 @@ struct PlayerSave
     char name[50] = "";
     int id = 0;
     long long score = 0;
-    // ---> INDIVIDUAL PROGRESS <---
+   
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
 };
@@ -1318,25 +1322,88 @@ struct PlayerSave
 // The Master Save Struct
 struct GameSaveData
 {
-    // 1. Settings (Global)
+   
     float mouseSpeed = 1.0f;
     int graphicsIndex = 0;
     int soundVolume = 100;
     bool isFullscreen = true;
     bool isMusicEnabled = true;
 
-    // 2. User Info (Now contains the individual unlocks!)
+    
     int numberOfUsers = 0;
     PlayerSave players[7];
     char currentUser[50] = "";
 
-    // 3. High Scores (Global)
+    
     HighScoreSave storyScores[25];
     HighScoreSave timeAttackScores[25];
 };
 
-// Create a single global instance
+
 GameSaveData g_data;
+
+void ApplyAudioSettings()
+{
+    // 1. Set Music Volume (100% or 0%)
+    float musicVol = isMusicEnabled ? 100.f : 0.f;
+    mainmenumusic.setVolume(musicVol);
+    loadingmusic.setVolume(musicVol);
+    levelsound.setVolume(musicVol);
+    WaveSound.setVolume(musicVol); 
+
+    // 2. Set Sound Volume (100% or 0%)
+    float soundVol = isSoundEnabled ? 100.f : 0.f;
+    if (waterloop) waterloop->setVolume(soundVol);
+    buttonpressedsound.setVolume(soundVol);
+    Bubbledone.setVolume(soundVol);
+    eatSound.setVolume(soundVol);
+    PlayergotEaten.setVolume(soundVol);
+    gameover.setVolume(soundVol);
+    mermaidevent.setVolume(soundVol);
+    dashSound.setVolume(soundVol);
+    levelUpSound.setVolume(soundVol);
+    StageClearSound.setVolume(soundVol);
+    spawnSound.setVolume(soundVol);
+    dieSound.setVolume(soundVol);
+
+    // Update frenzy array sounds
+    for (int i = 0; i < SOUND_COUNT; i++) {
+        if (sounds[i]) sounds[i]->setVolume(soundVol);
+    }
+
+ 
+    for (int i = 0; i < NUM_SOUND_CHANNELS; i++) {
+        if (sfxChannels[i]) sfxChannels[i]->setVolume(isSoundEnabled ? 30.f : 0.f);
+    }
+}
+void UpdateAmbientSounds()
+{
+    // 1. Always keep the base loop playing 
+    if (waterloop && waterloop->getStatus() != sf::Sound::Status::Playing) {
+        waterloop->play();
+    }
+
+    // 2. The Randomizer Logic
+    if (sfxTimer.getElapsedTime().asSeconds() >= nextSfxDelay)
+    {
+        sfxTimer.restart();
+        nextSfxDelay = getRandom(2.0f, 6.0f); // Pick a new random delay between 2 and 6 seconds
+
+        // Find an empty audio channel so they can overlap naturally
+        for (int i = 0; i < NUM_SOUND_CHANNELS; i++)
+        {
+            if (!sfxChannels[i] || sfxChannels[i]->getStatus() != sf::Sound::Status::Playing)
+            {
+                int randomBuffer = rand() % NUM_SFX_BUFFERS; // Pick from 0 to 3
+                sfxChannels[i].emplace(sfxBuffers[randomBuffer]);
+                sfxChannels[i]->setVolume(isSoundEnabled ? 30.f : 0.f);
+                sfxChannels[i]->play();
+                break; 
+            }
+        }
+    }
+}
+
 
 void LoadGameData()
 {
@@ -1381,7 +1448,7 @@ void LoadGameData()
             }
         }
 
-        // Apply THIS user's progress to the game map!
+       
         level1Unlocked = players[activeIndex].level1Unlocked;
         level2Unlocked = players[activeIndex].level2Unlocked;
         level3Unlocked = players[activeIndex].level3Unlocked;
@@ -1421,6 +1488,7 @@ void LoadGameData()
             timeattack_scores[i] = {"", 0};
         }
     }
+    ApplyAudioSettings();
 }
 
 void SaveGameData()
@@ -1456,7 +1524,7 @@ void SaveGameData()
         g_data.players[i].name[49] = '\0';
         g_data.players[i].id = players[i].id;
         g_data.players[i].score = players[i].score;
-        // Save the individual unlocks down into the binary struct
+       
         g_data.players[i].level1Unlocked = players[i].level1Unlocked;
         g_data.players[i].level2Unlocked = players[i].level2Unlocked;
         g_data.players[i].level3Unlocked = players[i].level3Unlocked;
@@ -1491,7 +1559,7 @@ void SaveGameData()
 
 
 // ============================================================
-// END LEVEL - Textures & Sprites
+//           END LEVEL - Textures & Sprites
 // ============================================================
 
 Texture texEndBg("Assets/EndGameScreen/shell_stageinfo.jpg");
@@ -1526,7 +1594,7 @@ Sprite  sprCrunch(texCrunch);
 
 
 // ============================================================
-// END LEVEL - Fonts & Score Globals
+//        END LEVEL - Fonts & Score Globals
 // ============================================================
 
 Font st_comp("Assets/Fonts/BernardMT.ttf");
@@ -1545,9 +1613,9 @@ Text score_of_eaten_fish[5] = {
 
 
 // ==========================================
-// Player Movement State Globals (To fix reset issues)
+//       Player Movement State Globals 
 // ==========================================
-float currentVisualScale = 0.275f; // نفس قيمة FISH_SCALE
+float currentVisualScale = 0.275f;
 bool canDash = true;
 bool isDashingNow = false;
 bool wasMousePressed = false;
@@ -1555,6 +1623,7 @@ sf::Vector2f dashDirection = { 1.f, 0.f };
 float currentRotation = 0.f;
 sf::Clock dashTimer;
 bool levelWonSuccessfully = false;
+
 
 int main()
 {
@@ -1775,12 +1844,12 @@ bool DrawLoadingScreen(float totalTime)
     for (int i = 0; i < 7; i++)
     {
         float startDelay = 1.5f;
-        float letterDelay = i * 0.4f; // سرعة ظهور الحروف ورا بعض (بطيئة)
+        float letterDelay = i * 0.4f; 
         float letterTime = totalTime - startDelay - letterDelay;
         float popScale = 0.0f;
         if (letterTime > 0)
         {
-            float popDuration = 1.0f; // مدة الفرقعة (بطيئة)
+            float popDuration = 1.0f; 
             popScale = (letterTime < popDuration) ? sin(letterTime * (3.14f / popDuration)) * 1.2f : 1.0f;
 
             if (popScale < 1.0f && letterTime > (popDuration / 2.0f))
@@ -1804,7 +1873,7 @@ bool DrawLoadingScreen(float totalTime)
 
     if (progress >= 1.0f && !exploded)
     {
-        Bubbledone.play(); // ← أضف هنا
+        Bubbledone.play(); 
         exploded = true;
         for (int i = 0; i < 35; i++)
         {
@@ -1812,25 +1881,25 @@ bool DrawLoadingScreen(float totalTime)
             float pX = startX + (idx * spacing);
             float pY = (WindowHeight / 2.0f - 40.f);
 
-            // --- شرارات (Particles) - انتشار أعرض ---
+            
             sparks[i].active = true;
             sparks[i].x = pX;
             sparks[i].y = pY;
 
-            // تعديل: زودنا النطاق (من 120 بدل 60) وقللنا القسمة لعمل انفجار عريض جداً
+           
             sparks[i].vx = (float)(rand() % 50 - 25) / 30.0f;
-            sparks[i].vy = -((float)(rand() % 50 + 20)) / 20.0f; // السرعة الرأسية كما هي أو أبطأ قليلاً عشان ينتشر أفقياً
+            sparks[i].vy = -((float)(rand() % 50 + 20)) / 20.0f; 
             sparks[i].alpha = 255.0f;
 
-            // --- فقاعات (Letter Bubbles) - طلوع أعلى وأسرع ---
+            
             letterBubbles[i].active = true;
             letterBubbles[i].x = pX;
             letterBubbles[i].y = pY;
 
-            // تعديل 1: زيادة الانتشار الأفقي قليلاً عشان متطلع راسية بس
+            
             letterBubbles[i].vx = (float)(rand() % 50 - 25) / 40.0f;
 
-            // تعديل 2: تقليل القسمة (من 40 إلى 20) لتسريع الطلوع بقوة للأعلى
+            
             letterBubbles[i].vy = -((float)(rand() % 30 + 10)) / 30.0f;
 
             letterBubbles[i].alpha = 200.0f;
@@ -1846,12 +1915,10 @@ bool DrawLoadingScreen(float totalTime)
             {
                 anyActive = true;
                 sparks[i].x += sparks[i].vx;
-                // === تعديل الجاذبية (مهم) ===
-                // قمنا بقسمة القسمة على 5 (من 0.2 إلى 0.04) لتصبح مناسبة لـ 120 FPS
+               
                 sparks[i].vy += 0.04f;
                 sparks[i].y += sparks[i].vy;
-                // === تعديل سرعة الاختفاء ===
-                // قمنا بقسمة القسمة على 4 (من 6 إلى 1.5) لتبقى فترة أطول
+                
                 sparks[i].alpha -= 1.5f;
 
                 if (sparks[i].alpha <= 0)
@@ -1872,8 +1939,7 @@ bool DrawLoadingScreen(float totalTime)
                 anyActive = true;
                 letterBubbles[i].x += letterBubbles[i].vx;
                 letterBubbles[i].y += letterBubbles[i].vy;
-                // === تعديل سرعة الاختفاء للفقاعات ===
-                // قمنا بقسمة القسمة على 4 (من 7 إلى 1.75) لتبقى فترة أطول
+                
                 letterBubbles[i].alpha -= 1.75f;
                 if (letterBubbles[i].alpha <= 0)
                 {
@@ -1909,7 +1975,7 @@ bool DrawLoadingScreen(float totalTime)
                 ventBubbles[i].alpha = 255.0f;
                 ventBubbles[i].x = ventPositions[ventIdx].x + (rand() % 12 - 6);
                 ventBubbles[i].y = ventPositions[ventIdx].y;
-                // فقاعات الـ Vent مضبوطة سابقاً لبطء
+               
                 ventBubbles[i].vx = (float)(rand() % 10 - 5) / 150.0f;
                 ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 50.0f;
                 return true;
@@ -2027,11 +2093,11 @@ void MainMenu()
                 {
                     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
-                    // === تعديل: فصل أزرار الكلاسيك والتايم اتاك ===
+           
                     if (startgamebutton.getGlobalBounds().contains(mousePos))
                     {
-                        currentGamemode = CLASSIC; // تحديد الوضع كلاسيك
-                        isTimeAttackMode = false;  // <--- أضف هذا السطر
+                        currentGamemode = CLASSIC; 
+                        isTimeAttackMode = false;  
                         FadeOutToBlack();
                         Select_level();
                         view.setSize({WindowWidth, WindowHeight});
@@ -2041,8 +2107,8 @@ void MainMenu()
                     }
                     else if (timeattackbutton.getGlobalBounds().contains(mousePos))
                     {
-                        currentGamemode = TIMEATTACK; // تحديد الوضع تايم اتاك
-                        isTimeAttackMode = true;      // <--- أضف هذا السطر
+                        currentGamemode = TIMEATTACK; 
+                        isTimeAttackMode = true;      
                         FadeOutToBlack();
                         Select_level();
                         view.setSize({WindowWidth, WindowHeight});
@@ -2061,18 +2127,18 @@ void MainMenu()
                         if (!CurUser.empty())
                         {
                             userName = CurUser;
-                            welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+                            welcomeLabel.setString("Welcome Back"); 
                         }
                         else
                         {
-                            userName = "Guest";                // اسم افتراضي في حالة لم يتم اختيار أحد
-                            welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+                            userName = "Guest";                
+                            welcomeLabel.setString("Welcome"); 
                         }
 
-                        // 2. تحديث نص الاسم المعروض على الشاشة
+                        
                         userNameText.setString(userName);
 
-                        // 3. إعادة حساب النقطة الوسطية للنص (Origin) لضبط المحاذاة في حال تغير طول الاسم
+                       
                         userNameText.setOrigin(userNameText.getLocalBounds().size / 2.0f);
                         FloatRect wBounds = welcomeLabel.getLocalBounds();
                         welcomeLabel.setOrigin({wBounds.size.x / 2.0f, wBounds.size.y / 2.0f});
@@ -2133,20 +2199,17 @@ void StartMainMenu()
         cout << "Error loading shader!" << endl;
     }
 
-    // ==========================================
-    // === التعديل المطلوب: تحديث النص واسم المستخدم ===
-    // ==========================================
     if (!CurUser.empty())
     {
-        // إذا تم اختيار مستخدم من شاشة Switch User (لست عاد)
+       
         userName = CurUser;
-        welcomeLabel.setString("Welcome Back"); // تغيير النص ليكون "مرحباً بعودتك"
+        welcomeLabel.setString("Welcome Back"); 
     }
     else
     {
-        // إذا لم يتم اختيار مستخدم (أول مرة تدخل)
-        userName = "Guest";                // اسم افتراضي
-        welcomeLabel.setString("Welcome"); // نص الترحيب العادي
+       
+        userName = "Guest";                
+        welcomeLabel.setString("Welcome"); 
     }
     // ==========================================
 
@@ -2249,7 +2312,6 @@ void StartMainMenu()
 
     // welcome text
     welcomeLabel.setFont(mainFont);
-    // تم تغيير النص بالأعلى، هنا نعيد تحديد الخصائص الأساسية فقط
     welcomeLabel.setCharacterSize(18);
     welcomeLabel.setFillColor(Color::White);
     welcomeLabel.setOutlineColor(Color::Black);
@@ -2273,6 +2335,8 @@ void StartMainMenu()
 
 void UpdateMainMenu()
 {
+    UpdateAmbientSounds();
+
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
     if (Barracuda.getScale().x == -1)
     {
@@ -2430,7 +2494,6 @@ void GreenfishAnimation(MenuFish &fish)
         GFswim = (GFswim + 1) % 13;
     }
 
-    // Eating interaction (unchanged)
     if (Greenfish.getGlobalBounds().findIntersection(Minowfish.getGlobalBounds()))
     {
         if (counter < 1)
@@ -3272,16 +3335,7 @@ void StartOptions()
             sprTitle->setPosition({WindowWidth / 2.f, 100.f});
             sprTitle->setScale({1.f, 1.f});
         }
-        if (WaterSound.loadFromFile("Assets/Music and Sounds/waterloop1.ogg"))
-        { // [MODIFIED] Corrected path
-            waterloop.emplace(WaterSound);
-            waterloop->setLooping(true);
-        }
-        (void)sfxBuffers[0].loadFromFile("Assets/Music and Sounds/wateramb1.ogg"); // [MODIFIED] Corrected path
-        (void)sfxBuffers[1].loadFromFile("Assets/Music and Sounds/wateramb2.ogg"); // [MODIFIED] Corrected path
-        (void)sfxBuffers[2].loadFromFile("Assets/Music and Sounds/wave1.ogg");     // [MODIFIED] Corrected path
-        (void)sfxBuffers[3].loadFromFile("Assets/Music and Sounds/wave2.ogg");     // [MODIFIED] Corrected path
-        nextSfxDelay = (rand() % 2500 + 2500) / 1000.f;
+
         (void)texUncheckedNormal.loadFromFile("Assets/Options/_shell_checkbtn_normal.png");     // [MODIFIED] Corrected path
         (void)texUncheckedHover.loadFromFile("Assets/Options/_shell_checkbtn_high.png");        // [MODIFIED] Corrected path
         (void)texCheckedNormal.loadFromFile("Assets/Options/shell_checkbtnchecked_normal.png"); // [MODIFIED] Corrected path
@@ -3482,87 +3536,11 @@ void UpdateOptions()
         }
     }
 
-    // تشغيل الصوت
-    // تحديث حالة الصوت العام (Update global sound state)
-    isSoundEnabled = OptionButtons[0].isChecked;
-
-    // تشغيل الصوت (Play/Stop Sounds)
-    if (isSoundEnabled)
-    {
-        if (waterloop && waterloop->getStatus() != Sound::Status::Playing)
-            waterloop->play();
-        // ... (كود الـ SFX لو عايز تضيفه) ...
-    }
-    else
-    {
-        if (waterloop)
-            waterloop->stop();
-        for (int c = 0; c < NUM_SOUND_CHANNELS; c++)
-            if (sfxChannels[c])
-                sfxChannels[c]->stop();
-    }
-
-    // ==========================================
-    // === [FIX] منطق التحكم في الموسيقى ===
-    // ==========================================
-
-    isMusicEnabled = OptionButtons[1].isChecked;
-
-    // التحقق هل نحن قادمين من شاشة Game Screen؟
-    // (بشوف هل موسيقى التحميل شغالة ولا لا)
-    bool isFromGameScreen = (loadingmusic.getStatus() == SoundSource::Status::Playing);
-
-    if (isMusicEnabled)
-    {
-        if (g_optionsFromPause)
-        {
-            // حالة: داخل المستوى (Pause Menu)
-            // نمنع تشغيل موسيقى القائمة الرئيسية حتى لا تتداخل مع موسيقى المستوى
-            if (mainmenumusic.getStatus() == Music::Status::Playing)
-                mainmenumusic.stop();
-        }
-        else
-        {
-            // حالة: القوائم (MainMenu أو GameScreen)
-            if (isFromGameScreen)
-            {
-                // إذا كنا من Game Screen، نريد تشغيل موسيقى التحميل فقط
-                // لذا نتأكد من إيقاف موسيقى القائمة الرئيسية تماماً
-                if (mainmenumusic.getStatus() == Music::Status::Playing)
-                    mainmenumusic.stop();
-
-                // نتأكد أن موسيقى التحميل شغالة
-                if (loadingmusic.getStatus() != SoundSource::Status::Playing)
-                    loadingmusic.play();
-            }
-            else
-            {
-                // إذا كنا من MainMenu، نريد تشغيل موسيقى القائمة الرئيسية فقط
-                // نتأكد من إيقاف موسيقى التحميل (تنظيف)
-                if (loadingmusic.getStatus() == SoundSource::Status::Playing)
-                    loadingmusic.stop();
-
-                // تشغيل موسيقى القائمة الرئيسية
-                if (mainmenumusic.getStatus() != Music::Status::Playing)
-                    mainmenumusic.play();
-            }
-        }
-    }
-    else
-    {
-        // إذا كان الصوت (الموسيقى) معطل
-        if (mainmenumusic.getStatus() == Music::Status::Playing)
-            mainmenumusic.pause();
-
-        // أيضاً إيقاف موسيقى التحميل إذا كانت شغالة
-        if (isFromGameScreen && loadingmusic.getStatus() == SoundSource::Status::Playing)
-            loadingmusic.pause();
-    }
-    // ==========================================
-
     isSoundEnabled = OptionButtons[0].isChecked;
     isMusicEnabled = OptionButtons[1].isChecked;
     isFullscreen = OptionButtons[2].isChecked;
+
+    ApplyAudioSettings();
 
     prevMousePressed = currentMousePressed;
 }
@@ -3585,26 +3563,7 @@ void DrawOptions()
 
     window.draw(screenDarkener);
     // --- UPDATED: The Bulletproof 4-Way Outline Trick ---
-    if (sprBgPlank)
-    {
-        Sprite plankOutline = *sprBgPlank;
-        // --- ALPHA LOWERED TO 90 for a softer, more transparent shadow! ---
-        plankOutline.setColor(Color(0, 0, 0, 90));
-        Vector2f pos = sprBgPlank->getPosition();
-        float outlineThickness = 3.f; // The thickness of the shadow edge
-        // Draw the soft shadow shifted in 4 directions
-        plankOutline.setPosition({pos.x - outlineThickness, pos.y});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x + outlineThickness, pos.y});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x, pos.y - outlineThickness});
-        window.draw(plankOutline);
-        plankOutline.setPosition({pos.x, pos.y + outlineThickness});
-        window.draw(plankOutline);
-        // Restore original position and draw the colorful plank on top
-        sprBgPlank->setPosition(pos);
-        window.draw(*sprBgPlank);
-    }
+    
     if (sprCorals)
         window.draw(*sprCorals);
     if (sprTitle)
@@ -6222,7 +6181,7 @@ void Updatemovingplayer(float dt)
             // حساب الوقت المستغرق: (الوقت الكلي - المتبقي)
             finalTime = timeAttackDuration - remainingTime;
             stopSpawning = true; // إيقاف ظهور الأسماك الجديدة
-
+			isEscapeMode = true; // منع اللاعب من الحركة
             // تفعيل حدث الفوز (Mermaid Event) عندما لا يبقى سمك
             if (!mermaidStarted && !anyFishLeft)
             {
@@ -6801,7 +6760,7 @@ void Updatemovingplayer(float dt)
             if (dist < dynamicEatRadius + 10.f)
             {
                 bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
-                if (playerLevel >= 2 or mediumShrunk)
+                if (playerLevel >= 2 || mediumShrunk)
                 {
                     eatSound.play();
                     mediumFishes[i].active = false;
@@ -6858,7 +6817,7 @@ void Updatemovingplayer(float dt)
             if (dist < dynamicEatRadius + 20.f)
             {
                 bool largeShrunk = abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
-                if (playerLevel >= 3 or largeShrunk)
+                if (playerLevel >= 3 || largeShrunk)
                 {
                     eatSound.play();
                     largeFishes[i].active = false;
@@ -6992,7 +6951,7 @@ void Updatemovingplayer(float dt)
     // تفعيل حدسمكة النجوم لما السمك يخلص
     if (isEscapeMode && !isMermaidEventActive)
     {
-        bool anyFishLeft = false;
+         anyFishLeft = false;
         for (int i = 0; i < MAX_SMALL_FISH; i++)
             if (smallFishes[i].active)
                 anyFishLeft = true;
@@ -8438,7 +8397,7 @@ void StartLevelHud()
 
     float barStartX = 165.f;     // How far right the slot starts
     float barY = 48.f;           // How far down the slot is
-    float barTotalWidth = 245.f; // The physical width of the empty bar
+    float barTotalWidth = 207.f; // The physical width of the empty bar
 
     // Calculate exactly what percentage of the total bar Marker 1 and Marker 2 should sit at
     float m1Ratio = static_cast<float>(currentLevelSettings.fishToGrowToLevel2) / currentLevelSettings.fishToWin;
@@ -8510,13 +8469,13 @@ void UpdateLevelHud()
         growthPercentage = 0.f;
 
     // The true physical measurements of the empty wood slot on the screen
-    float barStartX = 109.f;
+    float barStartX = 108.f;
     float barY = 48.f;
 
     // IF THE BAR OR MARKERS ARE TOO FAR RIGHT, LOWER THIS NUMBER (e.g., to 242.f).
     // Because everything uses this variable, changing it will shift the yellow bar
     // AND the markers together automatically!
-    float barTotalWidth = 202.f;
+    float barTotalWidth = 207.f;
 
     // 2. Size and position the yellow fill
     float currentFillWidth = barTotalWidth * (growthPercentage / 100.f);
