@@ -730,6 +730,7 @@ Font QuitLevelFont;
 Text txtQuitLevel(QuitLevelFont, "Loading...", 28);
 bool goToMainMenuFromLevel = false;
 bool g_optionsFromPause = false;
+bool g_inEndScreen = false;
 
 RectangleShape fadeRect;
 Clock fadeClock;
@@ -1274,6 +1275,9 @@ bool hasPlayedExitSound = false;
 
 SoundBuffer eatSoundBuffer("Assets/Music and Sounds/bite1.ogg");
 Sound eatSound(eatSoundBuffer);
+
+SoundBuffer eatSoundBuffer2("Assets/Music and Sounds/bite2.ogg");
+Sound eatSound2(eatSoundBuffer2);
 
 SoundBuffer PlayergotEatenBuffer("Assets/Music and Sounds/bite3.ogg");
 Sound PlayergotEaten(PlayergotEatenBuffer);
@@ -2093,9 +2097,10 @@ void MainMenu()
 
         while (const optional event = window.pollEvent())
         {
-            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape))
-                window.close();
-
+            if (event->is<Event::Closed>() || Keyboard::isKeyPressed(Keyboard::Key::Escape)){
+                    QuitGame();
+                    if (!window.isOpen()) return; 
+                }
             if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
             {
                 if (mouseEvent->button == Mouse::Button::Left)
@@ -2343,6 +2348,7 @@ void StartMainMenu()
 
 void UpdateMainMenu()
 {
+    mermaidevent.stop();
     UpdateAmbientSounds();
 
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
@@ -2524,6 +2530,19 @@ void GreenfishAnimation(MenuFish &fish)
     }
 }
 
+void CheckHoverSound(Vector2f mousePos, std::initializer_list<FloatRect> rects)
+{
+    bool isHovering = false;
+    for (const auto& r : rects)
+        if (r.contains(mousePos))
+        { isHovering = true; break; }
+
+    if (isHovering)
+    { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+    else
+        playsound = 1;
+}
+
 void PlayingSound(bool isMainMenu)
 {
     if (isLevelRunning)
@@ -2534,6 +2553,7 @@ void PlayingSound(bool isMainMenu)
     Vector2i mouseLocalPos = Mouse::getPosition(window);
     Vector2f mouseWorldPos = window.mapPixelToCoords(mouseLocalPos, view);
     bool isHovering = false;
+    
     if (isMainMenu)
     {
         isHovering = (startgamebutton.getGlobalBounds().contains(mouseWorldPos) ||
@@ -2542,32 +2562,21 @@ void PlayingSound(bool isMainMenu)
                       optionsbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       quitbutton.getGlobalBounds().contains(mouseWorldPos) ||
                       switchuserbutton.getGlobalBounds().contains(mouseWorldPos) ||
-                      creditsbutton.getGlobalBounds().contains(mouseWorldPos) ||
-                      YesButton.getGlobalBounds().contains(mouseWorldPos) ||
-                      NoButton.getGlobalBounds().contains(mouseWorldPos) ||
-                      sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||
-                      sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos));
+                      creditsbutton.getGlobalBounds().contains(mouseWorldPos));
     }
     else
     {
         isHovering = NewButton.getGlobalBounds().contains(mouseWorldPos) ||
                      SelectButton.getGlobalBounds().contains(mouseWorldPos) ||
                      DeleteButton.getGlobalBounds().contains(mouseWorldPos) ||
-                     quit_yes_text.getGlobalBounds().contains(mouseWorldPos) ||
-                     quit_no_text.getGlobalBounds().contains(mouseWorldPos) ||
-                     mySprite.getGlobalBounds().contains(mouseWorldPos) ||
-                     (OptionButtons[10].checkbox.has_value() && OptionButtons[10].checkbox->getGlobalBounds().contains(mouseWorldPos)) ||
-                     YesButton.getGlobalBounds().contains(mouseWorldPos) ||
-                     NoButton.getGlobalBounds().contains(mouseWorldPos) ||
-                     sprHSDonePlankcredits.getGlobalBounds().contains(mouseWorldPos) ||
-                     sprHSResetPlank.getGlobalBounds().contains(mouseWorldPos) ||
-                     quit_button_sprite.getGlobalBounds().contains(mouseWorldPos) ||
-                     sprHSDonePlank.getGlobalBounds().contains(mouseWorldPos) ||
-                     DoneAddingUser.getGlobalBounds().contains(mouseWorldPos) ||
-                     CancelAddingUser.getGlobalBounds().contains(mouseWorldPos) ||
-                     FullOKButton.getGlobalBounds().contains(mouseWorldPos) ||
-                     DeletethisUser.getGlobalBounds().contains(mouseWorldPos);
+                     (NameEntry && DoneAddingUser.getGlobalBounds().contains(mouseWorldPos)) ||
+                     (NameEntry && CancelAddingUser.getGlobalBounds().contains(mouseWorldPos)) ||
+                     (isConfirmUserDelete && YesButton.getGlobalBounds().contains(mouseWorldPos)) ||
+                     (isConfirmUserDelete && NoButton.getGlobalBounds().contains(mouseWorldPos)) ||
+                     (isListFull && FullOKButton.getGlobalBounds().contains(mouseWorldPos)) ||
+                     (DupplicateName && DupplicateOKButton.getGlobalBounds().contains(mouseWorldPos));
     }
+    
     if (isHovering)
     {
         if (playsound)
@@ -2577,9 +2586,7 @@ void PlayingSound(bool isMainMenu)
         }
     }
     else
-    {
         playsound = 1;
-    }
 }
 
 void MinowFishanimation(MenuFish &fish)
@@ -2893,6 +2900,13 @@ void UpdateSwitchUser()
         {
             view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
             window.setView(view);
+        }
+        if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+        {
+            if (keyPressed->code == Keyboard::Key::Escape){
+                window.setView(view);
+                MainMenu();
+            }
         }
         if (auto mouseEvent = event->getIf<Event::MouseButtonReleased>())
             if (mouseEvent->button == Mouse::Button::Left)
@@ -3279,6 +3293,23 @@ void OptionsMenu()
                 view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
                 window.setView(view);
             }
+            if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+            {
+                if (keyPressed->code == Keyboard::Key::Escape)
+                {
+                    if (g_optionsFromPause)
+                    {
+
+                        shouldCloseOptions = true; 
+                        return;
+                    }
+                    else
+                    {
+                        window.setView(view);
+                        MainMenu();
+                    }
+                }
+            }
         }
         UpdateOptions();
         if (shouldCloseOptions)
@@ -3331,7 +3362,7 @@ void drawCenteredSprite(sf::RenderWindow &window, sf::Sprite &sprite, sf::Textur
 
 void StartOptions()
 {
-
+    playsound = 1; 
     static bool isInitialized = false;
     if (!isInitialized)
     {
@@ -3469,10 +3500,17 @@ void StartOptions()
         }
         isInitialized = true;
     }
+    if (!g_optionsFromPause)
+    {
+        view.setSize({800.f, 600.f});
+        view.setCenter({400.f, 300.f});
+        view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+        window.setView(view);
+    }
 }
 void UpdateOptions()
 {
-    PlayingSound(false);
+    // PlayingSound(false);
     Vector2f MousePosition;
     if (g_optionsFromPause)
     {
@@ -3484,6 +3522,20 @@ void UpdateOptions()
         // If in main menu, use the standard view
         MousePosition = window.mapPixelToCoords(Mouse::getPosition(window), view);
     }
+
+    CheckHoverSound(MousePosition, {
+        OptionButtons[0].checkbox->getGlobalBounds(), // Sound
+        OptionButtons[1].checkbox->getGlobalBounds(), // Music
+        OptionButtons[2].checkbox->getGlobalBounds(), // Fullscreen
+        OptionButtons[3].checkbox->getGlobalBounds(), // Slow
+        OptionButtons[4].checkbox->getGlobalBounds(), // (bubble)
+        OptionButtons[5].checkbox->getGlobalBounds(), // (bubble)
+        OptionButtons[6].checkbox->getGlobalBounds(), // Fast
+        OptionButtons[7].checkbox->getGlobalBounds(), // Low
+        OptionButtons[8].checkbox->getGlobalBounds(), // (bubble)
+        OptionButtons[9].checkbox->getGlobalBounds(), // High
+        OptionButtons[10].checkbox->getGlobalBounds() // Done Button
+    });
 
     bool currentMousePressed = Mouse::isButtonPressed(Mouse::Button::Left);
 
@@ -3583,12 +3635,21 @@ void UpdateOptions()
 void DrawOptions()
 {
     window.setView(view);
+    
     if (g_optionsFromPause)
     {
-        window.clear(Color(20, 100, 160));
-        Drawbglevel(); // Draws the ocean, fishes, AND the HUD!
+        window.setView(view);
+
+        if (isLevelRunning && !g_inEndScreen) 
+            Drawbglevel();     
+        else if (gameScreenActive)
+            window.draw(gameScreenBgSprite); 
+        else
+            window.draw(sprEndBg); 
+
         window.setMouseCursorVisible(true);
-        window.setView(uiView); // Lock options UI to screen
+        
+        window.setView(uiView);
     }
     else
     {
@@ -3597,8 +3658,9 @@ void DrawOptions()
     }
 
     window.draw(screenDarkener);
+    
     if (sprBgPlank)           
-    window.draw(*sprBgPlank);
+        window.draw(*sprBgPlank);
     if (sprCorals)
         window.draw(*sprCorals);
     if (sprTitle)
@@ -3648,6 +3710,7 @@ void DrawOptions()
     }
     window.display();
 }
+
 void UpdateMainMenuFish()
 {
     GreenfishAnimation(mGreen);
@@ -3712,6 +3775,13 @@ void QuitGame()
                     }
                 }
             }
+            if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+        {
+            if (keyPressed->code == Keyboard::Key::Escape){
+                window.setView(view);
+                MainMenu();
+        }
+    }
         }
         window.setView(view);
         UpdateQuit();
@@ -3721,6 +3791,7 @@ void QuitGame()
 
 void StartQuit()
 {
+    playsound = 1;
     if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
     {
         cout << "Error: Could not load font!" << endl;
@@ -3751,8 +3822,8 @@ void StartQuit()
     quit_title_text.setString("Are you sure you want to quit");
     quit_title_text.setCharacterSize(28);
     quit_title_text.setFillColor(Color(255, 255, 255));
-    quit_title_text.setOutlineThickness(2);
-    quit_title_text.setOutlineColor(Color(80, 40, 0));
+    quit_title_text.setOutlineThickness(1.5f);
+    quit_title_text.setOutlineColor(Color(0, 0, 0));
     FloatRect titleBounds = quit_title_text.getLocalBounds();
     quit_title_text.setOrigin({titleBounds.position.x + titleBounds.size.x / 2.f, titleBounds.position.y + titleBounds.size.y / 2.f});
     quit_title_text.setPosition({WindowWidth / 2.f, WindowHeight / 2.f - 30.f});
@@ -3760,8 +3831,8 @@ void StartQuit()
     quit_title_text2.setString("Feeding Frenzy 2?");
     quit_title_text2.setCharacterSize(28);
     quit_title_text2.setFillColor(Color(255, 255, 255));
-    quit_title_text2.setOutlineThickness(2);
-    quit_title_text2.setOutlineColor(Color(80, 40, 0));
+    quit_title_text2.setOutlineThickness(1.5f);
+    quit_title_text2.setOutlineColor(Color(0, 0, 0));
     FloatRect titleBounds2 = quit_title_text2.getLocalBounds();
     quit_title_text2.setOrigin({titleBounds2.position.x + titleBounds2.size.x / 2.f, titleBounds2.position.y + titleBounds2.size.y / 2.f});
     quit_title_text2.setPosition({WindowWidth / 2.f, WindowHeight / 2.f + 10.f});
@@ -3789,7 +3860,7 @@ void StartQuit()
 
 void UpdateQuit()
 {
-    PlayingSound(false);
+    // PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
     Vector2f noPos = {WindowWidth / 2.f + 100.f, WindowHeight / 2.f + 90.f};
@@ -3805,6 +3876,8 @@ void UpdateQuit()
         quit_no_text.setFillColor(Color(255, 255, 0));
     else
         quit_no_text.setFillColor(Color(180, 255, 100));
+
+    CheckHoverSound(mousePos, { yesBounds, noBounds });
 }
 
 void DrawQuit()
@@ -4012,6 +4085,7 @@ void addNewHighScore(string name, int score, bool isStoryMode)
 
 void StartHighscore()
 {
+    playsound = 1;
     window.setView(view);
     texHSDoneNormal.setSmooth(true);
     texHSDoneHover.setSmooth(true);
@@ -4071,7 +4145,7 @@ void StartHighscore()
 
 void UpdateHighscore()
 {
-    PlayingSound(false);
+    // PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool mouseClicked = false;
     while (const optional event = window.pollEvent())
@@ -4086,6 +4160,12 @@ void UpdateHighscore()
         if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
             if (mouseBtn->button == Mouse::Button::Left)
                 mouseClicked = true;
+        if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+        {
+            if (keyPressed->code == Keyboard::Key::Escape){
+                window.setView(view);
+                MainMenu();
+        }}
     }
     static Clock arrowHoldClock;
     static bool wasMousePressed = false;
@@ -4128,6 +4208,7 @@ void UpdateHighscore()
             return false;
         }
     };
+    
     if (processArrow(sprHSListArrowUp, triggerScroll) && scrollOffset > 0)
     {
         scrollOffset--;
@@ -4175,6 +4256,15 @@ void UpdateHighscore()
         sprHSResetPlank.setTexture(texHSResetNormal);
         textHSResetButton.setFillColor(colorResetText);
     }
+
+    CheckHoverSound(mousePos, {
+    sprHSDonePlank.getGlobalBounds(),
+    sprHSResetPlank.getGlobalBounds(),
+    sprHSListArrowUp.getGlobalBounds(),
+    sprHSListArrowDown.getGlobalBounds(),
+    sprHSStoryArrowLeft.getGlobalBounds(),
+    sprHSStoryArrowRight.getGlobalBounds()
+});
 }
 
 void DrawHighscore()
@@ -4253,6 +4343,7 @@ void Credits()
 
 void StartCredits()
 {
+    playsound = 1;
     window.setView(view);
     creditsText.emplace(fontcredits);
     fontcredits.setSmooth(true);
@@ -4285,7 +4376,7 @@ void StartCredits()
 
 bool UpdateCredits()
 {
-    PlayingSound(false);
+    // PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     while (const optional event = window.pollEvent())
     {
@@ -4318,6 +4409,9 @@ bool UpdateCredits()
         sprHSDonePlankcredits.setTexture(texHSDoneNormalcredits);
         textHSDoneButtoncredits.setFillColor(Color(180, 255, 100));
     }
+    CheckHoverSound(mousePos, {
+    sprHSDonePlankcredits.getGlobalBounds()
+});
     return false;
 }
 
@@ -4337,7 +4431,7 @@ void DrawCredits()
 // load all assets & init texts/pearls
 void StartSelectLevel()
 {
-
+    playsound = 1;
     isLoading = false;
     loadProgress = 0.f;
 
@@ -4414,10 +4508,27 @@ void centerText(Text &text)
 void UpdateSelectLevel(float dt)
 {
     PearlData *activePearls = isTimeAttackMode ? ta_pearls : pearls;
-    PlayingSound(true);
+    // PlayingSound(true);
     Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
+
+    bool selHovering = mySprite.getGlobalBounds().contains(mf);
+    for (int i = 0; i < 3; ++i)
+    {
+        if (*activePearls[i].unlocked)
+        {
+            FloatRect bounds = activePearls[i].sprite->getGlobalBounds();
+            Vector2f center = {bounds.position.x + bounds.size.x/2.f,
+                               bounds.position.y + bounds.size.y/2.f};
+            if (hypot(mf.x - center.x, mf.y - center.y) <= activePearls[i].radius)
+                selHovering = true;
+        }
+    }
+    if (selHovering) { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+    else playsound = 1;
+    
     levelTxt.setString("choose level");
     centerText(levelTxt);
+
 
     static bool pearlClicked = false;
 
@@ -4664,6 +4775,13 @@ void Select_level()
                         }
                     }
                 }
+        if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+        {
+            if (keyPressed->code == Keyboard::Key::Escape){
+                window.setView(view);
+                MainMenu();
+        }
+    }
         }
         window.setView(view);
         UpdateSelectLevel(dt);
@@ -4683,6 +4801,7 @@ void Select_level()
 // load bg, buttons, quit popup & level-specific assets
 void StartGameScreen(int level)
 {
+    playsound = 1;
     selectedLevel = level;
     gameScreenActive = true;
     window.setView(view);
@@ -4996,26 +5115,25 @@ void StartGameScreen(int level)
 // button hover states each frame
 void UpdateGameScreen()
 {
-    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
+    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window));
 
-    // options & quit hover
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 2; i++) 
     {
-        if (!gsBtns[i].sprite)
-            continue;
+        if (!gsBtns[i].sprite) continue;
         if (gsBtns[i].sprite->getGlobalBounds().contains(mousePos))
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].hoverTex);
-            gsBtns[i].sprite->setOrigin({gsBtns[i].hoverTex.getSize().x / 2.f, gsBtns[i].hoverTex.getSize().y / 2.f});
+            gsBtns[i].sprite->setOrigin({ gsBtns[i].hoverTex.getSize().x / 2.f,
+                                           gsBtns[i].hoverTex.getSize().y / 2.f });
         }
         else
         {
             gsBtns[i].sprite->setTexture(gsBtns[i].normalTex);
-            gsBtns[i].sprite->setOrigin({gsBtns[i].normalTex.getSize().x / 2.f, gsBtns[i].normalTex.getSize().y / 2.f});
+            gsBtns[i].sprite->setOrigin({ gsBtns[i].normalTex.getSize().x / 2.f,
+                                           gsBtns[i].normalTex.getSize().y / 2.f });
         }
     }
 
-    // continue hover (uses custom half-bounds)
     if (gsBtns[2].sprite)
     {
         bool hovered = mousePos.x >= gsBtns[2].x - gsBtns[2].hoverHalfW &&
@@ -5025,37 +5143,48 @@ void UpdateGameScreen()
         if (hovered)
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].hoverTex);
-            gsBtns[2].sprite->setOrigin({gsBtns[2].hoverTex.getSize().x / 2.f, gsBtns[2].hoverTex.getSize().y / 2.f});
-            gsBtns[2].sprite->setScale({gsBtns[2].hoverScale, gsBtns[2].hoverScale});
+            gsBtns[2].sprite->setOrigin({ gsBtns[2].hoverTex.getSize().x / 2.f,
+                                           gsBtns[2].hoverTex.getSize().y / 2.f });
+            gsBtns[2].sprite->setScale({ gsBtns[2].hoverScale, gsBtns[2].hoverScale });
         }
         else
         {
             gsBtns[2].sprite->setTexture(gsBtns[2].normalTex);
-            gsBtns[2].sprite->setOrigin({gsBtns[2].normalTex.getSize().x / 2.f, gsBtns[2].normalTex.getSize().y / 2.f});
-            gsBtns[2].sprite->setScale({gsBtns[2].scale, gsBtns[2].scale});
+            gsBtns[2].sprite->setOrigin({ gsBtns[2].normalTex.getSize().x / 2.f,
+                                           gsBtns[2].normalTex.getSize().y / 2.f });
+            gsBtns[2].sprite->setScale({ gsBtns[2].scale, gsBtns[2].scale });
         }
     }
 
-    if (!showQuitPopup)
-        return;
-
-    // quit popup button hover
-    for (int i = 0; i < 3; i++)
+    if (showQuitPopup)
     {
-        auto &btn = quitPopup.btns[i];
-        if (!btn.sprite)
-            continue;
-        if (btn.sprite->getGlobalBounds().contains(mousePos))
+        for (int i = 0; i < 3; i++)
         {
-            btn.sprite->setTexture(btn.hoverTex);
-            btn.sprite->setOrigin({btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f});
-        }
-        else
-        {
-            btn.sprite->setTexture(btn.normalTex);
-            btn.sprite->setOrigin({btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f});
+            auto& btn = quitPopup.btns[i];
+            if (!btn.sprite) continue;
+
+            if (btn.sprite->getGlobalBounds().contains(mousePos))
+            {
+                btn.sprite->setTexture(btn.hoverTex);
+                btn.sprite->setOrigin({ btn.hoverTex.getSize().x / 2.f, btn.hoverTex.getSize().y / 2.f });
+            }
+            else
+            {
+                btn.sprite->setTexture(btn.normalTex);
+                btn.sprite->setOrigin({ btn.normalTex.getSize().x / 2.f, btn.normalTex.getSize().y / 2.f });
+            }
         }
     }
+    bool endHovering = false;
+    for (int i = 0; i < 3; i++)
+        if (gsBtns[i].sprite && gsBtns[i].sprite->getGlobalBounds().contains(mousePos))
+            endHovering = true;
+    if (showQuitPopup)
+        for (int i = 0; i < 3; i++)
+            if (quitPopup.btns[i].sprite && quitPopup.btns[i].sprite->getGlobalBounds().contains(mousePos))
+                endHovering = true;
+    if (endHovering) { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+    else playsound = 1;
 }
 
 // draw buttons + quit popup OR level images/texts
@@ -5105,23 +5234,40 @@ void GameScreen(int level)
     {
         float dt = clock.restart().asSeconds();
         totaltime += dt;
+        window.setView(view); 
         while (const optional event = window.pollEvent())
         {
             if (event->is<Event::Closed>())
                 window.close();
-            else if (const auto *resizeEvent = event->getIf<Event::Resized>())
+            else if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
             {
-                view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
-                window.setView(view);
-            }
-
-           
-            if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
                 if (keyPressed->code == Keyboard::Key::Escape)
                 {
-                    gameScreenActive = false;
-                    return;
+                    if (showQuitPopup)
+                    {
+
+                        showQuitPopup = false;
+                    }
+                    else
+                    {
+
+                        if (loadingmusic.getStatus() == SoundSource::Status::Playing)
+                            loadingmusic.stop();
+                        if (levelsound.getStatus() == SoundSource::Status::Playing)
+                            levelsound.stop();
+                        if (WaveSound.getStatus() == SoundSource::Status::Playing)
+                            WaveSound.stop();    
+
+                        gameScreenActive = false;
+                        goToMainMenuFromLevel = true;
+                        
+                        Select_level();
+                        mainmenumusic.play();
+                        
+                        return; 
+                    }
                 }
+            }
 
             // left click → buttons / quit popup
             if (const auto *mouseBtn = event->getIf<Event::MouseButtonReleased>())
@@ -5136,6 +5282,7 @@ void GameScreen(int level)
                             loadingmusic.stop();
                             showQuitPopup = false;
                             gameScreenActive = false;
+                            QuitLevelLoadingScreen();
                             MainMenu();
                             return;
                         }
@@ -5144,6 +5291,7 @@ void GameScreen(int level)
                             loadingmusic.stop();
                             showQuitPopup = false;
                             gameScreenActive = false;
+                            QuitLevelLoadingScreen(); 
                             MainMenu();
                             return;
                         }
@@ -5155,7 +5303,10 @@ void GameScreen(int level)
                         if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
                         {
                             gameScreenActive = false;
+                            g_optionsFromPause = true;  
                             OptionsMenu();
+                            g_optionsFromPause = false; 
+                            gameScreenActive = true;
                         }
                         if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
                             showQuitPopup = true;
@@ -5473,7 +5624,7 @@ void bglevel()
     Clock clock;
     while (window.isOpen() && isLevelRunning)
     {
-        float deltaTime = clock.restart().asSeconds();
+        deltaTime = clock.restart().asSeconds();
         if (deltaTime > 0.1f)
             deltaTime = 0.016f;
         totaltime += deltaTime;
@@ -5786,6 +5937,16 @@ void Startbglevel()
     grassY = LevelHeight - (grassSize.y * grassScale) + 10.f;
 
     sprreefsseaweed33.setPosition({grassX, grassY});
+
+    for (int i = 0; i < 60; i++)
+    {
+        ventBubbles[i].active = false;
+        ventBubbles[i].alpha = 0.f;
+        ventBubbles[i].x = 0.f;
+        ventBubbles[i].y = 0.f;
+        ventBubbles[i].vx = 0.f;
+        ventBubbles[i].vy = 0.f;
+    }
 }
 
 void Drawbglevel()
@@ -5797,7 +5958,7 @@ void Drawbglevel()
     window.draw(sprbglevel, &swayShader);
 
     swayShaderPlants.setUniform("time", totaltime);
-    window.draw(sprreefstubes3, &swayShaderPlants);
+    window.draw(sprreefstubes, &swayShaderPlants);
 
     DrawLargeFishes(window);
     DrawMediumFishes(window);
@@ -5819,10 +5980,86 @@ void Drawbglevel()
     window.draw(sprreefsseaweed31, &swayShaderPlants);
     window.draw(sprreefsseaweed22, &swayShaderPlants);
     window.draw(sprreefsseaweed, &swayShaderPlants);
-    window.draw(sprreefstubes, &swayShaderPlants);
     window.draw(sprreefsgrass, &swayShaderPlants);
     window.draw(sprreefsplants23, &swayShaderPlants);
 
+
+    // ==========================================
+    // --- Vent Bubbles Logic for Level ---
+    // ==========================================
+    
+    static Vector2f levelVentPos1 = {LevelWidth - 133.f, LevelHeight - 130.f};
+    static Vector2f levelVentPos2 = {LevelWidth - 198.f, LevelHeight - 110.f};
+    
+    static float levelVentTimer1 = 0.f;
+    static float levelVentTimer2 = 0.f;
+
+    levelVentTimer1 += deltaTime;
+    levelVentTimer2 += deltaTime;
+
+    auto spawnLevelBubble = [&](Vector2f ventPos) {
+        for (int i = 0; i < 60; i++)
+        {
+            if (!ventBubbles[i].active)
+            {
+                ventBubbles[i].active = true;
+                ventBubbles[i].isVent = true;
+                ventBubbles[i].alpha = 255.0f;
+                ventBubbles[i].x = ventPos.x + (rand() % 12 - 6);
+                ventBubbles[i].y = ventPos.y;
+                
+                ventBubbles[i].vx = (float)(rand() % 10 - 5) / 150.0f;
+                ventBubbles[i].vy = -((float)(rand() % 20 + 20)) / 50.0f;
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (levelVentTimer1 >= 0.8f)
+    {
+        if (spawnLevelBubble(levelVentPos1))
+            levelVentTimer1 = 0.0f;
+    }
+    if (levelVentTimer2 >= 0.8f)
+    {
+        if (spawnLevelBubble(levelVentPos2))
+            levelVentTimer2 = 0.0f;
+    }
+
+    for (int i = 0; i < 60; i++)
+    {
+        if (ventBubbles[i].active)
+        {
+            ventBubbles[i].x += ventBubbles[i].vx;
+            ventBubbles[i].y += ventBubbles[i].vy;
+
+            if (ventBubbles[i].isVent)
+            {
+                ventBubbles[i].x += sin(totaltime * 4.0f + i) * 0.25f;
+                
+                if (ventBubbles[i].y < 200.f)
+                    ventBubbles[i].alpha -= 8.0f;
+
+                if (ventBubbles[i].alpha <= 0 || ventBubbles[i].y < -100.f)
+                    ventBubbles[i].active = false;
+            }
+
+            if (ventBubbles[i].active)
+            {
+                bubbleSmallSprite.setPosition({ventBubbles[i].x, ventBubbles[i].y});
+                bubbleSmallSprite.setColor(Color(255, 255, 255, (uint8_t)ventBubbles[i].alpha));
+                
+                float s = ventBubbles[i].isVent ? (0.8f + (i % 3) * 0.2f) : 0.65f;
+                bubbleSmallSprite.setScale({s, s});
+                
+                window.draw(bubbleSmallSprite);
+            }
+        }
+    }
+    // ==========================================
+    // --- Vent Bubbles ---
+    // ==========================================
     
     if (showSorryAnimation && !sorryExploded)
     {
@@ -6048,9 +6285,7 @@ void Startmovingplayer()
     static bool *pIsDashingNow = nullptr;
     static bool *pWasMousePressed = nullptr;
     static float *pCurrentRotation = nullptr;
-    playerIntroActive = true;
-    playerIntroStep = 0;
-    playerIntroY = -150.f;
+    
 
     isPlayerDead = false;
     isGameOver = false;
@@ -6119,27 +6354,51 @@ void Startmovingplayer()
         largeFishes[i].state = 1;
     }
 
+
+    for (int i = 0; i < 35; i++)
+    {
+        sparks[i].active = false;
+        sparks[i].alpha = 0.f;
+    }
+    gameBubbleSpawnTimer = 0.f;
+
+    
     (void)texPlayerall.loadFromFile("Assets/Fish/butterflyfish/Butterflyfishall.png");
     spawnDelayClock.restart();
     sprPlayerall.setTexture(texPlayerall);
 
     sprPlayerall.setOrigin({DRAW_W / 2.0f, DRAW_H / 2.0f});
 
-    sprPlayerall.setScale({FISH_SCALE, FISH_SCALE});
 
+    float startScale = FISH_SCALE;
+    if (playerLevel == 2)
+        startScale = 0.4f;
+    else if (playerLevel == 3)
+        startScale = 0.6f;
+
+    currentVisualScale = startScale; 
+
+    isFacingRight = true;
+    sprPlayerall.setScale({-currentVisualScale, currentVisualScale}); 
+
+    playerIntroActive = true;
+    playerIntroStep = 0;
+    hasPlayedSpawnSound = false; 
+
+    sprPlayerall.setPosition({LevelWidth / 2.0f, LevelHeight / 2.0f});
+    
     texPlayerall.setSmooth(true);
     levelsound.setLooping(true);
     levelsound.play();
     WaveSound.play();
     levelsound.setLooping(true);
     WaveSound.setLooping(true);
-    hasPlayedSpawnSound = false;
+    
     StartPowerUps();
 
     currentState = IDLE;
     currentFrame = 0;
     isFacingRight = false;
-    sprPlayerall.setScale({FISH_SCALE, FISH_SCALE});
     lastMouseX = window.mapPixelToCoords(sf::Mouse::getPosition(window), view).x;
 
     fishEatenCount = 0; 
@@ -6158,7 +6417,7 @@ void Startmovingplayer()
         remainingTime = 0;
     } 
 
-    targetPos = {LevelWidth / 2.f, LevelHeight / 2.f};
+    targetPos = sprPlayerall.getPosition(); 
     sf::Vector2i windowCenter(window.getSize().x / 2, window.getSize().y / 2);
     sf::Mouse::setPosition(windowCenter, window);
 }
@@ -6227,7 +6486,7 @@ void Updatemovingplayer(float dt)
     }
     // ==========================================
 
-    static float currentVisualScale = FISH_SCALE;
+    // static float currentVisualScale = FISH_SCALE;
 
     if (isInvincible && hitCooldownClock.getElapsedTime().asSeconds() > 5.0f)
     {
@@ -6278,6 +6537,14 @@ void Updatemovingplayer(float dt)
     if (isPlayerDead)
     {
         float elapsed = respawnClock.getElapsedTime().asSeconds();
+
+        if (lives <= 0 && dieSound.getStatus() == sf::Sound::Status::Stopped)
+        {
+            if (gameover.getStatus() != sf::Sound::Status::Playing)
+            {
+                gameover.play(); 
+            }
+        }
 
         if (showSorryAnimation)
         {
@@ -6595,8 +6862,37 @@ void Updatemovingplayer(float dt)
     }
 
     bool isMoving = false;
-    float playerSpeed = speedBoostActive ? 1000.0f * SPEED_BOOST_MULT : 1000.0f;
+    // ==========================================
+    // --- Mouse Speed Options ---
+    // ==========================================
+    float baseSpeed = 1000.0f; 
 
+    if (MSpeedIndex == 1)
+    {
+        baseSpeed = 750.0f;   // Low
+    }
+    else if (MSpeedIndex == 2)
+    {
+        baseSpeed = 1000.0f;  // Medium
+    }
+    else if (MSpeedIndex == 3)
+    {
+        baseSpeed = 1250.0f;  // Medium 2
+    }
+    else if (MSpeedIndex == 4)
+    {
+        baseSpeed = 1500.0f;  // High
+    }
+
+    // --- Escape Mode Speed ---
+    if (isEscapeMode)
+    {
+        baseSpeed = baseSpeed * 2.5f;
+    }
+
+    float playerSpeed = speedBoostActive ? baseSpeed * SPEED_BOOST_MULT : baseSpeed;
+
+    // dash system
     if (isDashingNow)
     {
         playerSpeed *= 1.5f;
@@ -6791,7 +7087,7 @@ void Updatemovingplayer(float dt)
                 bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
                 if (playerLevel >= 2 || mediumShrunk)
                 {
-                    eatSound.play();
+                    eatSound2.play(); 
                     mediumFishes[i].active = false;
                     delete mediumFishes[i].sprite;
                     mediumFishes[i].sprite = nullptr;
@@ -6848,7 +7144,7 @@ void Updatemovingplayer(float dt)
                 bool largeShrunk = abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
                 if (playerLevel >= 3 || largeShrunk)
                 {
-                    eatSound.play();
+                    PlayergotEaten.play();
                     largeFishes[i].active = false;
                     delete largeFishes[i].sprite;
                     largeFishes[i].sprite = nullptr;
@@ -7398,7 +7694,7 @@ void UpdateMediumFishes(float dt)
         if (isEscapeMode && !fish.isFleeing)
         {
             fish.isFleeing = true;
-            fish.velocity.x *= 2.5f;
+            fish.velocity.x *= 2.4f;
             fish.velocity.y = 0;
             fish.state = 1;
             fish.canTurn = false;
@@ -7534,7 +7830,9 @@ void UpdateMediumFishes(float dt)
             }
 
             // 2. Medium Fish Eats Player
-            if (playerLevel < 2 && !isPlayerDead && !isInvincible)
+            bool mediumShrunk = std::abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
+
+            if (playerLevel < 2 && !mediumShrunk && !isPlayerDead && !isInvincible)
             {
                 // Mouth Check
                 sf::Vector2f fishDir(1.f, 0.f);
@@ -7564,7 +7862,7 @@ void UpdateMediumFishes(float dt)
                     else
                     {
                         levelsound.stop(); 
-                        gameover.play();  
+                        PlayergotEaten.play();
                         isGameOver = true; 
                         dieSound.play();   
                     }
@@ -7693,7 +7991,7 @@ void UpdateLargeFishes(float dt)
         if (isEscapeMode && !fish.isFleeing)
         {
             fish.isFleeing = true;
-            fish.velocity.x *= 2.0f;
+            fish.velocity.x *= 3.0f;
             fish.velocity.y = 0;
             fish.state = 1;
             fish.canTurn = false;
@@ -7850,7 +8148,9 @@ void UpdateLargeFishes(float dt)
             }
 
             // 3. Large Fish Eats Player
-            if (playerLevel < 3 && !isPlayerDead && !isInvincible)
+            bool largeShrunk = std::abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
+
+            if (playerLevel < 3 && !largeShrunk && !isPlayerDead && !isInvincible)
             {
                 sf::Vector2f fishDir(1.f, 0.f);
                 if (fish.velocity.x != 0)
@@ -7880,7 +8180,7 @@ void UpdateLargeFishes(float dt)
                     else
                     {
                         levelsound.stop();
-                        gameover.play();  
+                        PlayergotEaten.play();
                         isGameOver = true; 
                     }
 
@@ -8420,7 +8720,7 @@ void StartLevelHud()
 
     float barStartX = 165.f;    
     float barY = 48.f;           
-    float barTotalWidth = 210.f; 
+    float barTotalWidth = 208.f; 
 
     // Calculate exactly what percentage of the total bar Marker 1 and Marker 2 should sit at
     float m1Ratio = static_cast<float>(currentLevelSettings.fishToGrowToLevel2) / currentLevelSettings.fishToWin;
@@ -8494,7 +8794,7 @@ void UpdateLevelHud()
     float barStartX = 108.f;
     float barY = 48.f;
 
-    float barTotalWidth = 207.f;
+    float barTotalWidth = 208.5f;
 
 
     float currentFillWidth = barTotalWidth * (growthPercentage / 100.f);
@@ -8746,8 +9046,8 @@ bool ShowEndGameMenu()
 
             if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
-                view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
-                window.setView(view);
+                // view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+                // window.setView(view);
             }
 
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
@@ -8770,6 +9070,7 @@ bool ShowEndGameMenu()
 
                     if (saveBtn.getGlobalBounds().contains(mousePos))
                     {
+                        addNewHighScore(userName, score, currentGamemode == CLASSIC);
                         levelsound.stop();      
                         WaveSound.stop();      
                         mainmenumusic.play();    
@@ -8881,7 +9182,9 @@ bool ShowEndGameMenu()
         cancelTxt.setOutlineColor(outlineColor);
         centerText(cancelTxt, cancelPos.x, cancelPos.y - 2.f);
         window.draw(cancelTxt);
-
+        bool endMenuHovering = saveHover || quitHover || cancelHover;
+        if (endMenuHovering) { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+        else playsound = 1;
         window.display();
     }
 
@@ -8983,8 +9286,8 @@ void ShowPauseMenu()
 
             if (const auto *resizeEvent = event->getIf<Event::Resized>())
             {
-                view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
-                window.setView(view);
+                // view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+                // window.setView(view);
             }
 
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
@@ -9101,6 +9404,9 @@ void ShowPauseMenu()
         endTxt.setOutlineColor(outlineColor);
         centerText(endTxt, endPos.x, endPos.y - 3.f);
         window.draw(endTxt);
+        bool pauseHovering = resumeHover || optionsHover || endHover;
+        if (pauseHovering) { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+        else playsound = 1;
 
         window.display();
     }
@@ -9126,6 +9432,7 @@ void QuitLevelLoadingScreen()
         texLevelLoadingLogo.setSmooth(true);
         texLevelLoadBar.setSmooth(true);
         texLevelLoadBarCap.setSmooth(true);
+        mermaidevent.stop();
 
         float bgScaleX = WindowWidth / texLevelLoadingBg.getSize().x;
         float bgScaleY = WindowHeight / texLevelLoadingBg.getSize().y;
@@ -9333,6 +9640,7 @@ void StartEndLevel(RenderWindow& window)
 }
 bool EndLevel()
 {
+    g_inEndScreen = true; 
     mermaidevent.stop();
     view.setSize({ 800.f, 600.f });
     view.setCenter({ 400.f, 300.f });
@@ -9353,6 +9661,17 @@ bool EndLevel()
                 return false;
             }
 
+            else if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
+            {
+                if (keyPressed->code == Keyboard::Key::Escape)
+                {
+                    if (showQuitPopup)
+                    {
+                        showQuitPopup = false;
+                    }
+                    }
+                }
+
             if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
             {
                 if (mouseBtn->button == Mouse::Button::Left)
@@ -9361,7 +9680,9 @@ bool EndLevel()
 
                     if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
                     {
-                        OptionsMenu();
+                    g_optionsFromPause = true; 
+                    OptionsMenu();
+                    g_optionsFromPause = false; 
                     }
 
                     if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
@@ -9402,15 +9723,22 @@ bool EndLevel()
                         {
                             showQuitPopup = false;
                             levelsound.stop();
-                            MainMenu();
+                            WaveSound.stop();
+                            mermaidevent.stop();
+                            // QuitLevelLoadingScreen();
+                            isLevelRunning = false;
+                            goToMainMenuFromLevel = true;
                             return true; 
                         }
-
                         if (quitPopup.btns[1].sprite && quitPopup.btns[1].sprite->getGlobalBounds().contains(mousePos))
                         {
                             showQuitPopup = false;
                             levelsound.stop();
-                            MainMenu();
+                            WaveSound.stop();
+                            mermaidevent.stop();
+                            // QuitLevelLoadingScreen();
+                            isLevelRunning = false;
+                            goToMainMenuFromLevel = true;
                             return true;
                         }
 
@@ -9427,7 +9755,7 @@ bool EndLevel()
         UpdateEndLevel(window);
         DrawEndLevel(window);
     }
-
+    g_inEndScreen = false; 
     return true;
 }
 
@@ -9493,6 +9821,16 @@ void UpdateEndLevel(RenderWindow& window)
             }
         }
     }
+    bool endHovering = false;
+    for (int i = 0; i < 3; i++)
+        if (gsBtns[i].sprite && gsBtns[i].sprite->getGlobalBounds().contains(mousePos))
+            endHovering = true;
+    if (showQuitPopup)
+        for (int i = 0; i < 3; i++)
+            if (quitPopup.btns[i].sprite && quitPopup.btns[i].sprite->getGlobalBounds().contains(mousePos))
+                endHovering = true;
+    if (endHovering) { if (playsound) { buttonpressedsound.play(); playsound = 0; } }
+    else playsound = 1;
 }
 
 void DrawEndLevel(RenderWindow& window)
