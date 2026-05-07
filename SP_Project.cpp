@@ -1541,11 +1541,6 @@ void LoadGameData()
 
 void SaveGameData()
 {
-    if (isGuestSession)
-    {   
-        cout << "Guest session - saving scores only (without guest entries).\n";
-        return;
-    }
     // 1. Find the current user and save their progress into their specific slot
     for (int i = 0; i < NumberOfUsers; i++)
     {
@@ -3197,6 +3192,16 @@ for (int i = 0; i < NumberOfUsers; i++)
                         isConfirmUserDelete = 0;
                         SelectedUser = -1;
                         RefreshUsersList();
+                        CurUser = "Guest";
+                        isGuestSession = true;
+                        level1Unlocked = true;
+                        level2Unlocked = false;
+                        level3Unlocked = false;
+                        ta_level1Unlocked = true;
+                        ta_level2Unlocked = false;
+                        ta_level3Unlocked = false;
+                        storyCarryScore = 0;
+                        taCarryScore = 0;
                     }
                     JustOpenDeleteConfirm = 0;
                 }
@@ -4523,18 +4528,18 @@ void StartCredits()
     texHSDoneNormalcredits.setSmooth(true);
     texHSDoneHovercredits.setSmooth(true);
     creditsText->setCharacterSize(28);
-    creditsText->setOutlineThickness(1.f);
+    creditsText->setOutlineThickness(1.5f);
     creditsText->setOutlineColor(Color(0, 0, 0));
-    creditsText->setFillColor(Color(255, 255, 255));
+    creditsText->setFillColor(Color(180, 255, 100));
     creditsText->setString(
-        "Team Members:\n\n\n\n"
-        "1- Loay Mohamed\n"
-        "2- Zeyad Khaled\n"
-        "3- Mohamed Saraya\n"
+        "Team Members:\n\n"
+        "1- Loay Mohamed\n\n"
+        "2- Mohamed Medhat\n"
+        "3- Zeyad Gouda\n\n"
         "4- Mohamed El Sayed\n"
-        "5- Zeyad Gouda\n"
-        "6- Mohamed Yasser\n"
-        "7- Mohamed Medhat\n\n\n"
+        "5- Mohamed Yasser\n\n"
+        "6- Zeyad Khaled\n"
+        "7- Mohamed Saraya\n\n"
         "THANKS FOR PLAYING!");
     FloatRect bounds = creditsText->getLocalBounds();
     creditsText->setOrigin({bounds.position.x + bounds.size.x / 2.f, 0.f});
