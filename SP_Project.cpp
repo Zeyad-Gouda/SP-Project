@@ -1563,6 +1563,7 @@ void LoadGameData()
 
 void SaveGameData()
 {
+
     // 1. Find the current user and save their progress into their specific slot
     for (int i = 0; i < NumberOfUsers; i++)
     {
@@ -1585,6 +1586,10 @@ void SaveGameData()
     g_data.graphicsIndex = GraphicsIndex;
 
     g_data.numberOfUsers = NumberOfUsers;
+    for (int i = 0; i < 7; i++)
+    {
+        g_data.players[i] = PlayerSave();
+    }
 
     for (int i = 0; i < 7; i++)
     {
@@ -1703,7 +1708,6 @@ const float POWER_UP_DURATION = SPEED_BOOST_DURATION;
 
 int main()
 {
-    
     LoadGameData();
     loadSounds();
     cout << "SFML 3.0 and Standard Library are working!" << endl;
@@ -1711,10 +1715,70 @@ int main()
     if (isFullscreen)
     {
         window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2", State::Fullscreen);
+        sf::Image image;
+        if (image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
+        {
+            unsigned int newW = 48;
+            unsigned int newH = 48;
+
+            sf::Image resized;
+            resized.resize({newW, newH}, sf::Color::Transparent);
+
+            unsigned int origW = image.getSize().x;
+            unsigned int origH = image.getSize().y;
+
+            for (unsigned int y = 0; y < newH; y++)
+            {
+                for (unsigned int x = 0; x < newW; x++)
+                {
+                    unsigned int srcX = x * origW / newW;
+                    unsigned int srcY = y * origH / newH;
+                    resized.setPixel({x, y}, image.getPixel({srcX, srcY}));
+                }
+            }
+
+            if (auto cursor = sf::Cursor::createFromPixels(
+                    resized.getPixelsPtr(),
+                    resized.getSize(),
+                    {newW / 2, newH / 2}))
+            {
+                window.setMouseCursor(*cursor);
+            }
+        }
     }
     else
     {
         window.create(VideoMode({800, 600}), "Feeding Frenzy 2", State::Windowed);
+        sf::Image image;
+        if (image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
+        {
+            unsigned int newW = 48;
+            unsigned int newH = 48;
+
+            sf::Image resized;
+            resized.resize({newW, newH}, sf::Color::Transparent);
+
+            unsigned int origW = image.getSize().x;
+            unsigned int origH = image.getSize().y;
+
+            for (unsigned int y = 0; y < newH; y++)
+            {
+                for (unsigned int x = 0; x < newW; x++)
+                {
+                    unsigned int srcX = x * origW / newW;
+                    unsigned int srcY = y * origH / newH;
+                    resized.setPixel({x, y}, image.getPixel({srcX, srcY}));
+                }
+            }
+
+            if (auto cursor = sf::Cursor::createFromPixels(
+                    resized.getPixelsPtr(),
+                    resized.getSize(),
+                    {newW / 2, newH / 2}))
+            {
+                window.setMouseCursor(*cursor);
+            }
+        }
     }
 
     LoadingScreen();
@@ -1760,6 +1824,18 @@ int main()
         {
             if (event->is<Event::Closed>())
                 window.close();
+            if (event->is<Event::MouseEntered>())
+                {
+                    sf::Image image;
+                    if (image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
+                    {
+                        if (auto cursor = sf::Cursor::createFromPixels(
+                                image.getPixelsPtr(),
+                                image.getSize(),
+                                {image.getSize().x / 2, image.getSize().y / 2}))
+                            window.setMouseCursor(*cursor);
+                    }
+                }
             if (event->is<Event::KeyPressed>())
                 if (event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape)
                     window.close();
@@ -3805,6 +3881,7 @@ void UpdateOptions()
 
                     if (OptionButtons[i].isChecked)
                         window.create(VideoMode::getDesktopMode(), "Feeding Frenzy 2", State::Fullscreen);
+                        
                     else
                         window.create(VideoMode({800, 600}), "Feeding Frenzy 2", State::Windowed);
 
@@ -3814,6 +3891,36 @@ void UpdateOptions()
                     view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
 
                     window.setView(view);
+                    sf::Image image;
+                    if (image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
+                    {
+                        unsigned int newW = 48;
+                        unsigned int newH = 48;
+
+                        sf::Image resized;
+                        resized.resize({newW, newH}, sf::Color::Transparent);
+
+                        unsigned int origW = image.getSize().x;
+                        unsigned int origH = image.getSize().y;
+
+                        for (unsigned int y = 0; y < newH; y++)
+                        {
+                            for (unsigned int x = 0; x < newW; x++)
+                            {
+                                unsigned int srcX = x * origW / newW;
+                                unsigned int srcY = y * origH / newH;
+                                resized.setPixel({x, y}, image.getPixel({srcX, srcY}));
+                            }
+                        }
+
+                        if (auto cursor = sf::Cursor::createFromPixels(
+                                resized.getPixelsPtr(),
+                                resized.getSize(),
+                                {newW / 2, newH / 2}))
+                        {
+                            window.setMouseCursor(*cursor);
+                        }
+                    }
                 }
                 
                 else
@@ -3858,11 +3965,12 @@ void DrawOptions()
             Drawbglevel();     
         else if (gameScreenActive)
             window.draw(gameScreenBgSprite); 
+        else if (g_inEndScreen)
+            window.draw(sprEndBg);
         else
-            window.draw(sprEndBg); 
-
-        window.setMouseCursorVisible(true);
+            DrawMainMenuBackground(); 
         
+        window.setMouseCursorVisible(true);
         window.setView(uiView);
     }
     else

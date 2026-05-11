@@ -7,18 +7,16 @@
             "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
             "args": [
                 "-g",
-                "${workspaceFolder}/*.cpp",
+                "D:\\SP-Project\\*.cpp",
                 "-o",
-                "${workspaceFolder}\\FeedingFrenzy2.exe", 
-                "-I",
-                "C:/msys64/ucrt64/include",
-                "-L",
-                "C:/msys64/ucrt64/lib",
+                "D:\\SP-Project\\FeedingFrenzy2.exe",
+                "-I", "C:/msys64/ucrt64/include",
+                "-L", "C:/msys64/ucrt64/lib",
                 "-lsfml-graphics",
                 "-lsfml-window",
                 "-lsfml-system",
                 "-lsfml-audio",
-                "-lsfml-network" 
+                "-lsfml-network"
             ],
             "group": {
                 "kind": "build",
