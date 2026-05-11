@@ -489,15 +489,23 @@ struct AnimatedObject
     RectangleShape shape;
     void update(int frameWidth, int frameHeight, float dt)
     {
-        sprite.move({velocityX_AXIS * dt * 60.f, velocityY_AXIS * dt * 60.f});
+        sprite.move({ velocityX_AXIS * dt * 60.f, velocityY_AXIS * dt * 60.f });
         changedir = (velocityX_AXIS > 0) ? -1.f : 1.f;
-        sprite.setScale({0.2f * changedir, 0.2f});
-        timer = 0.0f;
-        sprite.setTextureRect(IntRect({currentFrame * frameWidth, 0}, {frameWidth, frameHeight}));
-        currentFrame++;
-        if (currentFrame == 15)
+        sprite.setScale({ 0.2f * changedir, 0.2f });
+
+       
+        timer += dt;
+        if (timer >= 0.06f)
         {
-            currentFrame = 0;
+            timer = 0.0f;
+            currentFrame++;
+
+          
+            if (currentFrame >= 14)
+            {
+                currentFrame = 0;
+            }
+            sprite.setTextureRect(IntRect({ currentFrame * frameWidth, 0 }, { frameWidth, frameHeight }));
         }
     }
 };
@@ -873,6 +881,7 @@ Texture texPlayerEat("Assets/Fish/butterflyfish/eat.png");
 Texture texPlayerTurn("Assets/Fish/butterflyfish/turn.png");
 Texture texPlayerIdle("Assets/Fish/butterflyfish/idle.png");
 Texture texPlayerall("Assets/Fish/butterflyfish/Butterflyfishall.png");
+Texture texPlayerInfected("Assets/Fish/butterflyfish/Butterflyfishall_infected.png");
 Sprite sprPlayerSwim(texPlayerSwim);
 Sprite sprPlayerEat(texPlayerEat);
 Sprite sprPlayerTurn(texPlayerTurn);
@@ -917,6 +926,17 @@ Texture texPowerUpShrink("Assets\\bouns\\shrinkbubble1.png");
 Texture texBubblePop0("Assets/bouns/_bubblepop0.png");
 Texture texBubblePop1("Assets/bouns/_bubblepop1.png");
 bool powerUpTexLoaded = false;
+
+// --- Crystal Infection System ---
+Texture texPowerUpCrystal;
+Texture mediumFishSlicedTexture;
+Texture largeFishSlicedTexture;
+bool isPlayerInfected = false;
+bool isWaitingForInfection = false;
+float infectionDelayTimer = 0.f;
+float infectionTimer = 0.f;
+const float INFECTION_DELAY = 2.0f;
+const float INFECTION_DURATION = 20.0f;
 
 // ==========================================
 // 1.       (Global Variables)
@@ -1049,9 +1069,9 @@ SmallFish smallFishes[MAX_SMALL_FISH];
 const int MEDIUM_COLS = 14;
 const int MEDIUM_FRAME_W = 283;
 const int MEDIUM_FRAME_H = 156;
-const int MEDIUM_FRAMES_SWIM = 12;
-const int MEDIUM_FRAMES_EAT = 6;
-const int MEDIUM_FRAMES_TURN = 5;
+const int MEDIUM_FRAMES_SWIM = 14;
+const int MEDIUM_FRAMES_EAT = 8;
+const int MEDIUM_FRAMES_TURN = 8;
 
 const int MAX_MEDIUM_FISH = 5;
 sf::Texture mediumFishTexture;
@@ -1089,11 +1109,12 @@ float mediumSpawnInterval = 6.0f;
 const int LARGE_COLS = 14;
 const int LARGE_FRAME_W = 180;
 const int LARGE_FRAME_H = 160;
-const int LARGE_FRAMES_SWIM = 7;
+const int LARGE_FRAMES_SWIM = 14;
 const int LARGE_FRAMES_TURN = 5;
 const int LARGE_FRAMES_EAT = 6;
 const int MAX_LARGE_FISH = 3;
 sf::Texture largeFishTexture;
+
 
 struct LargeFish
 {
@@ -1187,6 +1208,7 @@ const float PROGRESS_PER_EAT = 0.35f;
 const float COMBO_DECAY_TIME = 3.0f;  
 const int MAX_MULTIPLIER = 6;        
 
+bool hasEatenThisFrame = false;
 
 enum ComboState
 {
@@ -2711,12 +2733,12 @@ void PlayingSound(bool isMainMenu)
         playsound = 1;
 }
 
-void MinowFishanimation(MenuFish &fish)
+void MinowFishanimation(MenuFish& fish)
 {
     if (!MFvisable)
         return;
 
-    Minowfish.move({*fish.velocityX * deltaTime * 60.f, 0});
+    Minowfish.move({ *fish.velocityX * deltaTime * 60.f, 0 });
 
     const float leftBound = -180.f;
     const float rightBound = 980.f;
@@ -2724,31 +2746,46 @@ void MinowFishanimation(MenuFish &fish)
 
     if (!fish.turning &&
         ((posX <= leftBound && *fish.velocityX < 0) ||
-         (posX >= rightBound && *fish.velocityX > 0)))
+            (posX >= rightBound && *fish.velocityX > 0)))
     {
         fish.turning = true;
         fish.turnFrame = 0;
     }
 
-    if (fish.turning)
-    {
-        Minowfish.setTextureRect(IntRect({fish.turnFrame * 286, 1 * 126}, {286, 126}));
-        fish.turnFrame++;
+    // Add a static timer to stop the crazy 120 FPS jittering
+    static float mAnimTimer = 0.f;
+    mAnimTimer += deltaTime;
 
-        if (fish.turnFrame >= 6) // 6 frames in turn row
+    if (mAnimTimer >= 0.06f)
+    {
+        mAnimTimer = 0.f;
+
+        if (fish.turning)
         {
-            fish.turnFrame = 0;
-            fish.turning = false;
+            Minowfish.setTextureRect(IntRect({ fish.turnFrame * 286, 1 * 126 }, { 286, 126 }));
+            fish.turnFrame++;
 
-            *fish.changedir *= -1;
-            Minowfish.setScale({0.2f * (*fish.changedir), 0.2f});
-            *fish.velocityX = -*fish.velocityX;
+            if (fish.turnFrame >= 6) 
+            {
+                fish.turnFrame = 0;
+                fish.turning = false;
+
+                *fish.changedir *= -1;
+                Minowfish.setScale({ 0.2f * (*fish.changedir), 0.2f });
+                *fish.velocityX = -*fish.velocityX;
+            }
         }
-    }
-    else
-    {
-        Minowfish.setTextureRect(IntRect({MFcol * 286, 0}, {286, 126}));
-        MFcol = (MFcol + 1) % 15;
+        else
+        {
+            Minowfish.setTextureRect(IntRect({ MFcol * 286, 0 }, { 286, 126 }));
+            MFcol++;
+
+            
+            if (MFcol >= 14)
+            {
+                MFcol = 0;
+            }
+        }
     }
 }
 
@@ -5579,7 +5616,13 @@ void StartPowerUps()
             cout << "PowerUp: missing speed texture\n";
         if (!texPowerUpShrink.loadFromFile("Assets/bouns/shrinkbubble1.png"))
             cout << "PowerUp: missing shrink texture\n";
+        if (!texPowerUpCrystal.loadFromFile("Assets/bouns/crystal_shard.png"))
+            cout << "PowerUp: missing crystal texture\n";
+        if (!mediumFishSlicedTexture.loadFromFile("Assets/Fish/cod/cod_sliced.png"))
+            cout << "Missing sliced cod texture\n";
 
+        texPowerUpCrystal.setSmooth(true);
+        mediumFishSlicedTexture.setSmooth(true);
         texPowerUpShrink.setSmooth(true);
         texPowerUpTime.setSmooth(true);
         texPowerUpStar.setSmooth(true);
@@ -5614,22 +5657,31 @@ void UpdatePowerUps(float dt)
                     powerUps[i].vy = getRandom(70.f, 130.f); // fall speed
 
                     // Pick type
-                    if (currentGamemode == TIMEATTACK)
+                    int crystalRoll = rand() % 100;
+                    if (crystalRoll < 95)
                     {
-                        powerUps[i].type = rand() % 3;
+                        powerUps[i].type = 4; // 15% chance to drop the Crystal
                     }
-                    else if (gameLEVEL == 1)
+                    else
                     {
-                        powerUps[i].type = 1;
-                    }
-                    else if (gameLEVEL == 2)
-                    {
-                        powerUps[i].type = 1 + rand() % 2;
-                    }
-                    else if (gameLEVEL == 3)
-                    {
-                        int roll = rand() % 2;
-                        powerUps[i].type = (roll == 0) ? 2 : 3;
+                        // Normal power-ups based on level
+                        if (currentGamemode == TIMEATTACK)
+                        {
+                            powerUps[i].type = rand() % 3;
+                        }
+                        else if (gameLEVEL == 1)
+                        {
+                            powerUps[i].type = 1;
+                        }
+                        else if (gameLEVEL == 2)
+                        {
+                            powerUps[i].type = 1 + rand() % 2;
+                        }
+                        else if (gameLEVEL == 3)
+                        {
+                            int roll = rand() % 2;
+                            powerUps[i].type = (roll == 0) ? 2 : 3;
+                        }
                     }
 
                     break;
@@ -5756,10 +5808,18 @@ void UpdatePowerUps(float dt)
                             largeFishes[j].isFleeing = false;
                         }
 
+
                     eatSound.play();
                     createScorePopup(p.x, p.y - 20.f, "SHRINK"); 
                     powerUpTimerActive = true;   
                     powerUpTimer = POWER_UP_DURATION;
+                }
+                else if (p.type == 4) // Crystal Fragment
+                {
+                    isWaitingForInfection = true;
+                    infectionDelayTimer = 0.f;
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, "INFECTING...");
                 }
 
                 // Burst bubbles at collection point
@@ -5790,7 +5850,7 @@ if (speedBoostActive)
 
 void DrawPowerUps()
 {
-    Texture *texPtrs[4] = {&texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink};
+    Texture* texPtrs[5] = { &texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink, &texPowerUpCrystal };
 
     for (int i = 0; i < MAX_POWERUPS; i++)
     {
@@ -6015,7 +6075,10 @@ void Startbglevel()
     {
         cout << "Error loading Large Fish texture!" << endl;
     }
+    if (!largeFishSlicedTexture.loadFromFile("Assets/Fish/lionfish/lionfish_sliced.png")) // Update path to your actual image name
+        cout << "Missing sliced lionfish texture\n";
 
+    largeFishSlicedTexture.setSmooth(true);
     largeFishTexture.setSmooth(true);
     mediumFishTexture.setSmooth(true);
     smallFishTexture.setSmooth(true);
@@ -6527,6 +6590,11 @@ void Startmovingplayer()
     powerUpTimer = 0.f;       
     powerUpTimerActive = false;
 
+    isPlayerInfected = false;
+    isWaitingForInfection = false;
+    infectionDelayTimer = 0.f;
+    infectionTimer = 0.f;
+
     goToMainMenuFromLevel = false; 
     isPlayerDead = false;
     isGameOver = false;
@@ -6614,6 +6682,9 @@ void Startmovingplayer()
     scorePopups[i].active = false;
     
     (void)texPlayerall.loadFromFile("Assets/Fish/butterflyfish/Butterflyfishall.png");
+    (void)texPlayerInfected.loadFromFile("Assets/Fish/butterflyfish/Butterflyfishall_infected.png");
+    texPlayerInfected.setSmooth(true);
+
     spawnDelayClock.restart();
     sprPlayerall.setTexture(texPlayerall);
 
@@ -6675,6 +6746,33 @@ void Startmovingplayer()
 void Updatemovingplayer(float dt)
 {
     timer += dt;
+
+    if (isWaitingForInfection)
+    {
+        infectionDelayTimer += dt;
+        if (infectionDelayTimer >= INFECTION_DELAY)
+        {
+            isWaitingForInfection = false;
+            isPlayerInfected = true;
+            sprPlayerall.setTexture(texPlayerInfected);
+            infectionTimer = 0.f;
+            createScorePopup(sprPlayerall.getPosition().x, sprPlayerall.getPosition().y - 40.f, "INFECTED!");
+
+            
+            powerUpTimerActive = true;
+            powerUpTimer = INFECTION_DURATION;
+        }
+    }
+
+    if (isPlayerInfected)
+    {
+        infectionTimer += dt;
+        if (infectionTimer >= INFECTION_DURATION)
+        {
+            isPlayerInfected = false; // Infection wears off
+            sprPlayerall.setTexture(texPlayerall);
+        }
+    }
 
     if (currentGamemode == TIMEATTACK && !isPlayerDead)
     {
@@ -6745,7 +6843,6 @@ void Updatemovingplayer(float dt)
     }
 
     // --- Combo Logic ---
-    static bool hasEatenThisFrame = false;
     hasEatenThisFrame = false;
     switch (comboState)
     {
@@ -6859,6 +6956,18 @@ void Updatemovingplayer(float dt)
             showSorryAnimation = false;
             sorryExploded = false;
             sorryTimer = 0.f;
+
+            isPlayerInfected = false;
+            isWaitingForInfection = false;
+            infectionDelayTimer = 0.f;
+            infectionTimer = 0.f;
+
+            sprPlayerall.setTexture(texPlayerall);
+
+            powerUpTimer = 0.f;
+            powerUpTimerActive = false;
+            speedBoostActive = false;
+            speedBoostTimer = 0.f;
 
             multiplier = 1;
             comboProgress = 0.0f;
@@ -7080,11 +7189,6 @@ void Updatemovingplayer(float dt)
     }
 
     // --- Dash Logic ---
-    static bool canDash = true;
-    static bool isDashingNow = false;
-    static Clock dashTimer;
-    static bool wasMousePressed = false;
-    static sf::Vector2f dashDirection = {1.f, 0.f};
 
     bool isMousePressedNow = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
     if (isMousePressedNow && !wasMousePressed && canDash && !isPlayerDead)
@@ -7167,7 +7271,18 @@ void Updatemovingplayer(float dt)
     }
     else if (isMouseMoving)
     {
-        currentPos += moveDirection * playerSpeed * dt;
+        float moveDist = playerSpeed * dt;
+
+        // Prevent the fish from overshooting the target and vibrating!
+        if (moveDist >= distance)
+        {
+            currentPos = targetPos;
+        }
+        else
+        {
+            currentPos += moveDirection * moveDist;
+        }
+
         sprPlayerall.setPosition(currentPos);
         isMoving = true;
     }
@@ -7321,56 +7436,99 @@ void Updatemovingplayer(float dt)
     // Medium Fish
     for (int i = 0; i < MAX_MEDIUM_FISH; i++)
     {
-        if (mediumFishes[i].active && mediumFishes[i].sprite && !mediumFishes[i].isFleeing)
+        // Only check collisions if the fish is active, not fleeing, and NOT already sliced (state 3)
+        if (mediumFishes[i].active && mediumFishes[i].sprite && !mediumFishes[i].isFleeing && mediumFishes[i].state != 3)
         {
             float dx = mediumFishes[i].sprite->getPosition().x - mouthPos.x;
             float dy = mediumFishes[i].sprite->getPosition().y - mouthPos.y;
             float dist = std::sqrt(dx * dx + dy * dy);
 
-            if (dist < dynamicEatRadius + 10.f)
+            bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
+
+            // 1. SLICE MECHANIC (Priority! Happens if infected and dashing, regardless of Player Level)
+            if (isPlayerInfected && isDashingNow && dist < 90.f)
             {
-                bool mediumShrunk = abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
-                if (playerLevel >= 2 || mediumShrunk)
+                
+                mediumFishes[i].state = 3;
+                mediumFishes[i].currentFrame = 0;
+                mediumFishes[i].animTimer = 0.f;
+                mediumFishes[i].velocity = { 0.f, 20.f }; 
+
+                
+                int points = 200 * multiplier;
+                score += points;
+                createScorePopup(mouthPos.x, mouthPos.y - 30.f, "SLICED!");
+                createScorePopup(mouthPos.x, mouthPos.y, points);
+
+                dashSound.play();
+                eatSound2.play();
+
+                // ---- COMBO & GROWTH LOGIC ----
+                hasEatenThisFrame = true;
+                comboState = FILLING;
+                comboTimer = 0.0f;
+                comboProgress += 0.145f;
+                if (comboProgress >= 1.0f)
                 {
-                    eatSound2.play(); 
-                    mediumFishes[i].active = false;
-                    delete mediumFishes[i].sprite;
-                    mediumFishes[i].sprite = nullptr;
-                    int points = 20 * multiplier;
-                    score += points;
-                    createScorePopup(mouthPos.x, mouthPos.y, points);
-                    hasEatenThisFrame = true;
-                    comboState = FILLING;
-                    comboTimer = 0.0f;
-
-                    comboProgress += 0.145f;
-                    if (comboProgress >= 1.0f)
+                    if (multiplier < MAX_MULTIPLIER)
                     {
-                        if (multiplier < MAX_MULTIPLIER)
-                        {
-                            multiplier++;
-                            comboProgress -= 1.0f;
-                        }
-                        else
-                        {
-                            comboProgress = 1.0f; 
-                        }
+                        multiplier++;
+                        if (multiplier == 2) sounds[0]->play();
+                        else if (multiplier == 3) sounds[1]->play();
+                        else if (multiplier == 4) sounds[2]->play();
+                        else if (multiplier == 5) sounds[3]->play();
+                        else if (multiplier == 6) sounds[4]->play();
+                        comboProgress -= 1.0f;
                     }
-
-                    fishEatenCount += 3;
-                    mediumFishEatenCount++;
-                    for (int k = 0; k < 5; k++)
-                        StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
-
-                    if (currentState == TURN)
-                        pendingEat = true;
-                    else
-                    {
-                        currentState = EAT;
-                        currentFrame = 0;
-                        timer = 0.f;
-                    }
+                    else { comboProgress = 1.0f; }
                 }
+
+                fishEatenCount += 3; // Cod gives 3 growth points
+                mediumFishEatenCount++;
+                for (int k = 0; k < 5; k++)
+                    StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
+
+                if (currentState == TURN) pendingEat = true;
+                else { currentState = EAT; currentFrame = 0; timer = 0.f; }
+            }
+            // 2. NORMAL EAT MECHANIC (Only happens if we AREN'T slicing and are big enough)
+            else if (dist < dynamicEatRadius + 10.f && (playerLevel >= 2 || mediumShrunk))
+            {
+                eatSound2.play();
+                mediumFishes[i].active = false;
+                delete mediumFishes[i].sprite;
+                mediumFishes[i].sprite = nullptr;
+
+                int points = 20 * multiplier;
+                score += points;
+                createScorePopup(mouthPos.x, mouthPos.y, points);
+                hasEatenThisFrame = true;
+                comboState = FILLING;
+                comboTimer = 0.0f;
+
+                comboProgress += 0.145f;
+                if (comboProgress >= 1.0f)
+                {
+                    if (multiplier < MAX_MULTIPLIER)
+                    {
+                        multiplier++;
+                        comboProgress -= 1.0f;
+                        if (multiplier == 2) sounds[0]->play();
+                        else if (multiplier == 3) sounds[1]->play();
+                        else if (multiplier == 4) sounds[2]->play();
+                        else if (multiplier == 5) sounds[3]->play();
+                        else if (multiplier == 6) sounds[4]->play();
+                    }
+                    else { comboProgress = 1.0f; }
+                }
+
+                fishEatenCount += 3;
+                mediumFishEatenCount++;
+                for (int k = 0; k < 5; k++)
+                    StartGameBubble(mouthPos.x + getRandom(-10.f, 10.f), mouthPos.y + getRandom(-10.f, 10.f), true);
+
+                if (currentState == TURN) pendingEat = true;
+                else { currentState = EAT; currentFrame = 0; timer = 0.f; }
             }
         }
     }
@@ -7610,6 +7768,11 @@ void Drawmovingplayer()
 
             sprPlayerall.setColor(sf::Color(255, 255, 255, alpha));
         }
+        else if (isPlayerInfected)
+        {
+            // Glowing Cyan color while infected
+            sprPlayerall.setColor(sf::Color(185, 240, 240));
+        }
         else
         {
             sprPlayerall.setColor(sf::Color::White);
@@ -7711,12 +7874,17 @@ void UpdateSmallFishes(float dt)
         {
             SmallFish &fish = smallFishes[i];
 
-            if (isEscapeMode && !fish.isFleeing)
+            if(isEscapeMode && !fish.isFleeing)
             {
                 fish.isFleeing = true;
                 fish.velocity.x *= 3.0f;
                 fish.velocity.y = 0;
                 fish.canTurn = false;
+
+                // Reset the animation to a clean swimming frame
+                fish.isTurning = false;
+                fish.currentFrame = 0;
+                fish.animTimer = 0.f;
             }
 
             if (fish.isFleeing)
@@ -7732,8 +7900,9 @@ void UpdateSmallFishes(float dt)
                         delete fish.sprite;
                         fish.sprite = nullptr;
                     }
+                    continue; // ONLY continue if the fish is deleted!
                 }
-                continue;
+               
             }
 
             if (fish.isTurning)
@@ -7914,7 +8083,7 @@ void StartMediumFish()
     fish.state = 1;
     fish.currentFrame = 0;
     fish.animTimer = 0.f;
-    fish.sprite->setTextureRect(sf::IntRect({0, 1 * MEDIUM_FRAME_H}, {MEDIUM_FRAME_W, MEDIUM_FRAME_H}));
+    fish.sprite->setTextureRect(sf::IntRect({0, 2 * MEDIUM_FRAME_H}, {MEDIUM_FRAME_W, MEDIUM_FRAME_H}));
 }
 
 void UpdateMediumFishes(float dt)
@@ -7933,7 +8102,7 @@ void UpdateMediumFishes(float dt)
     {
         if (!mediumFishes[i].active)
             continue;
-        MediumFish &fish = mediumFishes[i];
+        MediumFish& fish = mediumFishes[i];
 
         // Escape Mode Logic
         if (isEscapeMode && !fish.isFleeing)
@@ -7943,6 +8112,10 @@ void UpdateMediumFishes(float dt)
             fish.velocity.y = 0;
             fish.state = 1;
             fish.canTurn = false;
+
+            // Reset the animation to a clean swimming frame
+            fish.currentFrame = 0;
+            fish.animTimer = 0.f;
         }
         if (fish.isFleeing)
         {
@@ -7956,32 +8129,37 @@ void UpdateMediumFishes(float dt)
                     delete fish.sprite;
                     fish.sprite = nullptr;
                 }
+                continue; // ONLY continue if the fish is deleted!
             }
-            continue;
-        }
 
-        // Movement Logic
-        if (fish.state == 1)
+        }
+        else if (fish.state == 1 || fish.state == 3) // Normal Movement Logic
         {
             fish.sprite->move(fish.velocity * dt);
-            fish.verticalTimer -= dt;
-            if (fish.verticalTimer <= 0.f)
+            if (fish.state == 1)
             {
-                fish.velocity.y = static_cast<float>(rand() % 61 - 30);
-                fish.verticalTimer = 1.5f + static_cast<float>(rand() % 400) / 100.0f;
+                fish.verticalTimer -= dt;
+                if (fish.verticalTimer <= 0.f)
+                {
+                    fish.velocity.y = static_cast<float>(rand() % 61 - 30);
+                    fish.verticalTimer = 1.5f + static_cast<float>(rand() % 400) / 100.0f;
+                }
+                sf::Vector2f pos = fish.sprite->getPosition();
+                if (pos.y < 80.0f)
+                    fish.velocity.y = 30.0f;
+                else if (pos.y > LevelHeight - 80.0f)
+                    fish.velocity.y = -30.0f;
             }
-            sf::Vector2f pos = fish.sprite->getPosition();
-            if (pos.y < 80.0f)
-                fish.velocity.y = 30.0f;
-            else if (pos.y > LevelHeight - 80.0f)
-                fish.velocity.y = -30.0f;
         }
         Vector2f p = fish.sprite->getPosition();
         if (p.x < -300.f || p.x > LevelWidth + 300.f)
         {
             fish.active = false;
-            delete fish.sprite;
-            fish.sprite = nullptr;
+            if (fish.sprite)
+            {
+                delete fish.sprite;
+                fish.sprite = nullptr;
+            }
             continue;
         }
 
@@ -7989,9 +8167,7 @@ void UpdateMediumFishes(float dt)
         if (fish.state == 1 && fish.canTurn && !fish.hasTurned)
         {
             sf::Vector2f pos = fish.sprite->getPosition();
-
             float turnDistance = 250.f;
-
             bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
 
             if (outOfBounds)
@@ -8018,8 +8194,36 @@ void UpdateMediumFishes(float dt)
         // Animation Logic
         fish.animTimer += dt;
         float animSpeed = (fish.state == 0) ? 0.06f : ((fish.state == 2) ? 0.08f : 0.12f);
+        if (fish.state == 3) animSpeed = 0.08f;
 
-        if (fish.animTimer >= animSpeed)
+
+        if (fish.state == 3 && fish.currentFrame >= 14)
+        {
+            fish.currentFrame = 14;
+
+
+            sf::Color c = fish.sprite->getColor();
+
+
+            float fadeSpeed = 350.0f;
+
+            int newAlpha = c.a - static_cast<int>(fadeSpeed * dt);
+
+            if (newAlpha <= 0)
+            {
+
+                fish.active = false;
+                delete fish.sprite;
+                fish.sprite = nullptr;
+                continue;
+            }
+            else
+            {
+
+                fish.sprite->setColor(sf::Color(255, 255, 255, newAlpha));
+            }
+        }
+        else if (fish.animTimer >= animSpeed)
         {
             fish.animTimer = 0.f;
             fish.currentFrame++;
@@ -8035,7 +8239,7 @@ void UpdateMediumFishes(float dt)
                 fish.state = 1;
                 fish.velocity.x = -fish.velocity.x;
                 float scale = std::abs(fish.sprite->getScale().x);
-                fish.sprite->setScale({(fish.velocity.x > 0 ? -scale : scale), scale});
+                fish.sprite->setScale({ (fish.velocity.x > 0 ? -scale : scale), scale });
                 fish.spawnX = fish.sprite->getPosition().x;
             }
             else if (fish.state == 1 && fish.currentFrame >= MEDIUM_FRAMES_SWIM)
@@ -8045,9 +8249,8 @@ void UpdateMediumFishes(float dt)
         }
 
         // === Interaction Logic (Eating & Death) ===
-        if (fish.state == 1)
+        if (fish.state == 1 && !fish.isFleeing) // Only interact if swimming normally
         {
-
             // 1. Medium Fish Eats Small Fish
             for (int j = 0; j < MAX_SMALL_FISH; j++)
             {
@@ -8059,8 +8262,6 @@ void UpdateMediumFishes(float dt)
 
                     if (dist < 40.f)
                     { // Eating Range
-                      
-
                         smallFishes[j].active = false;
                         delete smallFishes[j].sprite;
                         smallFishes[j].sprite = nullptr;
@@ -8074,12 +8275,11 @@ void UpdateMediumFishes(float dt)
                 }
             }
 
-            // 2. Medium Fish Eats Player
-            bool mediumShrunk = std::abs(mediumFishes[i].sprite->getScale().y) <= 0.21f;
+            // 2. Medium Fish Eats Player (Only if player is level 1 and missed their dash!)
+            bool mediumShrunk = std::abs(fish.sprite->getScale().y) <= 0.21f;
 
             if (playerLevel < 2 && !mediumShrunk && !isPlayerDead && !isInvincible)
             {
-                // Mouth Check
                 sf::Vector2f fishDir(1.f, 0.f);
                 if (fish.velocity.x != 0)
                     fishDir.x = (fish.velocity.x > 0) ? 1.f : -1.f;
@@ -8091,30 +8291,20 @@ void UpdateMediumFishes(float dt)
                 float dy = sprPlayerall.getPosition().y - predatorMouthPos.y;
                 float distance = std::sqrt(dx * dx + dy * dy);
 
-                if (distance < 35.f)
+                if (distance < 40.f) // Strict hitbox to be eaten
                 {
+                    // Normal death logic
                     fish.state = 0;
                     fish.currentFrame = 0;
                     fish.animTimer = 0.f;
                     lives--;
 
-                    if (lives > 0)
-                    {
-                        levelsound.stop();    
-                        PlayergotEaten.play(); 
-                        dieSound.play();       
-                    }
-                    else
-                    {
-                        levelsound.stop(); 
-                        PlayergotEaten.play();
-                        isGameOver = true; 
-                        dieSound.play();   
-                    }
+                    if (lives > 0) { levelsound.stop(); PlayergotEaten.play(); dieSound.play(); }
+                    else { levelsound.stop(); PlayergotEaten.play(); isGameOver = true; dieSound.play(); }
 
                     isPlayerDead = true;
                     respawnClock.restart();
-                    dieSound.play(); 
+                    dieSound.play();
                     showSorryAnimation = true;
                     sorryExploded = false;
                     sorryTimer = 0.f;
@@ -8124,23 +8314,49 @@ void UpdateMediumFishes(float dt)
             }
         }
 
-        // Out of Bounds
-        sf::Vector2f pos = fish.sprite->getPosition();
-        float hudCeiling = view.getCenter().y - 300.f + 90.f;
-
-        if (pos.y < hudCeiling + 40.f)
+        // Out of Bounds & Bouncing
+        if (fish.sprite)
         {
-            fish.velocity.y = std::abs(fish.velocity.y);
-            if (fish.velocity.y < 10.f)
-                fish.velocity.y = 30.0f;
-        }
-        else if (pos.y > LevelHeight - 80.0f)
-        {
-            fish.velocity.y = -30.0f;
-        }
+            sf::Vector2f finalPos = fish.sprite->getPosition();
+            float hudCeiling = view.getCenter().y - 300.f + 90.f;
 
-        int row = fish.state;
-        fish.sprite->setTextureRect(sf::IntRect({fish.currentFrame * MEDIUM_FRAME_W, row * MEDIUM_FRAME_H}, {MEDIUM_FRAME_W, MEDIUM_FRAME_H}));
+            if (finalPos.y < hudCeiling + 40.f)
+            {
+                fish.velocity.y = std::abs(fish.velocity.y);
+                if (fish.velocity.y < 10.f)
+                    fish.velocity.y = 30.0f;
+            }
+            else if (finalPos.y > LevelHeight - 80.0f)
+            {
+                fish.velocity.y = -30.0f;
+            }
+
+            // === APPLY TEXTURES ===
+            if (fish.state == 3)
+            {
+                // Apply the 15-frame Sliced Sprite Sheet (4x4 Grid)
+                fish.sprite->setTexture(mediumFishSlicedTexture);
+
+                int col = fish.currentFrame % 4;
+                int row = fish.currentFrame / 4;
+
+                fish.sprite->setTextureRect(sf::IntRect({ col * 283, row * 156 }, { 283, 156 }));
+            }
+            else
+            {
+                // Apply the normal swimming/eating/turning Sprite Sheet
+                fish.sprite->setTexture(mediumFishTexture);
+
+                // Based on your specific Sprite Sheet:
+                // Row 0 = Eat, Row 1 = Idle, Row 2 = Swim, Row 3 = Turn
+                int row = 0;
+                if (fish.state == 0) row = 0;      // Eat
+                else if (fish.state == 1) row = 2; // Swim (Skipping row 1/Idle)
+                else if (fish.state == 2) row = 3; // Turn
+
+                fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * MEDIUM_FRAME_W, row * MEDIUM_FRAME_H }, { MEDIUM_FRAME_W, MEDIUM_FRAME_H }));
+            }
+        }
     }
 }
 
@@ -8211,7 +8427,7 @@ void StartLargeFish()
     fish.state = 1;
     fish.currentFrame = 0;
     fish.animTimer = 0.f;
-    fish.sprite->setTextureRect(sf::IntRect({0, 1 * LARGE_FRAME_H}, {LARGE_FRAME_W, LARGE_FRAME_H}));
+    fish.sprite->setTextureRect(sf::IntRect({0, 2 * LARGE_FRAME_H}, {LARGE_FRAME_W, LARGE_FRAME_H}));
 }
 
 void UpdateLargeFishes(float dt)
@@ -8230,7 +8446,7 @@ void UpdateLargeFishes(float dt)
     {
         if (!largeFishes[i].active)
             continue;
-        LargeFish &fish = largeFishes[i];
+        LargeFish& fish = largeFishes[i];
 
         // Escape Mode
         if (isEscapeMode && !fish.isFleeing)
@@ -8240,6 +8456,10 @@ void UpdateLargeFishes(float dt)
             fish.velocity.y = 0;
             fish.state = 1;
             fish.canTurn = false;
+
+            // Reset the animation to a clean swimming frame
+            fish.currentFrame = 0;
+            fish.animTimer = 0.f;
         }
         if (fish.isFleeing)
         {
@@ -8253,43 +8473,46 @@ void UpdateLargeFishes(float dt)
                     delete fish.sprite;
                     fish.sprite = nullptr;
                 }
+                continue; // ONLY continue if the fish is deleted!
             }
-            continue;
+            // Let the code fall down to the animation logic!
         }
-
-        // Movement
-        if (fish.state == 1)
+        else if (fish.state == 1 || fish.state == 3) // Normal Movement Logic
         {
             fish.sprite->move(fish.velocity * dt);
-            fish.verticalTimer -= dt;
-            if (fish.verticalTimer <= 0.f)
+            if (fish.state == 1)
             {
-                fish.velocity.y = static_cast<float>(rand() % 41 - 20);
-                fish.verticalTimer = 2.0f + static_cast<float>(rand() % 500) / 100.0f;
+                fish.verticalTimer -= dt;
+                if (fish.verticalTimer <= 0.f)
+                {
+                    fish.velocity.y = static_cast<float>(rand() % 41 - 20);
+                    fish.verticalTimer = 2.0f + static_cast<float>(rand() % 500) / 100.0f;
+                }
+                sf::Vector2f pos = fish.sprite->getPosition();
+                if (pos.y < 120.0f)
+                    fish.velocity.y = 20.0f;
+                else if (pos.y > LevelHeight - 120.0f)
+                    fish.velocity.y = -20.0f;
             }
-            sf::Vector2f pos = fish.sprite->getPosition();
-            if (pos.y < 120.0f)
-                fish.velocity.y = 20.0f;
-            else if (pos.y > LevelHeight - 120.0f)
-                fish.velocity.y = -20.0f;
         }
+
         Vector2f p = fish.sprite->getPosition();
         if (p.x < -400.f || p.x > LevelWidth + 400.f)
         {
             fish.active = false;
-            delete fish.sprite;
-            fish.sprite = nullptr;
+            if (fish.sprite)
+            {
+                delete fish.sprite;
+                fish.sprite = nullptr;
+            }
             continue;
         }
 
-        // Turning
+        // Turning Logic
         if (fish.state == 1 && fish.canTurn && !fish.hasTurned)
         {
             sf::Vector2f pos = fish.sprite->getPosition();
-
-
             float turnDistance = 325.f;
-
             bool outOfBounds = (pos.x < turnDistance && fish.velocity.x < 0) || (pos.x > LevelWidth - turnDistance && fish.velocity.x > 0);
 
             if (outOfBounds)
@@ -8313,25 +8536,51 @@ void UpdateLargeFishes(float dt)
             }
         }
 
-        // Animation
+        // Animation Logic
         fish.animTimer += dt;
         float animSpeed = (fish.state == 0) ? 0.06f : ((fish.state == 2) ? 0.08f : 0.1f);
-        if (fish.animTimer >= animSpeed)
+        if (fish.state == 3) animSpeed = 0.04f; // Speed of the slicing animation
+
+        // === FADE OUT LOGIC ===
+        // If the fish is sliced and has reached the final frame
+        if (fish.state == 3 && fish.currentFrame >= 13)
+        {
+            fish.currentFrame = 13; // Lock the animation to the last frame
+
+            sf::Color c = fish.sprite->getColor();
+            float fadeSpeed = 350.0f;
+            int newAlpha = c.a - static_cast<int>(fadeSpeed * dt);
+
+            if (newAlpha <= 0)
+            {
+                // Fully faded out, delete the fish
+                fish.active = false;
+                delete fish.sprite;
+                fish.sprite = nullptr;
+                continue;
+            }
+            else
+            {
+                fish.sprite->setColor(sf::Color(255, 255, 255, newAlpha));
+            }
+        }
+        else if (fish.animTimer >= animSpeed)
         {
             fish.animTimer = 0.f;
             fish.currentFrame++;
+
             if (fish.state == 0 && fish.currentFrame >= LARGE_FRAMES_EAT)
             {
                 fish.currentFrame = 0;
                 fish.state = 1;
-            } // Finish Eat
+            } // Finish Eat -> Swim
             else if (fish.state == 2 && fish.currentFrame >= LARGE_FRAMES_TURN)
             {
                 fish.currentFrame = 0;
                 fish.state = 1;
                 fish.velocity.x = -fish.velocity.x;
                 float scale = std::abs(fish.sprite->getScale().x);
-                fish.sprite->setScale({(fish.velocity.x > 0 ? -scale : scale), scale});
+                fish.sprite->setScale({ (fish.velocity.x > 0 ? -scale : scale), scale });
                 fish.spawnX = fish.sprite->getPosition().x;
             }
             else if (fish.state == 1 && fish.currentFrame >= LARGE_FRAMES_SWIM)
@@ -8341,9 +8590,8 @@ void UpdateLargeFishes(float dt)
         }
 
         // === Interaction Logic ===
-        if (fish.state == 1)
+        if (fish.state == 1 && !fish.isFleeing) // Only interact if swimming normally
         {
-
             // 1. Large Fish Eats Medium Fish
             for (int j = 0; j < MAX_MEDIUM_FISH; j++)
             {
@@ -8354,8 +8602,7 @@ void UpdateLargeFishes(float dt)
                     float dist = std::sqrt(dx * dx + dy * dy);
 
                     if (dist < 50.f)
-                    { // Eating Range
-
+                    {
                         mediumFishes[j].active = false;
                         delete mediumFishes[j].sprite;
                         mediumFishes[j].sprite = nullptr;
@@ -8379,7 +8626,6 @@ void UpdateLargeFishes(float dt)
 
                     if (dist < 50.f)
                     {
-
                         smallFishes[j].active = false;
                         delete smallFishes[j].sprite;
                         smallFishes[j].sprite = nullptr;
@@ -8392,8 +8638,8 @@ void UpdateLargeFishes(float dt)
                 }
             }
 
-            // 3. Large Fish Eats Player
-            bool largeShrunk = std::abs(largeFishes[i].sprite->getScale().y) <= 0.21f;
+            // 3. Large Fish Eats Player OR Player Slices Large Fish
+            bool largeShrunk = std::abs(fish.sprite->getScale().y) <= 0.21f;
 
             if (playerLevel < 3 && !largeShrunk && !isPlayerDead && !isInvincible)
             {
@@ -8409,54 +8655,128 @@ void UpdateLargeFishes(float dt)
                 float dy = sprPlayerall.getPosition().y - predatorMouthPos.y;
                 float distance = std::sqrt(dx * dx + dy * dy);
 
-                if (distance < 40.f)
+                // MUST be at least Level 2 to slice the Large Fish (Level 3)
+                bool canSlice = (isPlayerInfected && isDashingNow && playerLevel >= 2);
+
+                // Expand hitbox significantly ONLY if they are legally allowed to slice
+                float hitRadius = canSlice ? 120.f : 40.f;
+
+                if (distance < hitRadius)
                 {
-                    fish.state = 0;
-                    fish.currentFrame = 0;
-                    fish.animTimer = 0.f;
-                    lives--;
-
-
-                    if (lives > 0)
+                    // === THE INFECTION SLASH MECHANIC ===
+                    if (canSlice)
                     {
-                        levelsound.stop();   
-                        PlayergotEaten.play(); 
+                       
+                        fish.state = 3;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                        fish.velocity = { 0.f, 20.f }; 
+
+                        int points = 350 * multiplier;
+                        score += points;
+                        createScorePopup(predatorMouthPos.x, predatorMouthPos.y - 30.f, "SLICED!");
+                        createScorePopup(predatorMouthPos.x, predatorMouthPos.y, points);
+
+                        score += 350 * multiplier; 
+                        createScorePopup(predatorMouthPos.x, predatorMouthPos.y, "SLICED!");
+                        dashSound.play();
+                        eatSound2.play();
+
+                        // ---- COMBO & GROWTH LOGIC ----
+                        hasEatenThisFrame = true;
+                        comboState = FILLING;
+                        comboTimer = 0.0f;
+                        comboProgress += 0.145f;
+                        if (comboProgress >= 1.0f)
+                        {
+                            if (multiplier < MAX_MULTIPLIER)
+                            {
+                                multiplier++;
+                                if (multiplier == 2) sounds[0]->play();
+                                else if (multiplier == 3) sounds[1]->play();
+                                else if (multiplier == 4) sounds[2]->play();
+                                else if (multiplier == 5) sounds[3]->play();
+                                else if (multiplier == 6) sounds[4]->play();
+                                comboProgress -= 1.0f;
+                            }
+                            else { comboProgress = 1.0f; }
+                        }
+
+                        fishEatenCount += 5; // Large fish gives 5 growth points
+                        largeFishEatenCount++;
+                        for (int k = 0; k < 8; k++)
+                            StartGameBubble(predatorMouthPos.x + getRandom(-15.f, 15.f), predatorMouthPos.y + getRandom(-15.f, 15.f), true);
+
+                        if (currentState == TURN) pendingEat = true;
+                        else { currentState = EAT; currentFrame = 0; timer = 0.f; }
                     }
                     else
                     {
-                        levelsound.stop();
-                        PlayergotEaten.play();
-                        isGameOver = true; 
-                    }
+                        // Normal death logic (Triggers if player is Level 1, even if they dash!)
+                        fish.state = 0;
+                        fish.currentFrame = 0;
+                        fish.animTimer = 0.f;
+                        lives--;
 
-                    isPlayerDead = true;
-                    respawnClock.restart();
-                    dieSound.play(); 
-                    showSorryAnimation = true;
-                    sorryExploded = false;
-                    sorryTimer = 0.f;
-                    for (int k = 0; k < 5; k++)
-                        sorryLetterScales[k] = 0.f;
+                        if (lives > 0) { levelsound.stop(); PlayergotEaten.play(); dieSound.play(); }
+                        else { levelsound.stop(); PlayergotEaten.play(); isGameOver = true; dieSound.play(); }
+
+                        isPlayerDead = true;
+                        respawnClock.restart();
+                        dieSound.play();
+                        showSorryAnimation = true;
+                        sorryExploded = false;
+                        sorryTimer = 0.f;
+                        for (int k = 0; k < 5; k++)
+                            sorryLetterScales[k] = 0.f;
+                    }
                 }
             }
         }
 
-        sf::Vector2f pos = fish.sprite->getPosition();
-        float hudCeiling = view.getCenter().y - 300.f + 90.f;
-
-        if (pos.y < hudCeiling + 60.f)
+        // Out of Bounds & Bouncing
+        if (fish.sprite)
         {
-            fish.velocity.y = std::abs(fish.velocity.y);
-            if (fish.velocity.y < 10.f)
-                fish.velocity.y = 20.0f;
-        }
-        else if (pos.y > LevelHeight - 120.0f)
-        {
-            fish.velocity.y = -20.0f;
-        }
+            sf::Vector2f finalPos = fish.sprite->getPosition();
+            float hudCeiling = view.getCenter().y - 300.f + 90.f;
 
-        int row = fish.state;
-        fish.sprite->setTextureRect(sf::IntRect({fish.currentFrame * LARGE_FRAME_W, row * LARGE_FRAME_H}, {LARGE_FRAME_W, LARGE_FRAME_H}));
+            if (finalPos.y < hudCeiling + 40.f)
+            {
+                fish.velocity.y = std::abs(fish.velocity.y);
+                if (fish.velocity.y < 10.f)
+                    fish.velocity.y = 30.0f;
+            }
+            else if (finalPos.y > LevelHeight - 80.0f)
+            {
+                fish.velocity.y = -30.0f;
+            }
+
+            // === APPLY TEXTURES ===
+            if (fish.state == 3)
+            {
+                // Apply the 14-frame Sliced Sprite Sheet
+                fish.sprite->setTexture(largeFishSlicedTexture);
+
+                int col = fish.currentFrame % 4;
+                int row = fish.currentFrame / 4;
+
+                fish.sprite->setTextureRect(sf::IntRect({ col * LARGE_FRAME_W, row * LARGE_FRAME_H }, { LARGE_FRAME_W, LARGE_FRAME_H }));
+            }
+            else
+            {
+                // Apply the normal swimming/eating/turning Sprite Sheet
+                fish.sprite->setTexture(largeFishTexture);
+
+                // Based on your specific Sprite Sheet:
+                // Row 0 = Eat, Row 1 = Idle, Row 2 = Swim, Row 3 = Turn
+                int row = 0;
+                if (fish.state == 0) row = 0;      // Eat
+                else if (fish.state == 1) row = 2; // Swim (Skipping row 1/Idle)
+                else if (fish.state == 2) row = 3; // Turn
+
+                fish.sprite->setTextureRect(sf::IntRect({ fish.currentFrame * LARGE_FRAME_W, row * LARGE_FRAME_H }, { LARGE_FRAME_W, LARGE_FRAME_H }));
+            }
+        }
     }
 }
 
@@ -8585,9 +8905,9 @@ void StartMermaidEvent()
     starTexture.setSmooth(true);
 
     mermaidSprite.setTexture(mermaidTex);
-    mermaidSprite.setTextureRect(IntRect({0, 0}, {299, 88}));
+    mermaidSprite.setTextureRect(IntRect({0, 0}, {300, 100}));
     mermaidSprite.setScale({1.0f, 1.0f});
-    mermaidSprite.setOrigin({149.5f, 44.f});
+    mermaidSprite.setOrigin({150.f, 50.f});
 
     float startX = view.getCenter().x + (view.getSize().x / 2.f) + 150.f;
     float startY = LevelHeight / 2.0f;
@@ -8623,13 +8943,13 @@ void UpdateMermaidEvent(float dt)
         if (mermaidFrame >= 20)
             mermaidFrame = 0;
 
-        int frameWidth = 299;
-        int frameHeight = 88;
+        int frameWidth = 300;
+        int frameHeight = 100;
 
         mermaidSprite.setTextureRect(IntRect({mermaidFrame * frameWidth, 0}, {frameWidth, frameHeight}));
     }
 
-    mermaidSprite.setOrigin({149.5f, 44.f});
+    mermaidSprite.setOrigin({150.f, 50.f});
 
     starSpawnTimer += dt;
     if (starSpawnTimer >= 0.5f)
