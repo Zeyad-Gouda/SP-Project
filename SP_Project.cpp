@@ -141,6 +141,10 @@ void StartEndLevel(RenderWindow& window);
 void UpdateEndLevel(RenderWindow& window);
 void DrawEndLevel(RenderWindow& window);
 bool EndLevel();
+void StartMines();
+void SpawnMine();
+void UpdateMines(float dt);
+void DrawMines();
 
 float getRandom(float min, float max)
 {
@@ -1358,6 +1362,76 @@ SoundBuffer dieBuffer("Assets/Music and Sounds/09_playerDie.mp3");
 Sound dieSound(dieBuffer);
 
 Music WaveSound("Assets/Music and Sounds/waterloop1.ogg");
+
+SoundBuffer explodeBuffer("Assets/Music and Sounds/mineexplode.ogg");
+Sound explodeSound(explodeBuffer);
+
+Texture explosionTex("Assets/bouns/Explosionmine.png");
+Sprite explosionSprite(explosionTex);
+
+ 
+// Mine
+const int MINE_X      = 150;
+const int MINE_Y      = 0;
+const int MINE_FRAME_W = 65;
+const int MINE_FRAME_H = 75;
+
+// Explosion (5 frames)
+const int EXPL_X      = 150;
+const int EXPL_Y      = 90;
+const int EXPL_FRAME_W = 164;
+const int EXPL_FRAME_H = 125;
+
+const int PUFF_X       = 150;
+const int PUFF_Y       = 215;
+const int PUFF_FRAME_W1 = 125;   // Frame 0
+const int PUFF_FRAME_W2 = 86;    
+const int PUFF_FRAME_H  = 100;
+
+// Smoke (1 frame)
+const int SMOKE_X      = 150;
+const int SMOKE_Y      = 355;
+const int SMOKE_FRAME_W = 135;
+const int SMOKE_FRAME_H = 113;
+
+const int EXPL_FRAME_COUNT = 5;
+const int PUFF_FRAME_COUNT = 2;
+
+sf::Vector2f g_mouthPos = {0.f, 0.f};
+ 
+// --- Mine States ---
+enum class MineState
+{
+    FLOATING,     
+    EXPLODING,  
+    PUFFING,     
+    SMOKING,   
+    DEAD        
+};
+ 
+struct Mine
+{
+    float x, y;
+    float baseY;     
+    float floatTimer;  
+    float vy;           
+    bool descended;    
+ 
+    MineState state;
+    int       currentFrame;
+    float     animTimer;
+ 
+    bool active;
+};
+ 
+const int MAX_MINES = 4;
+Mine mines[MAX_MINES];
+ 
+float mineSpawnTimer    = 0.f;
+float mineSpawnInterval = 20.f;   
+ 
+Texture texMineSheet;             
+bool mineTexLoaded = false;
 
 bool hasPlayedSpawnSound = false;
 Clock spawnDelayClock;
@@ -5976,6 +6050,231 @@ void DrawPowerUps()
     }
 }
 
+void StartMines()
+{
+    for (int i = 0; i < MAX_MINES; i++)
+        mines[i].active = false;
+ 
+    mineSpawnTimer = 0.f;
+ 
+    if (!mineTexLoaded)
+    {
+        if (!texMineSheet.loadFromFile("Assets/bouns/Explosionmine.png"))
+            cout << "Mine: missing Explosionmine.png\n";
+        texMineSheet.setSmooth(true);
+        mineTexLoaded = true;
+    }
+}
+// ============================================================
+void SpawnMine()
+{
+    for (int i = 0; i < MAX_MINES; i++)
+    {
+        if (!mines[i].active)
+        {
+            mines[i].active = true;
+            mines[i].state       = MineState::FLOATING;
+            mines[i].currentFrame = 0;
+            mines[i].animTimer   = 0.f;
+            mines[i].floatTimer  = 0.f;
+            mines[i].descended   = false;
+ 
+            mines[i].x = getRandom(80.f, LevelWidth - 80.f);
+ 
+            mines[i].y = view.getCenter().y - view.getSize().y / 2.f - 80.f;
+ 
+            mines[i].vy = getRandom(60.f, 100.f);
+ 
+            mines[i].baseY = getRandom(
+                view.getCenter().y - view.getSize().y / 2.f + 150.f,
+                LevelHeight - 150.f
+            );
+ 
+            break;
+        }
+    }
+}
+ 
+// ============================================================
+void UpdateMines(float dt)
+{
+    // --- Spawn ---
+    if (!stopSpawning)
+    {
+        mineSpawnTimer += dt;
+        if (mineSpawnTimer >= mineSpawnInterval)
+        {
+            mineSpawnTimer = 0.f;
+            SpawnMine();
+        }
+    }
+ 
+    sf::Vector2f playerPos = sprPlayerall.getPosition();
+ 
+    for (int i = 0; i < MAX_MINES; i++)
+    {
+        if (!mines[i].active) continue;
+        Mine& m = mines[i];
+ 
+        // ── FLOATING ──────────────────────────────────────────
+        if (m.state == MineState::FLOATING)
+        {
+            if (!m.descended)
+            {
+                m.y += m.vy * dt;
+                if (m.y >= m.baseY)
+                {
+                    m.y        = m.baseY;
+                    m.descended = true;
+                }
+            }
+            else
+            {
+                m.floatTimer += dt;
+                m.y = m.baseY + sinf(m.floatTimer * 1.5f) * 12.f;
+            }
+ 
+            if (!isPlayerDead && !isInvincible)
+            {
+                float dx   = g_mouthPos.x - m.x;
+                float dy   = g_mouthPos.y - m.y;
+                float dist = sqrtf(dx*dx + dy*dy);
+ 
+                if (dist < 10.f)
+                {
+                    m.state        = MineState::EXPLODING;
+                    m.currentFrame = 0;
+                    m.animTimer    = 0.f;
+ 
+                    explodeSound.play();
+ 
+                    lives--;
+                    isPlayerDead = true;
+                    respawnClock.restart();
+ 
+                    if (lives <= 0)
+                    {
+                        isGameOver = true;
+                        levelsound.stop();
+                        gameover.play();
+                    }
+                    else
+                    {
+                        levelsound.stop();
+                        dieSound.play();
+                    }
+ 
+                    // --- SORRY animation ---
+                    showSorryAnimation = true;
+                    sorryExploded      = false;
+                    sorryTimer         = 0.f;
+                    for (int k = 0; k < 5; k++)
+                        sorryLetterScales[k] = 0.f;
+ 
+                    for (int k = 0; k < 8; k++)
+                        StartGameBubble(
+                            m.x + getRandom(-20.f, 20.f),
+                            m.y + getRandom(-20.f, 20.f),
+                            true
+                        );
+ 
+                    // --- Reset combo & multiplier ---
+                    multiplier    = 1;
+                    comboProgress = 0.f;
+                    comboState    = FILLING;
+                }
+            }
+        }
+ 
+        // ── EXPLODING (5 frames) ────────────────────────────
+        else if (m.state == MineState::EXPLODING)
+        {
+            m.animTimer += dt;
+            if (m.animTimer >= 0.08f)
+            {
+                m.animTimer = 0.f;
+                m.currentFrame++;
+                if (m.currentFrame >= EXPL_FRAME_COUNT)
+                {
+                    m.state        = MineState::PUFFING;
+                    m.currentFrame = 0;
+                }
+            }
+        }
+ 
+        // ── PUFFING (2 frames) ───────────────────────────────
+        else if (m.state == MineState::PUFFING)
+        {
+            m.animTimer += dt;
+            if (m.animTimer >= 0.1f)
+            {
+                m.animTimer = 0.f;
+                m.currentFrame++;
+                if (m.currentFrame >= PUFF_FRAME_COUNT)
+                {
+                    m.state        = MineState::SMOKING;
+                    m.currentFrame = 0;
+                }
+            }
+        }
+ 
+        else if (m.state == MineState::SMOKING)
+        {
+            m.animTimer += dt;
+            if (m.animTimer >= 0.4f)  
+            {
+                m.state  = MineState::DEAD;
+                m.active = false;
+            }
+        }
+    }
+}
+ 
+// ============================================================
+void DrawMines()
+{
+    for (int i = 0; i < MAX_MINES; i++)
+    {
+        if (!mines[i].active) continue;
+        Mine& m = mines[i];
+
+        sf::Sprite spr(texMineSheet);
+
+        if (m.state == MineState::FLOATING)
+        {
+            spr.setTextureRect(sf::IntRect({MINE_X, MINE_Y}, 
+                                           {MINE_FRAME_W, MINE_FRAME_H}));
+            spr.setOrigin({MINE_FRAME_W / 2.f, MINE_FRAME_H / 2.f});
+            spr.setPosition({m.x, m.y});
+        }
+        else if (m.state == MineState::EXPLODING)
+        {
+            spr.setTextureRect(sf::IntRect(
+                {EXPL_X + m.currentFrame * EXPL_FRAME_W, EXPL_Y},
+                {EXPL_FRAME_W, EXPL_FRAME_H}));
+            spr.setOrigin({EXPL_FRAME_W / 2.f, EXPL_FRAME_H / 2.f});
+            spr.setPosition({m.x, m.y});
+        }
+        else if (m.state == MineState::PUFFING)
+        {
+            int puffW = (m.currentFrame == 0) ? PUFF_FRAME_W1 : PUFF_FRAME_W2;
+            int puffX = (m.currentFrame == 0) ? PUFF_X : PUFF_X + PUFF_FRAME_W1;
+            spr.setTextureRect(sf::IntRect({puffX, PUFF_Y}, {puffW, PUFF_FRAME_H}));
+            spr.setOrigin({puffW / 2.f, PUFF_FRAME_H / 2.f});
+            spr.setPosition({m.x, m.y});
+        }
+        else if (m.state == MineState::SMOKING)
+        {
+            spr.setTextureRect(sf::IntRect({SMOKE_X, SMOKE_Y}, 
+                                           {SMOKE_FRAME_W, SMOKE_FRAME_H}));
+            spr.setOrigin({SMOKE_FRAME_W / 2.f, SMOKE_FRAME_H / 2.f});
+            spr.setPosition({m.x, m.y});
+        }
+
+        window.draw(spr);
+    }
+}
+
 // bglevel and player logic
 
 void bglevel()
@@ -6032,6 +6331,7 @@ void bglevel()
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
         UpdatePowerUps(deltaTime);
+        UpdateMines(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -6121,6 +6421,7 @@ void Timeattacklevel()
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
         UpdatePowerUps(deltaTime);
+        UpdateMines(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -6357,6 +6658,7 @@ void Drawbglevel()
     DrawGameBubbles();
     DrawMermaidEvent();
     DrawPowerUps();
+    DrawMines();
 
     for (int i = 0; i < MAX_POPUPS; i++)
     {
@@ -6824,6 +7126,7 @@ void Startmovingplayer()
     WaveSound.setLooping(true);
     
     StartPowerUps();
+    StartMines();
 
     currentState = IDLE;
     currentFrame = 0;
@@ -7468,6 +7771,8 @@ void Updatemovingplayer(float dt)
         else
             mouthPos.x -= dynamicMouthOffset;
     }
+    g_mouthPos = mouthPos;
+
 
     // Small Fish
     for (int i = 0; i < MAX_SMALL_FISH; i++)
