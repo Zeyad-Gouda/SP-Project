@@ -145,6 +145,9 @@ void StartMines();
 void SpawnMine();
 void UpdateMines(float dt);
 void DrawMines();
+void RespawnBarracuda();
+void RespawnQueen();
+
 
 float getRandom(float min, float max)
 {
@@ -243,7 +246,7 @@ sf::Vector2f unlockedPos3 = {255.f, 186.f};
 sf::Vector2f unlockedScale3 = {0.028f, 0.028f};
 
 // UI texts
-static sf::Font font("Assets/Fonts/ARIALNBI.ttf");
+static sf::Font font("Assets/Fonts/ARIALNBI.TTF");
 static sf::Text staticTxt(font, ""), nowLoadingTxt(font, ""), menuTxt(font, ""), levelTxt(font, ""), loadingtxt(font, "");
 
 // level unlock state
@@ -528,10 +531,21 @@ Sprite QueenTrigger(QueenTrigerTEX);
 int QTcol = 0;
 int QTrow = 0;
 float QTchangedir = 1;
-float QTvelocityX_AXIS = -2;
-float QTvelocityY_AXIS = -2;
+float QTvelocityX_AXIS = -1.2f;
+float QTvelocityY_AXIS = 0;
 RectangleShape n;
 int num = 0;
+float cudaBaseY = 200.0f; 
+float queenVerticalTimer = 0.f; 
+float queenBaseY = 0.0f; 
+float cudaVerticalTimer = 0.f;
+// === Barracuda Respawn System ===
+bool barracudaIsAlive = true;
+float barracudaRespawnTimer = 0.0f;
+bool isBarracudaRespawning = false;
+// === Queen Respawn System ===
+bool isQueenRespawning = false;
+float queenRespawnTimer = 0.0f;
 
 bool playsound = 1;
 
@@ -898,6 +912,15 @@ Sprite sprPlayerall(texPlayerall);
 // 0 = Time Bonus (+5 sec, time attack only)
 // 1 = Star       (+100 * multiplier score)
 // 2 = Speed Boost (5 sec speed x2)
+enum PowerUpType
+{
+    TIME_BONUS = 0,
+    STAR       = 1,
+    SPEED      = 2,
+    SHRINK     = 3,
+    CRYSTAL    = 4,
+    BOMB       = 5
+};
 
 struct PowerUp
 {
@@ -940,7 +963,7 @@ bool isWaitingForInfection = false;
 float infectionDelayTimer = 0.f;
 float infectionTimer = 0.f;
 const float INFECTION_DELAY = 2.0f;
-const float INFECTION_DURATION = 20.0f;
+const float INFECTION_DURATION = 10.0f;
 
 // ==========================================
 // 1.       (Global Variables)
@@ -2466,6 +2489,7 @@ void StartMainMenu()
     view.setCenter({400.f, 300.f});
     view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
     window.setView(view);
+    levelsound.stop();
 
     if (!swayShader.loadFromFile("sway.frag", Shader::Type::Fragment))
     {
@@ -2559,11 +2583,16 @@ void StartMainMenu()
     switchuserbutton.setPosition(Vector2f({WindowWidth / 2.0f + 300, WindowHeight / 2.0f + 250}));
     creditsbutton.setOrigin(creditsbutton.getLocalBounds().size / 2.0f);
     creditsbutton.setPosition(Vector2f({WindowWidth / 2.0f - 300, WindowHeight / 2.0f + 240}));
-    Barracuda.setPosition(Vector2f({WindowWidth / 2.f - 700, WindowHeight / 2.f - 200}));
-    QueenTrigger.setPosition({1450, 360});
+    float randomBarracudaY = getRandom(100.f, WindowHeight - 100.f);
+    Barracuda.setPosition(Vector2f({WindowWidth / 2.f - 700, randomBarracudaY}));
+    cudaBaseY = Barracuda.getPosition().y; 
+
+    float randomQueenY = getRandom(100.f, WindowHeight - 100.f);
+    QueenTrigger.setPosition({WindowWidth / 2.f + 700, randomQueenY});
+    queenBaseY = QueenTrigger.getPosition().y; 
     Greenfish.setScale({GFchangedir, 1});
     Minowfish.setScale({0.2f * MFchangedir, 0.2f}); // 0.2 is the size factor for Minow
-    Barracuda.setScale({BFchangedir, 1});
+    Barracuda.setScale({BFchangedir * 0.7f, 0.7f});
     QueenTrigger.setScale({QTchangedir, 1});
 
     mGreen.sprite = &Greenfish;
@@ -2618,6 +2647,42 @@ void UpdateMainMenu()
     mermaidevent.stop();
     UpdateAmbientSounds();
 
+    if (isQueenRespawning)
+    {
+        queenRespawnTimer += deltaTime;
+        if (queenRespawnTimer >= 5.0f)
+            RespawnQueen();
+    }
+
+    if (isBarracudaRespawning)
+    {
+        barracudaRespawnTimer += deltaTime;
+        
+        if (barracudaRespawnTimer >= 5.0f)
+        {
+            RespawnBarracuda();
+        }
+    }
+    
+    Vector2f queenPos = QueenTrigger.getPosition();
+    
+    for (auto &obj : smallfishs)
+    {
+        float dx = obj.sprite.getPosition().x - queenPos.x;
+        float dy = obj.sprite.getPosition().y - queenPos.y;
+        float distance = std::sqrt(dx*dx + dy*dy);
+
+        if (distance < 150.0f)
+        {
+            obj.velocityX_AXIS *= 0.98f; 
+            
+            if (std::abs(obj.velocityX_AXIS) < 0.5f)
+            {
+                float dir = (obj.velocityX_AXIS > 0) ? 1.0f : -1.0f;
+                obj.velocityX_AXIS = 0.5f * dir;
+            }
+        }
+    }
     float smallfishsvelocityYaxis = getRandom(-2.f, 2.f);
     if (Barracuda.getScale().x == -1)
     {
@@ -2660,6 +2725,27 @@ void UpdateMainMenu()
     ChangingButtonShape();
     BarracudaFishanimation(mCuda);
     QueenTriggerFish(mQueen);
+}
+
+void RespawnBarracuda()
+{
+    float randomY = getRandom(100.f, WindowHeight - 100.f);
+    Barracuda.setPosition(Vector2f{-300.f, randomY});
+    
+    barracudaIsAlive = true;
+    isBarracudaRespawning = false;
+    barracudaRespawnTimer = 0.0f;
+    
+    Barracuda.setScale({BFchangedir * 0.7f, 0.7f});
+}
+
+void RespawnQueen()
+{
+    float randomY = getRandom(100.f, WindowHeight - 100.f);
+    QueenTrigger.setPosition(Vector2f{WindowWidth + 300.f, randomY});
+    
+    isQueenRespawning = false;
+    queenRespawnTimer = 0.0f;
 }
 
 void ChangingButtonShape()
@@ -2943,154 +3029,270 @@ void BarracudaFishanimation(MenuFish &fish)
 {
     Barracuda.move({*fish.velocityX * deltaTime * 60.f, 0});
 
-    const float leftBound = -150.f;
+    cudaVerticalTimer += deltaTime;
+    
+    if (cudaVerticalTimer > 2.0f)
+    {
+        cudaVerticalTimer = 0.f;
+        *fish.velocityY = getRandom(-2.5f, 2.5f);
+    }
+
+    Barracuda.move({0, *fish.velocityY * deltaTime * 30.f});
+
+    float posY = Barracuda.getPosition().y;
+    if (posY <= -100.f || posY >= WindowHeight + 100.f)
+    {
+        *fish.velocityY *= -1;
+        float clampedY = (posY <= -100.f) ? -99.f : WindowHeight + 99.f;
+        Barracuda.setPosition({Barracuda.getPosition().x, clampedY});
+    }
+
+    const float leftBound  = -150.f;
     const float rightBound = WindowWidth + 150.f;
     float posX = Barracuda.getPosition().x;
 
     if (!fish.turning &&
-        ((posX <= leftBound && *fish.velocityX < 0) ||
+        ((posX <= leftBound  && *fish.velocityX < 0) ||
          (posX >= rightBound && *fish.velocityX > 0)))
     {
-        fish.turning = true;
+        fish.turning   = true;
         fish.turnFrame = 0;
+        BFcol          = 0;
     }
 
-    static float bAnimTimer = 0.f;
+    static float bAnimTimer  = 0.f;
+    static bool  bIsEating   = false;
+    static int   bEatFrame   = 0;
+
     bAnimTimer += deltaTime;
+
     if (bAnimTimer >= 0.08f)
     {
         bAnimTimer = 0.f;
+
+        // ── TURN ──────────────────────────────────────────
         if (fish.turning)
         {
-            Barracuda.setTextureRect(IntRect({fish.turnFrame * 256, 2 * 118}, {256, 118}));
+            // row 2 = turn animation
+            Barracuda.setTextureRect(
+                IntRect({fish.turnFrame * 256, 2 * 118}, {256, 118}));
             fish.turnFrame++;
 
             if (fish.turnFrame >= 5)
             {
-                fish.turnFrame = 0;
-                fish.turning = false;
+                fish.turning    = false;
+                fish.turnFrame  = 0;
+                BFcol           = 0;
+                bIsEating       = false;
 
                 *fish.changedir *= -1;
-                Barracuda.setScale({*fish.changedir, 1});
-                *fish.velocityX = -*fish.velocityX;
+                Barracuda.setScale({BFchangedir * 0.7f, 0.7f});
+                *fish.velocityX  = -*fish.velocityX;
             }
+            return;
         }
-        else if (Barracudacollieder.getGlobalBounds().findIntersection(MFcollieder.getGlobalBounds()))
+
+        // ── EAT CHECK ─────────────────────────────────────
+        if (!bIsEating)
         {
-            // Use a static counter to track how far along the eat animation is
-            static int bEatCounter = 0;
-
-            if (bEatCounter < 1)
-                BFcol = 0; // Start at the very first frame of the Eat animation
-
-            if (bEatCounter == 3)
+            for (auto &obj : smallfishs)
             {
-                // Right as the jaws snap shut, teleport the Minnow off-screen
-                Minowfish.setPosition({ 3000.f, 3000.f });
-                MFvisable = 0;
-            }
-
-            bEatCounter++;
-
-            if (bEatCounter <= 6) // Play 6 frames of the eating animation
-            {
-                // Row 0 is the Eat animation
-                Barracuda.setTextureRect(IntRect({ BFcol * 256, 0 }, { 256, 118 }));
-                BFcol++;
-            }
-            else
-            {
-                // Once eating is finished, immediately go back to the Swim animation (Row 1)
-                Barracuda.setTextureRect(IntRect({ BFcol * 256, 1 * 118 }, { 256, 118 }));
-                BFcol = (BFcol + 1) % 14;
-                bEatCounter = 0; // Reset the counter just in case it needs to eat again
+                float dx = obj.sprite.getPosition().x 
+                           - Barracuda.getPosition().x;
+                float dy = obj.sprite.getPosition().y 
+                           - Barracuda.getPosition().y;
+                if (std::sqrt(dx*dx + dy*dy) < 80.f)
+                {
+                    bIsEating = true;
+                    bEatFrame = 0;
+                    BFcol     = 0;
+                    break;
+                }
             }
         }
-        else
+
+        // ── EAT ANIMATION ─────────────────────────────────
+        if (bIsEating)
         {
-            Barracuda.setTextureRect(IntRect({BFcol * 256, 1 * 118}, {256, 118}));
-            BFcol = (BFcol + 1) % 14;
+            // row 0 = eat animation
+            Barracuda.setTextureRect(
+                IntRect({bEatFrame * 256, 0}, {256, 118}));
+            bEatFrame++;
+
+            if (bEatFrame >= 5)
+            {
+                for (auto &obj : smallfishs)
+                {
+                    float dx = obj.sprite.getPosition().x 
+                               - Barracuda.getPosition().x;
+                    float dy = obj.sprite.getPosition().y 
+                               - Barracuda.getPosition().y;
+                    if (std::sqrt(dx*dx + dy*dy) < 100.f)
+                    {
+                        obj.sprite.setPosition(
+                            {obj.velocityX_AXIS > 0 
+                                ? -200.f 
+                                : WindowWidth + 200.f,
+                             obj.sprite.getPosition().y});
+                        break;
+                    }
+                }
+                bIsEating = false;
+                bEatFrame = 0;
+                BFcol     = 0;
+            }
+            return;
         }
+
+        // ── SWIM (default) ────────────────────────────────
+        // row 1 = swim animation
+        Barracuda.setTextureRect(
+            IntRect({BFcol * 256, 1 * 118}, {256, 118}));
+        BFcol = (BFcol + 1) % 14;
     }
 }
 
 void QueenTriggerFish(MenuFish &fish)
 {
-    
-    QueenTrigger.move({*fish.velocityX * deltaTime * 60.f, *fish.velocityY * deltaTime * 60.f});
+    QueenTrigger.move({*fish.velocityX * deltaTime * 60.f, 0});
+    queenVerticalTimer += deltaTime;
+        if (queenVerticalTimer > 2.0f)
+    {
+        queenVerticalTimer = 0.f;
+        *fish.velocityY = getRandom(-2.5f, 2.5f);
+    }
+    QueenTrigger.move({0, *fish.velocityY * deltaTime * 30.f});
 
-    const float leftBound = -150.f;
-    const float rightBound = WindowWidth + 150.f;
-    float posX = QueenTrigger.getPosition().x;
     float posY = QueenTrigger.getPosition().y;
-
-    
     if (posY <= -100.f || posY >= WindowHeight + 100.f)
     {
         *fish.velocityY *= -1;
-        // Keep it safely inside the bounds so it doesn't get stuck
-        if (posY <= -100.f)
-            QueenTrigger.setPosition({posX, -99.f});
-        if (posY >= WindowHeight + 100.f)
-            QueenTrigger.setPosition({posX, WindowHeight + 99.f});
+        QueenTrigger.setPosition({QueenTrigger.getPosition().x, posY <= -100.f ? -99.f : WindowHeight + 99.f});
     }
+
+    const float leftBound  = -150.f;
+    const float rightBound = WindowWidth + 150.f;
+    float posX = QueenTrigger.getPosition().x;
 
     if (!fish.turning &&
-        ((posX <= leftBound && *fish.velocityX < 0) ||
+        ((posX <= leftBound  && *fish.velocityX < 0) ||
          (posX >= rightBound && *fish.velocityX > 0)))
     {
-        fish.turning = true;
+        fish.turning   = true;
         fish.turnFrame = 0;
+        QTcol          = 0;
     }
 
-    
     static float qAnimTimer = 0.f;
+    static bool  qIsEating  = false;
+    static int   qEatFrame  = 0;
+
     qAnimTimer += deltaTime;
 
     if (qAnimTimer >= 0.08f)
     {
-        qAnimTimer = 0.f; // Reset the timer
+        qAnimTimer = 0.f;
 
+        // ── TURN ──────────────────────────────────────────
         if (fish.turning)
         {
-            QueenTrigger.setTextureRect(IntRect({fish.turnFrame * 298, 2 * 216}, {298, 216}));
+            // row 2 = turn animation
+            QueenTrigger.setTextureRect(
+                IntRect({fish.turnFrame * 298, 2 * 216}, {298, 216}));
             fish.turnFrame++;
 
-            if (fish.turnFrame >= 6) // 6-turn frames
+            if (fish.turnFrame >= 6)
             {
+                fish.turning   = false;
                 fish.turnFrame = 0;
-                fish.turning = false;
+                QTcol          = 0;
+                qIsEating      = false;
 
                 *fish.changedir *= -1;
-                QueenTrigger.setScale({*fish.changedir, 1});
-                *fish.velocityX = -*fish.velocityX;
+                QueenTrigger.setScale({*fish.changedir, 1.f});
+                *fish.velocityX  = -*fish.velocityX;
             }
+            return;
         }
-        else if (QueenTriggercollieder.getGlobalBounds().findIntersection(smallfishs[0].sprite.getGlobalBounds()) ||
-                 QueenTriggercollieder.getGlobalBounds().findIntersection(smallfishs[2].sprite.getGlobalBounds()))
+
+    // ── EAT CHECK (Barracuda) ─────────────────────────────
+    if (!qIsEating && barracudaIsAlive)
+    {
+        float dx = Barracuda.getPosition().x - QueenTrigger.getPosition().x;
+        float dy = Barracuda.getPosition().y - QueenTrigger.getPosition().y;
+        float dist = sqrt(dx*dx + dy*dy);
+        
+        if (dist < 120.f)
         {
-            static int counter = 0;
-            if (counter < 1)
-                QTcol = 0;
-            if (counter == 3)
-            {
-                smallfishs[2].sprite.setPosition({3000, 3000});
-                smallfishs[0].sprite.setPosition({3000, 3000});
-            }
-            counter++;
-            if (counter <= 6)
-            {
-                QueenTrigger.setTextureRect(IntRect({QTcol * 298, 0}, {298, 216}));
-                QTcol++;
-            }
-        }
-        else
-        {
-            QueenTrigger.setTextureRect(IntRect({QTcol * 298, 1 * 216}, {298, 216}));
-            QTcol = (QTcol + 1) % 14;
+            qIsEating = true;
+            qEatFrame = 0;
+            QTcol     = 0;
+            
+            Barracuda.setPosition({-3000.f, -3000.f});
+            
+            barracudaIsAlive = false;
+            isBarracudaRespawning = true;
+            barracudaRespawnTimer = 0.f;
         }
     }
+    // ── EAT CHECK (Small Fish) ─────────────────────────────
+    if (!qIsEating)
+    {
+        for (auto &obj : smallfishs)
+        {
+            float dx = obj.sprite.getPosition().x - QueenTrigger.getPosition().x;
+            float dy = obj.sprite.getPosition().y - QueenTrigger.getPosition().y;
+            float dist = sqrt(dx*dx + dy*dy);
+            
+            if (dist < 120.f)
+            {
+                qIsEating = true;
+                qEatFrame = 0;
+                QTcol = 0;
+            }
+        }
+    }
+        // ── EAT ANIMATION ─────────────────────────────────
+        if (qIsEating)
+        {
+            // row 0 = eat animation
+            QueenTrigger.setTextureRect(
+                IntRect({qEatFrame * 298, 0}, {298, 216}));
+            qEatFrame++;
+
+            if (qEatFrame >= 5)
+            {
+                for (auto &obj : smallfishs)
+                {
+                    float dx = obj.sprite.getPosition().x 
+                               - QueenTrigger.getPosition().x;
+                    float dy = obj.sprite.getPosition().y 
+                               - QueenTrigger.getPosition().y;
+                    if (std::sqrt(dx*dx + dy*dy) < 120.f)
+                    {
+                        obj.sprite.setPosition(
+                            {obj.velocityX_AXIS > 0 
+                                ? -200.f 
+                                : WindowWidth + 200.f,
+                             obj.sprite.getPosition().y});
+                        break;
+                    }
+                }
+                qIsEating = false;
+                qEatFrame = 0;
+                QTcol     = 0;
+            }
+            return;
+        }
+
+        // ── SWIM (default) ────────────────────────────────
+        // row 1 = swim animation
+        QueenTrigger.setTextureRect(
+            IntRect({QTcol * 298, 1 * 216}, {298, 216}));
+        QTcol = (QTcol + 1) % 14;
+    }
 }
+
 void SwitchUser()
 {
     StartSwitchUser();
@@ -3251,6 +3453,7 @@ void UpdateSwitchUser()
                             }
                             if (!DupplicateName)
                             {
+                                players[NumberOfUsers] = Player(); 
                                 players[NumberOfUsers].name = InputString;
                                 players[NumberOfUsers].id = NumberOfUsers + 1;
 
@@ -3370,11 +3573,10 @@ for (int i = 0; i < NumberOfUsers; i++)
                     {
                         for (int id = SelectedUser; id < NumberOfUsers - 1; id++)
                         {
-                            players[id].name = players[id + 1].name;
+                            players[id] = players[id + 1];
                             players[id].id = id + 1;
                         }
-                        players[NumberOfUsers - 1].name = "";
-                        players[NumberOfUsers - 1].id = 0;
+                        players[NumberOfUsers - 1] = Player();
                         NumberOfUsers--;
                         isConfirmUserDelete = 0;
                         SelectedUser = -1;
@@ -4035,12 +4237,22 @@ void DrawOptions()
     {
         window.setView(view);
 
-        if (isLevelRunning && !g_inEndScreen) 
+        if (g_inEndScreen)
+        {
+            window.setView(view);
+            view.setSize({800.f, 600.f});
+            view.setCenter({400.f, 300.f});
+            window.setView(view);
+            
+            Vector2f texSize = Vector2f(texEndBg.getSize());
+            sprEndBg.setScale({800.f / texSize.x, 600.f / texSize.y});
+            sprEndBg.setPosition({0.f, 0.f});
+            window.draw(sprEndBg);
+        }
+        else if (isLevelRunning && !g_inEndScreen) 
             Drawbglevel();     
         else if (gameScreenActive)
             window.draw(gameScreenBgSprite); 
-        else if (g_inEndScreen)
-            window.draw(sprEndBg);
         else
             DrawMainMenuBackground(); 
         
@@ -4828,9 +5040,23 @@ void DrawCredits()
 // load all assets & init texts/pearls
 void StartSelectLevel()
 {
+    window.setView(view);
+    
+    // Ensure view is in the correct state for the menu (800x600 center)
+    view.setSize({800.f, 600.f});
+    view.setCenter({400.f, 300.f});
+    window.setView(view);
+
+    gameScreenActive = false;
+    g_inEndScreen = false;
     playsound = 1;
     isLoading = false;
     loadProgress = 0.f;
+    goToMainMenuFromLevel = false;
+    selectedLevel = -1; // Reset selected level to prevent auto-start issues
+    pearlClicked = false;
+    loadingdone = false;
+    showQuitPopup = false;
 
     if (!bgTexture.loadFromFile("Assets/Select_level/gamemap_bg.jpeg"))
         std::cerr << "Error: Could not load gamemap_bg.jpeg" << std::endl;
@@ -4868,7 +5094,7 @@ void StartSelectLevel()
         std::cerr << "Error: Could not load gamemap_loadbar.jpeg" << std::endl;
     loadBarTexture.setSmooth(true);
 
-    if (!font.openFromFile("Assets/Fonts/ARIALNBI.ttf"))
+    if (!font.openFromFile("Assets/Fonts/ARIALNBI.TTF"))
         cout << "Error loading font!\n";
     font.setSmooth(true);
 
@@ -4904,6 +5130,8 @@ void centerText(Text &text)
 
 void UpdateSelectLevel(float dt)
 {
+    window.setView(view);
+
     PearlData *activePearls = isTimeAttackMode ? ta_pearls : pearls;
     // PlayingSound(true);
     Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
@@ -5116,7 +5344,7 @@ void DrawSelectLevel()
 // main select-level loop
 void Select_level()
 {
-    
+    g_inEndScreen = false;
     sf::Image image;
     if (!image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
     {
@@ -5840,7 +6068,7 @@ void UpdatePowerUps(float dt)
 
                     // Pick type
                     int crystalRoll = rand() % 100;
-                    if (crystalRoll < 95)
+                    if (crystalRoll < 10)
                     {
                         powerUps[i].type = 4; // 15% chance to drop the Crystal
                     }
@@ -5849,20 +6077,39 @@ void UpdatePowerUps(float dt)
                         // Normal power-ups based on level
                         if (currentGamemode == TIMEATTACK)
                         {
-                            powerUps[i].type = rand() % 3;
+                            powerUps[i].type = rand() % 6;
                         }
                         else if (gameLEVEL == 1)
                         {
-                            powerUps[i].type = 1;
+                            // Bomb or Star
+                            int roll = rand() % 5;
+
+                            if (roll == 0)
+                                powerUps[i].type = BOMB;
+                            else
+                                powerUps[i].type = STAR;
                         }
                         else if (gameLEVEL == 2)
                         {
-                            powerUps[i].type = 1 + rand() % 2;
+                            // Time / Star / Crystal
+                            int roll = rand() % 2;
+
+                            if (roll == 0)
+                                powerUps[i].type = STAR;
+                            else
+                                powerUps[i].type = CRYSTAL;
                         }
                         else if (gameLEVEL == 3)
                         {
-                            int roll = rand() % 2;
-                            powerUps[i].type = (roll == 0) ? 2 : 3;
+                            // Time / Star / Speed / Shrink
+                            int roll = rand() % 3;
+
+                            if (roll == 0)
+                                powerUps[i].type = STAR;
+                            else if (roll == 1)
+                                powerUps[i].type = SPEED;
+                            else
+                                powerUps[i].type = SHRINK;
                         }
                     }
 
@@ -6098,6 +6345,15 @@ void SpawnMine()
 // ============================================================
 void UpdateMines(float dt)
 {
+    if (isEscapeMode)
+    {
+        for (int i = 0; i < MAX_MINES; i++)
+        {
+            mines[i].active = false;
+        }
+        return;
+    }
+
     // --- Spawn ---
     if (!stopSpawning)
     {
@@ -6134,13 +6390,13 @@ void UpdateMines(float dt)
                 m.y = m.baseY + sinf(m.floatTimer * 1.5f) * 12.f;
             }
  
-            if (!isPlayerDead && !isInvincible)
+            if (!isPlayerDead && !isInvincible && !isMermaidEventActive && !isGameWon)
             {
                 float dx   = g_mouthPos.x - m.x;
                 float dy   = g_mouthPos.y - m.y;
                 float dist = sqrtf(dx*dx + dy*dy);
  
-                if (dist < 10.f)
+                if (dist < 15.f)
                 {
                     m.state        = MineState::EXPLODING;
                     m.currentFrame = 0;
@@ -6162,6 +6418,23 @@ void UpdateMines(float dt)
                     {
                         levelsound.stop();
                         dieSound.play();
+                    }
+ 
+                    for (int j = 0; j < MAX_MINES; j++)
+                    {
+                        if (i == j || !mines[j].active || mines[j].state != MineState::FLOATING) continue;
+                        
+                        float dx2 = mines[j].x - m.x;
+                        float dy2 = mines[j].y - m.y;
+                        float distMines = sqrtf(dx2*dx2 + dy2*dy2);
+                        
+                        if (distMines < 100.f) 
+                        {
+                             mines[j].state        = MineState::EXPLODING;
+                             mines[j].currentFrame = 0;
+                             mines[j].animTimer    = 0.f;
+                             // explodeSound.play(); 
+                        }
                     }
  
                     // --- SORRY animation ---
@@ -6371,6 +6644,7 @@ void Timeattacklevel()
 {
     currentGamemode = TIMEATTACK;
     gameScreenActive = false;
+    gameLEVEL = selectedLevel; 
     bool isGameWon = false;
     float finalTime = 0.f;
     isLevelRunning = true;
@@ -6978,7 +7252,7 @@ void Movingplayer()
 
 void Startmovingplayer()
 {
-
+    gameLEVEL = selectedLevel; 
     static float *pCurrentVisualScale = nullptr;
     static bool *pCanDash = nullptr;
     static bool *pIsDashingNow = nullptr;
@@ -8298,6 +8572,10 @@ void UpdateSmallFishes(float dt)
                 fish.isTurning = false;
                 fish.currentFrame = 0;
                 fish.animTimer = 0.f;
+                for (int i = 0; i < MAX_MINES; i++)
+                {
+                    mines[i].active = false;
+                }
             }
 
             if (fish.isFleeing)
@@ -10825,9 +11103,15 @@ bool EndLevel()
 
                     if (gsBtns[0].sprite && gsBtns[0].sprite->getGlobalBounds().contains(mousePos))
                     {
-                    g_optionsFromPause = true; 
-                    OptionsMenu();
-                    g_optionsFromPause = false; 
+                        view.setSize({800.f, 600.f});      
+                        view.setCenter({400.f, 300.f});   
+                        window.setView(view);            
+                        g_inEndScreen = true;
+                        g_optionsFromPause = true; 
+                        OptionsMenu();
+                        g_optionsFromPause = false;
+                        g_inEndScreen = true;            
+                        window.setView(view); 
                     }
 
                     if (gsBtns[1].sprite && gsBtns[1].sprite->getGlobalBounds().contains(mousePos))
