@@ -1449,6 +1449,7 @@ struct Mine
     float     animTimer;
  
     bool active;
+    float lifeTime = 0.f; 
 };
  
 const int MAX_MINES = 4;
@@ -6241,56 +6242,47 @@ void UpdatePowerUps(float dt)
 
                     // Pick type
                     int crystalRoll = rand() % 100;
-                    if (crystalRoll < 35)
+                    if (crystalRoll < 10 && gameLEVEL >= 2)
                     {
                         powerUps[i].type = 4; 
                     }
-                    else
-                    {
-                        // Normal power-ups based on level
+                    else{
                         if (currentGamemode == TIMEATTACK)
                         {
-                            powerUps[i].type = rand() % 6;
+                            int roll = rand() % 3;
+                            if (roll == 0) powerUps[i].type = TIME_BONUS;
+                            else if (roll == 1) powerUps[i].type = BOMB;
+                            else powerUps[i].type = STAR;
                         }
                         else if (gameLEVEL == 1)
                         {
-                            // Bomb or Star
-                            int roll = rand() % 5;
-
-                            if (roll == 0)
-                                powerUps[i].type = BOMB;
-                            else
-                                powerUps[i].type = STAR;
+                            int roll = rand() % 10;
+                            if (roll == 0) powerUps[i].type = BOMB;
+                            else powerUps[i].type = STAR;
                         }
                         else if (gameLEVEL == 2)
                         {
-                            // Time / Star / Crystal
-                            int roll = rand() % 2;
-
-                            if (roll == 0)
-                                powerUps[i].type = STAR;
-                            else
-                                powerUps[i].type = CRYSTAL;
+                            int roll = rand() % 4;
+                            if (roll == 0) powerUps[i].type = STAR;
+                            else if (roll == 1) powerUps[i].type = CRYSTAL;
+                            else if (roll == 2) powerUps[i].type = BOMB;
                         }
                         else if (gameLEVEL == 3)
                         {
-                            // Time / Star / Speed / Shrink
-                            int roll = rand() % 3;
-
-                            if (roll == 0)
-                                powerUps[i].type = STAR;
-                            else if (roll == 1)
-                                powerUps[i].type = SPEED;
-                            else
-                                powerUps[i].type = SHRINK;
+                            int roll = rand() % 6;
+                            if (roll == 0) powerUps[i].type = STAR;
+                            else if (roll == 1) powerUps[i].type = SPEED;
+                            else if (roll == 2) powerUps[i].type = SHRINK;
+                            else if (roll == 3) powerUps[i].type = CRYSTAL;
+                            else if (roll == 4) powerUps[i].type = BOMB;
                         }
                     }
-
                     break;
                 }
             }
         }
     }
+
 
     // --- Update each bubble ---
     Vector2f playerPos = sprPlayerall.getPosition();
@@ -6457,27 +6449,43 @@ if (speedBoostActive)
 
 void DrawPowerUps()
 {
-  
-    Texture* texPtrs[6] = { &texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink, &texPowerUpCrystal, &texMineSheet };
+    Texture* texPtrs[5] = { 
+        &texPowerUpTime, 
+        &texPowerUpStar, 
+        &texPowerUpSpeed, 
+        &texPowerUpShrink, 
+        &texPowerUpCrystal 
+    };
 
     for (int i = 0; i < MAX_POWERUPS; i++)
     {
-        if (!powerUps[i].active)
-            continue;
+        if (!powerUps[i].active) continue;
 
         PowerUp& p = powerUps[i];
 
-        if (p.type < 0 || p.type > 5)
-            continue;
+        if (p.type < 0 || p.type > 5) continue;
 
-        Sprite bub(*texPtrs[p.type]);
-
-        bub.setOrigin({ texPtrs[p.type]->getSize().x / 2.f,
-                       texPtrs[p.type]->getSize().y / 2.f });
-        bub.setPosition({ p.x, p.y });
-        bub.setScale({ 0.8f, 0.8f });
-
-        window.draw(bub);
+        if (p.type == BOMB)
+        {
+            Sprite bub(texMineSheet);
+            bub.setTextureRect(sf::IntRect(
+                {MINE_X, MINE_Y}, 
+                {MINE_FRAME_W, MINE_FRAME_H}
+            ));
+            bub.setOrigin({ MINE_FRAME_W / 2.f, MINE_FRAME_H / 2.f });
+            bub.setPosition({ p.x, p.y });
+            bub.setScale({ 0.8f, 0.8f });
+            window.draw(bub);
+        }
+        else
+        {
+            Sprite bub(*texPtrs[p.type]);
+            bub.setOrigin({ texPtrs[p.type]->getSize().x / 2.f,
+                           texPtrs[p.type]->getSize().y / 2.f });
+            bub.setPosition({ p.x, p.y });
+            bub.setScale({ 0.8f, 0.8f });
+            window.draw(bub);
+        }
     }
 }
 
@@ -6499,6 +6507,15 @@ void StartMines()
 // ============================================================
 void SpawnMine()
 {
+
+    for (int i = 0; i < MAX_MINES; i++)
+    {
+        if (mines[i].active)
+        {
+            return;
+        }
+    }
+
     for (int i = 0; i < MAX_MINES; i++)
     {
         if (!mines[i].active)
@@ -6508,6 +6525,7 @@ void SpawnMine()
             mines[i].currentFrame = 0;
             mines[i].animTimer   = 0.f;
             mines[i].floatTimer  = 0.f;
+            mines[i].lifeTime = 0.f;
             mines[i].descended   = false;
  
             mines[i].x = getRandom(80.f, LevelWidth - 80.f);
@@ -6555,6 +6573,16 @@ void UpdateMines(float dt)
     {
         if (!mines[i].active) continue;
         Mine& m = mines[i];
+        m.lifeTime += dt;
+
+    if (m.lifeTime > 16.0f)
+    {
+        m.active = false; 
+        if (rand() % 100 < 15) 
+        {
+            SpawnMine(); 
+        }
+    }
  
         // ── FLOATING ──────────────────────────────────────────
         if (m.state == MineState::FLOATING)
@@ -6579,8 +6607,17 @@ void UpdateMines(float dt)
                 float dx   = g_mouthPos.x - m.x;
                 float dy   = g_mouthPos.y - m.y;
                 float dist = sqrtf(dx*dx + dy*dy);
+
+                float dynamicHitRadius = 15.0f;
+
+                if (playerLevel == 2) {
+                    dynamicHitRadius = 25.0f; 
+                }
+                else if (playerLevel == 3) {
+                    dynamicHitRadius = 50.0f;
+                }
  
-                if (dist < 15.f)
+                if (dist < dynamicHitRadius)
                 {
                     m.state        = MineState::EXPLODING;
                     m.currentFrame = 0;
