@@ -147,6 +147,7 @@ void UpdateMines(float dt);
 void DrawMines();
 void RespawnBarracuda();
 void RespawnQueen();
+void ShowCrystalInfoPopup();
 
 
 float getRandom(float min, float max)
@@ -254,6 +255,8 @@ bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
 bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
 bool isTimeAttackMode = false;
 bool loadingdone = false;
+
+bool g_hasSeenCrystalInfo = false;
 
 // pearl data struct
 struct PearlData
@@ -590,9 +593,10 @@ struct Player
     string name = "";
     int id = 0;
     long long score = 0;
-    // ---> INDIVIDUAL PROGRESS <---
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
+    bool hasSeenCrystalInfo = false;
+
 };
 Player players[7];
 int NumberOfUsers = 0;
@@ -1473,6 +1477,7 @@ struct PlayerSave
    
     bool level1Unlocked = true, level2Unlocked = false, level3Unlocked = false;
     bool ta_level1Unlocked = true, ta_level2Unlocked = false, ta_level3Unlocked = false;
+    bool hasSeenCrystalInfo = false;
 };
 
 // The Master Save Struct
@@ -1521,6 +1526,10 @@ void ApplyAudioSettings()
     StageClearSound.setVolume(soundVol);
     spawnSound.setVolume(soundVol);
     dieSound.setVolume(soundVol);
+
+    eatSound2.setVolume(soundVol);
+    PlayergotEaten.setVolume(soundVol);
+    explodeSound.setVolume(soundVol);
 
     // Update frenzy array sounds
     for (int i = 0; i < SOUND_COUNT; i++) {
@@ -1595,6 +1604,7 @@ void LoadGameData()
             players[i].ta_level1Unlocked = g_data.players[i].ta_level1Unlocked;
             players[i].ta_level2Unlocked = g_data.players[i].ta_level2Unlocked;
             players[i].ta_level3Unlocked = g_data.players[i].ta_level3Unlocked;
+            players[i].hasSeenCrystalInfo = g_data.players[i].hasSeenCrystalInfo;
 
             if (players[i].name == CurUser)
             {
@@ -1608,6 +1618,7 @@ void LoadGameData()
         ta_level1Unlocked = players[activeIndex].ta_level1Unlocked;
         ta_level2Unlocked = players[activeIndex].ta_level2Unlocked;
         ta_level3Unlocked = players[activeIndex].ta_level3Unlocked;
+        g_hasSeenCrystalInfo = players[activeIndex].hasSeenCrystalInfo;
 
         for (int i = 0; i < 25; i++)
         {
@@ -1650,11 +1661,14 @@ void LoadGameData()
         ta_level2Unlocked = false;
         ta_level3Unlocked = false;
 
+        g_hasSeenCrystalInfo = false;
+
         storyCarryScore = 0;
         taCarryScore = 0;
         
         lastWonStoryLevel = 0;
         lastWonTALevel = 0;
+
     }
 }
 
@@ -1672,6 +1686,7 @@ void SaveGameData()
             players[i].ta_level1Unlocked = ta_level1Unlocked;
             players[i].ta_level2Unlocked = ta_level2Unlocked;
             players[i].ta_level3Unlocked = ta_level3Unlocked;
+            players[i].hasSeenCrystalInfo = g_hasSeenCrystalInfo;
             break;
         }
     }
@@ -1701,6 +1716,7 @@ void SaveGameData()
         g_data.players[i].ta_level1Unlocked = players[i].ta_level1Unlocked;
         g_data.players[i].ta_level2Unlocked = players[i].ta_level2Unlocked;
         g_data.players[i].ta_level3Unlocked = players[i].ta_level3Unlocked;
+		g_data.players[i].hasSeenCrystalInfo = players[i].hasSeenCrystalInfo;
     }
 
     for (int i = 0; i < 25; i++)
@@ -1726,7 +1742,161 @@ void SaveGameData()
         cout << "Error: Could not save data." << endl;
     }
 }
+void ShowCrystalInfoPopup()
+{
+    static bool loaded = false;
+    static Texture infoTex, btnNormalTex, btnHoverTex;
+    static Font btnFont;
 
+    
+    static optional<Cursor> popupCursor;
+
+    if (!loaded)
+    {
+        if (!infoTex.loadFromFile("Assets/bouns/shell_bioinfo.png"))
+            cout << "Missing shell_bioinfo.png\n";
+        if (!btnNormalTex.loadFromFile("Assets/Options/done_normal.png"))
+            cout << "Missing done_normal.png\n";
+        if (!btnHoverTex.loadFromFile("Assets/Options/done_hover.png"))
+            cout << "Missing done_hover.png\n";
+        if (!btnFont.openFromFile("Assets/Fonts/BarmenoBold.otf"))
+            cout << "Missing BarmenoBold.otf\n";
+
+        infoTex.setSmooth(true);
+        btnNormalTex.setSmooth(true);
+        btnHoverTex.setSmooth(true);
+        btnFont.setSmooth(true);
+
+        
+        Image image;
+        if (image.loadFromFile("Assets/Main menu & Loading/Main menu/blue_fish_normal_select.png"))
+        {
+            unsigned int newW = 48, newH = 48;
+            Image resized;
+            resized.resize({ newW, newH }, Color::Transparent);
+            unsigned int origW = image.getSize().x;
+            unsigned int origH = image.getSize().y;
+
+            for (unsigned int y = 0; y < newH; y++) {
+                for (unsigned int x = 0; x < newW; x++) {
+                    unsigned int srcX = x * origW / newW;
+                    unsigned int srcY = y * origH / newH;
+                    resized.setPixel({ x, y }, image.getPixel({ srcX, srcY }));
+                }
+            }
+         
+            popupCursor = sf::Cursor::createFromPixels(resized.getPixelsPtr(), resized.getSize(), { newW / 2, newH / 2 });
+        }
+        loaded = true;
+    }
+
+    
+    if (popupCursor.has_value()) {
+        window.setMouseCursor(popupCursor.value());
+    }
+    window.setMouseCursorVisible(true);
+
+    Sprite infoSpr(infoTex);
+    FloatRect infoB = infoSpr.getLocalBounds();
+    infoSpr.setOrigin({ infoB.size.x / 2.f, infoB.size.y / 2.f });
+    infoSpr.setPosition({ WindowWidth / 2.f, WindowHeight / 2.f - 30.f });
+
+    Sprite btnSpr(btnNormalTex);
+    FloatRect btnB = btnSpr.getLocalBounds();
+    btnSpr.setOrigin({ btnB.size.x / 2.f, btnB.size.y / 2.f });
+    btnSpr.setPosition({ WindowWidth / 2.f, WindowHeight / 2.f + 180.f });
+
+    Text btnTxt(btnFont, "Done", 30);
+    btnTxt.setFillColor(Color(160, 211, 74));
+    btnTxt.setOutlineColor(Color(66, 50, 25));
+    btnTxt.setOutlineThickness(2.f);
+    FloatRect tb = btnTxt.getLocalBounds();
+    btnTxt.setOrigin({ tb.position.x + tb.size.x / 2.f, tb.position.y + tb.size.y / 2.f });
+    btnTxt.setPosition({ WindowWidth / 2.f, WindowHeight / 2.f + 175.f });
+
+    Clock frameClock;
+    while (window.isOpen() && isLevelRunning)
+    {
+        float dt = frameClock.restart().asSeconds();
+
+        while (const optional event = window.pollEvent())
+        {
+            if (event->is<Event::Closed>())
+            {
+                window.close();
+                return;
+            }
+            if (const auto* keyPressed = event->getIf<Event::KeyPressed>())
+            {
+                if (keyPressed->code == Keyboard::Key::Escape || keyPressed->code == Keyboard::Key::Enter)
+                {
+                    window.setMouseCursorVisible(false);
+                    return;
+                }
+            }
+            if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
+            {
+                if (mouseBtn->button == Mouse::Button::Left)
+                {
+                    Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
+                    if (btnSpr.getGlobalBounds().contains(mousePos))
+                    {
+                        if (isSoundEnabled) buttonpressedsound.play();
+                        window.setMouseCursorVisible(false);
+                        return; // Exit the popup to resume game!
+                    }
+                }
+            }
+        }
+
+        Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), uiView);
+        bool hovering = btnSpr.getGlobalBounds().contains(mousePos);
+
+        static bool wasHovering = false;
+        if (hovering && !wasHovering)
+        {
+            if (isSoundEnabled) buttonpressedsound.play();
+        }
+        wasHovering = hovering;
+
+        if (hovering)
+        {
+            btnSpr.setTexture(btnHoverTex, true);
+            btnSpr.setScale({ 1.05f, 1.05f });
+            btnTxt.setFillColor(Color(255, 241, 74));
+        }
+        else
+        {
+            btnSpr.setTexture(btnNormalTex, true);
+            btnSpr.setScale({ 1.f, 1.f });
+            btnTxt.setFillColor(Color(160, 211, 74));
+        }
+
+        window.clear(Color(20, 100, 160));
+        Drawbglevel(); // Keeps the level frozen in the background
+
+        window.setView(uiView);
+
+        // Draw dark overlay
+        screenDarkener.setSize(Vector2f(WindowWidth, WindowHeight));
+        screenDarkener.setPosition({ 0.f, 0.f });
+        screenDarkener.setFillColor(Color(0, 0, 0, 160));
+        window.draw(screenDarkener);
+
+        // Draw items
+        window.draw(infoSpr);
+        window.draw(btnSpr);
+
+        Text shadow = btnTxt;
+        shadow.setFillColor(Color(10, 20, 40, 180));
+        shadow.setOutlineThickness(0);
+        shadow.move({ 1.f, 1.f });
+        window.draw(shadow);
+        window.draw(btnTxt);
+
+        window.display();
+    }
+}
 
 // ============================================================
 //           END LEVEL - Textures & Sprites
@@ -1805,8 +1975,9 @@ const float POWER_UP_DURATION = SPEED_BOOST_DURATION;
 
 int main()
 {
-    LoadGameData();
     loadSounds();
+    LoadGameData();
+    
     cout << "SFML 3.0 and Standard Library are working!" << endl;
     srand(time(0));
     if (isFullscreen)
@@ -2988,7 +3159,6 @@ void MinowFishanimation(MenuFish& fish)
         fish.turnFrame = 0;
     }
 
-    // Add a static timer to stop the crazy 120 FPS jittering
     static float mAnimTimer = 0.f;
     mAnimTimer += deltaTime;
 
@@ -3464,6 +3634,8 @@ void UpdateSwitchUser()
                                 players[NumberOfUsers].ta_level1Unlocked = true;
                                 players[NumberOfUsers].ta_level2Unlocked = false;
                                 players[NumberOfUsers].ta_level3Unlocked = false;
+                                players[NumberOfUsers].hasSeenCrystalInfo = false;
+                                g_hasSeenCrystalInfo = false;
 
                                 NumberOfUsers++;
                                 InputString = "";
@@ -3534,6 +3706,7 @@ for (int i = 0; i < NumberOfUsers; i++)
                     ta_level1Unlocked = true;
                     ta_level2Unlocked = false;
                     ta_level3Unlocked = false;
+                    g_hasSeenCrystalInfo = false;
 
                     storyCarryScore = 0;
                     taCarryScore = 0;
@@ -3562,6 +3735,7 @@ for (int i = 0; i < NumberOfUsers; i++)
                     ta_level1Unlocked = players[SelectedUser].ta_level1Unlocked;
                     ta_level2Unlocked = players[SelectedUser].ta_level2Unlocked;
                     ta_level3Unlocked = players[SelectedUser].ta_level3Unlocked;
+                    g_hasSeenCrystalInfo = players[SelectedUser].hasSeenCrystalInfo;
                 }
                 if (SelectedUser != -1 && !NameEntry && !isConfirmUserDelete && DeleteButton.getGlobalBounds().contains(mousePos))
                     DeleteUser();
@@ -4468,7 +4642,7 @@ void StartQuit()
 
 void UpdateQuit()
 {
-    // PlayingSound(false);
+
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     Vector2f yesPos = {WindowWidth / 2.f - 100.f, WindowHeight / 2.f + 90.f};
     Vector2f noPos = {WindowWidth / 2.f + 100.f, WindowHeight / 2.f + 90.f};
@@ -4754,7 +4928,7 @@ void StartHighscore()
 
 void UpdateHighscore()
 {
-    // PlayingSound(false);
+
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     bool mouseClicked = false;
     while (const optional event = window.pollEvent())
@@ -4985,7 +5159,6 @@ void StartCredits()
 
 bool UpdateCredits()
 {
-    // PlayingSound(false);
     Vector2f mousePos = window.mapPixelToCoords(Mouse::getPosition(window), view);
     while (const optional event = window.pollEvent())
     {
@@ -6068,9 +6241,9 @@ void UpdatePowerUps(float dt)
 
                     // Pick type
                     int crystalRoll = rand() % 100;
-                    if (crystalRoll < 10)
+                    if (crystalRoll < 35)
                     {
-                        powerUps[i].type = 4; // 15% chance to drop the Crystal
+                        powerUps[i].type = 4; 
                     }
                     else
                     {
@@ -6249,6 +6422,11 @@ void UpdatePowerUps(float dt)
                     infectionDelayTimer = 0.f;
                     eatSound.play();
                     createScorePopup(p.x, p.y - 20.f, "INFECTING...");
+                    if (!g_hasSeenCrystalInfo)
+                    {
+                        g_hasSeenCrystalInfo = true;
+                        ShowCrystalInfoPopup();
+                    }
                 }
 
                 // Burst bubbles at collection point
@@ -6279,20 +6457,26 @@ if (speedBoostActive)
 
 void DrawPowerUps()
 {
-    Texture* texPtrs[5] = { &texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink, &texPowerUpCrystal };
+  
+    Texture* texPtrs[6] = { &texPowerUpTime, &texPowerUpStar, &texPowerUpSpeed, &texPowerUpShrink, &texPowerUpCrystal, &texMineSheet };
 
     for (int i = 0; i < MAX_POWERUPS; i++)
     {
         if (!powerUps[i].active)
             continue;
 
-        PowerUp &p = powerUps[i];
+        PowerUp& p = powerUps[i];
+
+        if (p.type < 0 || p.type > 5)
+            continue;
 
         Sprite bub(*texPtrs[p.type]);
-        bub.setOrigin({texPtrs[p.type]->getSize().x / 2.f,
-                       texPtrs[p.type]->getSize().y / 2.f});
-        bub.setPosition({p.x, p.y});
-        bub.setScale({0.8f, 0.8f});
+
+        bub.setOrigin({ texPtrs[p.type]->getSize().x / 2.f,
+                       texPtrs[p.type]->getSize().y / 2.f });
+        bub.setPosition({ p.x, p.y });
+        bub.setScale({ 0.8f, 0.8f });
+
         window.draw(bub);
     }
 }
@@ -8568,7 +8752,7 @@ void UpdateSmallFishes(float dt)
                 fish.velocity.y = 0;
                 fish.canTurn = false;
 
-                // Reset the animation to a clean swimming frame
+                
                 fish.isTurning = false;
                 fish.currentFrame = 0;
                 fish.animTimer = 0.f;
@@ -9025,7 +9209,7 @@ void UpdateMediumFishes(float dt)
             // === APPLY TEXTURES ===
             if (fish.state == 3)
             {
-                // Apply the 15-frame Sliced Sprite Sheet (4x4 Grid)
+               
                 fish.sprite->setTexture(mediumFishSlicedTexture);
 
                 int col = fish.currentFrame % 4;
@@ -9035,11 +9219,10 @@ void UpdateMediumFishes(float dt)
             }
             else
             {
-                // Apply the normal swimming/eating/turning Sprite Sheet
+               
                 fish.sprite->setTexture(mediumFishTexture);
 
-                // Based on your specific Sprite Sheet:
-                // Row 0 = Eat, Row 1 = Idle, Row 2 = Swim, Row 3 = Turn
+             
                 int row = 0;
                 if (fish.state == 0) row = 0;      // Eat
                 else if (fish.state == 1) row = 2; // Swim (Skipping row 1/Idle)
@@ -9166,7 +9349,7 @@ void UpdateLargeFishes(float dt)
                 }
                 continue; // ONLY continue if the fish is deleted!
             }
-            // Let the code fall down to the animation logic!
+           
         }
         else if (fish.state == 1 || fish.state == 3) // Normal Movement Logic
         {
@@ -9445,7 +9628,7 @@ void UpdateLargeFishes(float dt)
             // === APPLY TEXTURES ===
             if (fish.state == 3)
             {
-                // Apply the 14-frame Sliced Sprite Sheet
+                
                 fish.sprite->setTexture(largeFishSlicedTexture);
 
                 int col = fish.currentFrame % 4;
@@ -9455,11 +9638,10 @@ void UpdateLargeFishes(float dt)
             }
             else
             {
-                // Apply the normal swimming/eating/turning Sprite Sheet
+            
                 fish.sprite->setTexture(largeFishTexture);
 
-                // Based on your specific Sprite Sheet:
-                // Row 0 = Eat, Row 1 = Idle, Row 2 = Swim, Row 3 = Turn
+              
                 int row = 0;
                 if (fish.state == 0) row = 0;      // Eat
                 else if (fish.state == 1) row = 2; // Swim (Skipping row 1/Idle)
@@ -9752,7 +9934,6 @@ void UpdateMermaidEvent(float dt)
                 score     += timeBonus;
             }
  
-            // ---- Spawn lives bonus popup (uiView coords - fixed on screen) ----
             for (int i = 0; i < MAX_BONUS_POPUPS; i++)
             {
                 if (!bonusPopups[i].active)
@@ -9845,7 +10026,6 @@ void UpdateMermaidEvent(float dt)
             }
         }
 
-        // ---------------------------------------------------------------
  
         if (elapsed >= 6.0f)
         {
@@ -10402,11 +10582,6 @@ bool ShowEndGameMenu()
                 return false;
             }
 
-            if (const auto *resizeEvent = event->getIf<Event::Resized>())
-            {
-                // view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
-                // window.setView(view);
-            }
 
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
             {
@@ -10663,11 +10838,6 @@ void ShowPauseMenu()
                 return;
             }
 
-            if (const auto *resizeEvent = event->getIf<Event::Resized>())
-            {
-                // view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
-                // window.setView(view);
-            }
 
             if (const auto *keyPressed = event->getIf<Event::KeyPressed>())
             {
