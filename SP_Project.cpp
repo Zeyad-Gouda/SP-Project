@@ -6724,7 +6724,6 @@ void UpdateMines(float dt)
     }
 }
  
-// ============================================================
 void DrawMines()
 {
     for (int i = 0; i < MAX_MINES; i++)
