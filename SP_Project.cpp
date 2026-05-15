@@ -5219,7 +5219,9 @@ void StartSelectLevel()
     // Ensure view is in the correct state for the menu (800x600 center)
     view.setSize({800.f, 600.f});
     view.setCenter({400.f, 300.f});
-    window.setView(view);
+    view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+    view.setRotation(sf::degrees(0.f));
+    g_optionsFromPause = false;
 
     gameScreenActive = false;
     g_inEndScreen = false;
@@ -6262,19 +6264,19 @@ void UpdatePowerUps(float dt)
                         }
                         else if (gameLEVEL == 2)
                         {
-                            int roll = rand() % 4;
+                            int roll = rand() % 3; 
                             if (roll == 0) powerUps[i].type = STAR;
                             else if (roll == 1) powerUps[i].type = CRYSTAL;
-                            else if (roll == 2) powerUps[i].type = BOMB;
+                            else powerUps[i].type = BOMB;
                         }
                         else if (gameLEVEL == 3)
                         {
-                            int roll = rand() % 6;
+                            int roll = rand() % 5; 
                             if (roll == 0) powerUps[i].type = STAR;
                             else if (roll == 1) powerUps[i].type = SPEED;
                             else if (roll == 2) powerUps[i].type = SHRINK;
                             else if (roll == 3) powerUps[i].type = CRYSTAL;
-                            else if (roll == 4) powerUps[i].type = BOMB;
+                            else powerUps[i].type = BOMB;
                         }
                     }
                     break;
@@ -11390,64 +11392,125 @@ bool EndLevel()
 
                         if (selectedLevel >= 3)
                         {
+                            levelsound.stop();
+                            WaveSound.stop();
+                            mermaidevent.stop();
+                            g_inEndScreen = false;
+                            g_optionsFromPause = false;
+                            isLevelRunning = false;
                             goToMainMenuFromLevel = true;
                             endScreenRunning = false;
                         }
+                    else
+                    {
+                        int nextLevel = selectedLevel + 1;
+
+                        if (currentGamemode == CLASSIC)
+                        {
+                            if (nextLevel == 2) level2Unlocked = true;
+                            if (nextLevel == 3) level3Unlocked = true;
+                        }
                         else
                         {
-                            int nextLevel = selectedLevel + 1;
+                            if (nextLevel == 2) ta_level2Unlocked = true;
+                            if (nextLevel == 3) ta_level3Unlocked = true;
+                        }
 
-                            if (currentGamemode == CLASSIC)
+                        mainmenumusic.play();
+                        mainmenumusic.setLooping(true);
+                        endScreenRunning = false;
+
+                        StartSelectLevel();
+
+                        selectedLevel = nextLevel;
+                        isLoading = true;
+                        loadProgress = 0.f;
+                        pearlClicked = true;
+
+                        if (currentGamemode == CLASSIC)
+                            storyCarryScore = score;
+                        else
+                            taCarryScore = score;
+
+                        bool exitSelectLevel = false;
+                        Clock clock;
+                        
+                        while (window.isOpen())
+                        {
+                            float dt = clock.restart().asSeconds();
+                            while (auto event = window.pollEvent())
                             {
-                                if (nextLevel == 2) level2Unlocked = true;
-                                if (nextLevel == 3) level3Unlocked = true;
-                            }
-                            else
-                            {
-                                if (nextLevel == 2) ta_level2Unlocked = true;
-                                if (nextLevel == 3) ta_level3Unlocked = true;
-                            }
+                                if (event->is<Event::Closed>()) {
+                                    window.close();
+                                    return true;
+                                }
+                                
+                                if (const auto* keyPressed = event->getIf<Event::KeyPressed>())
+                                    if (keyPressed->code == Keyboard::Key::Escape)
+                                    {
+                                        goToMainMenuFromLevel = true;
+                                        exitSelectLevel = true;
+                                    }
 
-                            mainmenumusic.play();
-                            mainmenumusic.setLooping(true);
+                                if (const auto* mouseBtn = event->getIf<Event::MouseButtonReleased>())
+                                    if (mouseBtn->button == Mouse::Button::Left)
+                                    {
+                                        Vector2f mf = window.mapPixelToCoords(Mouse::getPosition(window), view);
 
-                            endScreenRunning = false;
-
-                            StartSelectLevel();
-
-                            selectedLevel = nextLevel;
-                            isLoading = true;
-                            loadProgress = 0.f;
-                            pearlClicked = true;
-
-                            // Carry score
-                            if (currentGamemode == CLASSIC)
-                                storyCarryScore = score;
-                            else
-                                taCarryScore = score;
-
-                            Clock clock;
-                            while (window.isOpen())
-                            {
-                                float dt = clock.restart().asSeconds();
-                                while (auto event = window.pollEvent())
-                                {
-                                    if (event->is<Event::Closed>())
-                                        window.close();
-                                    if (const auto* key = event->getIf<Event::KeyPressed>())
-                                        if (key->code == Keyboard::Key::Escape)
+                                        if (mySprite.getGlobalBounds().contains(mf))
                                         {
                                             goToMainMenuFromLevel = true;
-                                            return true;
+                                            exitSelectLevel = true;
                                         }
-                                }
-                                window.setView(view);
-                                UpdateSelectLevel(dt);
-                                if (goToMainMenuFromLevel)
-                                    return true;
-                                DrawSelectLevel();
+                                        PearlData* activePearls = isTimeAttackMode ? ta_pearls : pearls;
+                                        for (int i = 0; i < 3; ++i)
+                                        {
+                                            if (*activePearls[i].unlocked)
+                                            {
+                                                FloatRect bounds = activePearls[i].sprite->getGlobalBounds();
+                                                Vector2f center = {bounds.position.x + bounds.size.x/2.f,
+                                                                   bounds.position.y + bounds.size.y/2.f};
+                                                if (activePearls[i].sprite->getGlobalBounds().contains(mf))
+                                                {
+                                                    isLoading = true;
+                                                    loadProgress = 0.f;
+                                                    selectedLevel = i + 1;
+                                                    pearlClicked = true;
+
+                                                    if (!isTimeAttackMode)
+                                                    {
+                                                        if (selectedLevel != lastWonStoryLevel + 1)
+                                                            storyCarryScore = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        if (selectedLevel != lastWonTALevel + 1)
+                                                            taCarryScore = 0;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                             }
+
+                            if (exitSelectLevel) break;
+
+                            window.setView(view);
+                            UpdateSelectLevel(dt);
+
+                            if (loadingdone) 
+                            {
+                                goToMainMenuFromLevel = true;
+                                exitSelectLevel = true;
+                            }
+
+                            if (goToMainMenuFromLevel) break;
+
+                            DrawSelectLevel();
                         }
+
+                        if (goToMainMenuFromLevel) return true;
+                    }
                     }
                     }
 
