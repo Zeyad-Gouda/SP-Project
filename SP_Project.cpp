@@ -6232,6 +6232,7 @@ void UpdatePowerUps(float dt)
                 if (!powerUps[i].active)
                 {
                     powerUps[i].active = true;
+                    powerUps[i].type = STAR;
                     powerUps[i].isPopping = false;
                     powerUps[i].popTimer = 0.f;
                     powerUps[i].scaleX = 1.f;
