@@ -4,7 +4,7 @@ uniform sampler2D texture;
 uniform float time;
 
 void main() {
-    // إحداثيات الصورة (من 0 لـ 1)
+    // ???????? ?????? (?? 0 ?? 1)
     vec2 tc = gl_TexCoord[0].xy;
     
     // equation of motion (animation of weeds)

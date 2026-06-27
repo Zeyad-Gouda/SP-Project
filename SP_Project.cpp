@@ -5183,7 +5183,9 @@ void StartSelectLevel()
     // Ensure view is in the correct state for the menu (800x600 center)
     view.setSize({800.f, 600.f});
     view.setCenter({400.f, 300.f});
-    window.setView(view);
+    view.setViewport(FloatRect({0.f, 0.f}, {1.f, 1.f}));
+    view.setRotation(sf::degrees(0.f));
+    g_optionsFromPause = false;
 
     gameScreenActive = false;
     g_inEndScreen = false;
@@ -6205,6 +6207,7 @@ void UpdatePowerUps(float dt)
                 if (!powerUps[i].active)
                 {
                     powerUps[i].active = true;
+                    powerUps[i].type = STAR;
                     powerUps[i].isPopping = false;
                     powerUps[i].popTimer = 0.f;
                     powerUps[i].scaleX = 1.f;
@@ -6214,57 +6217,55 @@ void UpdatePowerUps(float dt)
                     powerUps[i].y = view.getCenter().y - view.getSize().y / 2.f - 60.f;
                     powerUps[i].vy = getRandom(70.f, 130.f);
 
-                    // --- Pick Type ---
-                    bool isTimeBonus = false;
-
-                    // --- Time Attack Bonus Logic ---
-                    if (currentGamemode == TIMEATTACK)
+                    // Pick type
+                    int crystalRoll = rand() % 100;
+                    if (crystalRoll < 10 && gameLEVEL >= 2)
                     {
-                        int taRoll = rand() % 100;
-                        if (taRoll < 25)
-                        {
-                            powerUps[i].type = TIME_BONUS;
-                            isTimeBonus = true;
-                        }
+                        powerUps[i].type = 4;
                     }
-                    if (!isTimeBonus)
+                    else
                     {
-                        if (gameLEVEL == 1)
+                        if (currentGamemode == TIMEATTACK)
                         {
-                            int roll = rand() % 100;
-                            if (roll < 60)
-                            {
+                            int roll = rand() % 3;
+                            if (roll == 0)
+                                powerUps[i].type = TIME_BONUS;
+                            else if (roll == 1)
+                                powerUps[i].type = BOMB;
+                            else
                                 powerUps[i].type = STAR;
-                            }
                         }
-
+                        else if (gameLEVEL == 1)
+                        {
+                            int roll = rand() % 10;
+                            if (roll == 0)
+                                powerUps[i].type = BOMB;
+                            else
+                                powerUps[i].type = STAR;
+                        }
                         else if (gameLEVEL == 2)
                         {
-                            int roll = rand() % 100;
-                            if (roll < 75)
-                            {
+                            int roll = rand() % 3;
+                            if (roll == 0)
                                 powerUps[i].type = STAR;
-                            }
+                            else if (roll == 1)
+                                powerUps[i].type = CRYSTAL;
                             else
-                            {
-                                powerUps[i].type = SPEED;
-                            }
+                                powerUps[i].type = BOMB;
                         }
                         else if (gameLEVEL == 3)
                         {
-                            int roll = rand() % 100;
-                            if (roll < 60)
-                            {
+                            int roll = rand() % 5;
+                            if (roll == 0)
                                 powerUps[i].type = STAR;
-                            }
-                            else if (roll < 80)
-                            {
-                                powerUps[i].type = SHRINK;
-                            }
-                            else
-                            {
+                            else if (roll == 1)
                                 powerUps[i].type = SPEED;
-                            }
+                            else if (roll == 2)
+                                powerUps[i].type = SHRINK;
+                            else if (roll == 3)
+                                powerUps[i].type = CRYSTAL;
+                            else
+                                powerUps[i].type = BOMB;
                         }
                     }
                     break;
@@ -6370,12 +6371,26 @@ void UpdatePowerUps(float dt)
                             largeFishes[j].sprite->setScale({(s.x < 0 ? -shrinkScale : shrinkScale), shrinkScale});
                             largeFishes[j].isFleeing = false;
                         }
+
                     eatSound.play();
                     createScorePopup(p.x, p.y - 20.f, "SHRINK");
                     powerUpTimerActive = true;
                     powerUpTimer = POWER_UP_DURATION;
                 }
+                else if (p.type == 4) // Crystal Fragment
+                {
+                    isWaitingForInfection = true;
+                    infectionDelayTimer = 0.f;
+                    eatSound.play();
+                    createScorePopup(p.x, p.y - 20.f, "INFECTING...");
+                    if (!g_hasSeenCrystalInfo)
+                    {
+                        g_hasSeenCrystalInfo = true;
+                        ShowCrystalInfoPopup();
+                    }
+                }
 
+                // Burst bubbles at collection point
                 for (int k = 0; k < 6; k++)
                     StartGameBubble(p.x + getRandom(-15.f, 15.f), p.y + getRandom(-15.f, 15.f), true);
             }
@@ -6402,11 +6417,12 @@ void UpdatePowerUps(float dt)
 
 void DrawPowerUps()
 {
-    Texture *texPtrs[4] = {
+    Texture *texPtrs[5] = {
         &texPowerUpTime,
         &texPowerUpStar,
         &texPowerUpSpeed,
-        &texPowerUpShrink};
+        &texPowerUpShrink,
+        &texPowerUpCrystal};
 
     for (int i = 0; i < MAX_POWERUPS; i++)
     {
@@ -6415,7 +6431,21 @@ void DrawPowerUps()
 
         PowerUp &p = powerUps[i];
 
-        if (p.type >= 0 && p.type <= 3)
+        if (p.type < 0 || p.type > 5)
+            continue;
+
+        if (p.type == BOMB)
+        {
+            Sprite bub(texMineSheet);
+            bub.setTextureRect(sf::IntRect(
+                {MINE_X, MINE_Y},
+                {MINE_FRAME_W, MINE_FRAME_H}));
+            bub.setOrigin({MINE_FRAME_W / 2.f, MINE_FRAME_H / 2.f});
+            bub.setPosition({p.x, p.y});
+            bub.setScale({0.8f, 0.8f});
+            window.draw(bub);
+        }
+        else
         {
             Sprite bub(*texPtrs[p.type]);
             bub.setOrigin({texPtrs[p.type]->getSize().x / 2.f,
@@ -6765,6 +6795,7 @@ void bglevel()
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
         UpdatePowerUps(deltaTime);
+        UpdateMines(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -6853,7 +6884,7 @@ void Timeattacklevel()
         UpdateGameBubbles(deltaTime);
         UpdateMermaidEvent(deltaTime);
         UpdatePowerUps(deltaTime);
-        // UpdateMines(deltaTime);
+        UpdateMines(deltaTime);
         UpdateLevelHud();
 
         if (!isLevelRunning && goToMainMenuFromLevel)
@@ -7088,6 +7119,7 @@ void Drawbglevel()
     DrawGameBubbles();
     DrawMermaidEvent();
     DrawPowerUps();
+    DrawMines();
 
     for (int i = 0; i < MAX_POPUPS; i++)
     {
@@ -7566,6 +7598,7 @@ void Startmovingplayer()
     WaveSound.setLooping(true);
 
     StartPowerUps();
+    StartMines();
 
     currentState = IDLE;
     currentFrame = 0;
@@ -7596,6 +7629,32 @@ void Startmovingplayer()
 void Updatemovingplayer(float dt)
 {
     timer += dt;
+
+    if (isWaitingForInfection)
+    {
+        infectionDelayTimer += dt;
+        if (infectionDelayTimer >= INFECTION_DELAY)
+        {
+            isWaitingForInfection = false;
+            isPlayerInfected = true;
+            sprPlayerall.setTexture(texPlayerInfected);
+            infectionTimer = 0.f;
+            createScorePopup(sprPlayerall.getPosition().x, sprPlayerall.getPosition().y - 40.f, "INFECTED!");
+
+            powerUpTimerActive = true;
+            powerUpTimer = INFECTION_DURATION;
+        }
+    }
+
+    if (isPlayerInfected)
+    {
+        infectionTimer += dt;
+        if (infectionTimer >= INFECTION_DURATION)
+        {
+            isPlayerInfected = false; // Infection wears off
+            sprPlayerall.setTexture(texPlayerall);
+        }
+    }
 
     if (currentGamemode == TIMEATTACK && !isPlayerDead)
     {
@@ -8610,6 +8669,11 @@ void Drawmovingplayer()
             int alpha = static_cast<int>(fadeValue * 255);
 
             sprPlayerall.setColor(sf::Color(255, 255, 255, alpha));
+        }
+        else if (isPlayerInfected)
+        {
+            // Glowing Cyan color while infected
+            sprPlayerall.setColor(sf::Color(185, 240, 240));
         }
         else
         {
@@ -11365,6 +11429,12 @@ bool EndLevel()
 
                             if (selectedLevel >= 3)
                             {
+                                levelsound.stop();
+                                WaveSound.stop();
+                                mermaidevent.stop();
+                                g_inEndScreen = false;
+                                g_optionsFromPause = false;
+                                isLevelRunning = false;
                                 goToMainMenuFromLevel = true;
                                 endScreenRunning = false;
                             }
@@ -11434,7 +11504,6 @@ bool EndLevel()
                                                     goToMainMenuFromLevel = true;
                                                     exitSelectLevel = true;
                                                 }
-
                                                 PearlData *activePearls = isTimeAttackMode ? ta_pearls : pearls;
                                                 for (int i = 0; i < 3; ++i)
                                                 {
